@@ -308,6 +308,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
             this.lasso = rect;
             V(this.vis).append(rect);
         }
+        this.trigger("blank_pointDown");
     },
 
     blank_pointMove:function(evt,x,y){

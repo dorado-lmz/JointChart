@@ -3649,7 +3649,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
 org.dedu.draw.CellView = Backbone.View.extend({
      tagName: 'g',
 
-     attributes:function(){
+    attributes:function(){
         return {'model-id':this.model.id}
      },
 
@@ -3670,7 +3670,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
 
     },
 
-    initialize:function(){
+    initialize:function(options){
 
     },
 
@@ -3712,9 +3712,18 @@ org.dedu.draw.CellView = Backbone.View.extend({
         if (el === this.el) {
             return prevSelector;
         }
-
         var nthChild = V(el).index() + 1;
-        var selector = el.tagName + ':nth-child(' + nthChild + ')';
+        //if(el.tagName == 'circle'){
+        //    nthChild += 1;
+        //}else{
+        //    nthChild += 1;
+        //}
+
+        var classnames = '';
+        el.classList.forEach(function (classname) {
+           classnames += '.'+classname;
+        });
+        var selector = el.tagName + classnames + ':nth-child(' + nthChild + ')';
 
         if (prevSelector) {
             selector += ' > ' + prevSelector;
@@ -3773,8 +3782,6 @@ org.dedu.draw.CellView = Backbone.View.extend({
         return this;
     },
 
-
-
     // Find the closest element that has the `magnet` attribute set to `true`. If there was not such
     // an element found, return the root element of the cell view.
     findMagnet: function (el) {
@@ -3821,6 +3828,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
 
         this.notify('cell:pointerdblclick', evt, x, y);
     },
+
     pointerclick: function(evt, x, y) {
         this.notify('cell:pointerclick', evt, x, y);
     },
@@ -3860,8 +3868,7 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
             height: 1
         },
         angle: 0,
-        selected:false,
-
+        selected:false
     },
 
     position:function(x,y,opt){
@@ -3931,10 +3938,14 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         return 'element node '+this.model.get('type').replace('.',' ','g')
     },
 
-    initialize:function(){
-        _.bindAll(this, 'translate', 'resize', 'rotate');
+    initialize:function(options){
 
+        if(options.skip_render){
+            return;
+        }
         org.dedu.draw.CellView.prototype.initialize.apply(this, arguments);
+
+        _.bindAll(this, 'translate', 'resize', 'rotate');
 
         this.listenTo(this.model, 'change:position', this.translate);
         this.listenTo(this.model, 'change:size', this.resize);
@@ -4306,7 +4317,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
 
         if (!_.isUndefined(yAlignment) || !_.isUndefined(xAlignment)) {
 
-            var velBBox = vel.bbox(false, this.paper.viewport);
+            var velBBox = vel.bbox(false, this.paper&&this.paper.viewport || this.options.paper&&this.options.paper.viewport);
 
             // `y-alignment` when set to `middle` causes centering of the subelement around its new y coordinate.
             if (yAlignment === 'middle') {
@@ -4341,28 +4352,6 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         this.vel.attr('transform','translate('+position.x+','+position.y+')');
     },
 
-    resize: function () {
-        var size = this.model.get('size') || { width: 1, height: 1 };
-        var angle = this.model.get('angle') || 0;
-
-        var scalable = this.scalableNode;
-        if (!scalable) {
-            // If there is no scalable elements, than there is nothing to resize.
-            return;
-        }
-        var scalableBbox = scalable.bbox(true);
-        // Make sure `scalableBbox.width` and `scalableBbox.height` are not zero which can happen if the element does not have any content. By making
-        // the width/height 1, we prevent HTML errors of the type `scale(Infinity, Infinity)`.
-        scalable.attr('transform', 'scale(' + (size.width / (scalableBbox.width || 1)) + ',' + (size.height / (scalableBbox.height || 1)) + ')');
-
-
-        // Update must always be called on non-rotated element. Otherwise, relative positioning
-        // would work with wrong (rotated) bounding boxes.
-        this.update();
-    },
-
-
-
     findMagnetsInArea:function(rect, opt) {
         rect = g.rect(rect);
         var views = [this.up,this.down,this.left,this.right];
@@ -4373,7 +4362,6 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
             return view && rect.intersect(g.rect(view.bbox(false,this.paper.viewport)));
         },this);
     },
-
 
     pointerdown:function(evt,x,y){
         var paper = this.paper;
@@ -4454,7 +4442,6 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         this._closestView = null;
     },
 
-    
     pointermove:function(evt,tx,ty,localPoint){
         if(this._linkView){
             // let the linkview deal with this event
@@ -4537,7 +4524,8 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
     defaults: {
         type: 'link',
         source: {},
-        target: {}
+        target: {},
+        labels:undefined
     },
 
     isLink: function() {
@@ -4584,8 +4572,13 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
             }else{
                 this.unfocus();
             }
-
         },this);
+
+        this.model.on('change:labels', function () {
+            this.renderLabels();
+            this.updateLabelPositions();
+        },this);
+
     },
 
     // Returns a function observing changes on an end of the link. If a change happens and new end is a new model,
@@ -5022,6 +5015,12 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
         return this;
     },
 
+    hideLabels:function(){
+        $(this._V.labels.node).hide();
+    },
+    showLabel: function () {
+        $(this._V.labels.node).show();
+    },
 
     findRoute: function (oldVertices) {
         var namespace = org.dedu.draw.routers;
@@ -5382,9 +5381,6 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
         this.unhighlight('connection_line');
     },
 
-    remove: function () {
-        this.$el.remove();
-    },
 
     unhighlight: function (el) {
         this._V[el].attr({'stroke':'#888'});
@@ -5392,7 +5388,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 
     pointerdown: function (evt,x,y) {
         org.dedu.draw.CellView.prototype.pointerdown.apply(this, arguments);
-        this.notify('link:pointerdown', evt, x, y);
+
 
         this._dx = x;
         this._dy = y;
@@ -5420,15 +5416,16 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
                 }
                 break;
 
-            case 'label':
-                if (this.can('labelMove')) {
-                    this._action = 'label-move';
-                    this._labelIdx = parseInt(V(labelNode).attr('label-idx'), 10);
-                    // Precalculate samples so that we don't have to do that
-                    // over and over again while dragging the label.
-                    this._samples = this._V.connection.sample(1);
-                    this._linkLength = this._V.connection.node.getTotalLength();
-                }
+            case 'connection_background':
+                //if (this.can('labelMove')) {
+                //    this._action = 'label-move';
+                //    this._labelIdx = parseInt(V(labelNode).attr('label-idx'), 10);
+                //    // Precalculate samples so that we don't have to do that
+                //    // over and over again while dragging the label.
+                //    this._samples = this._V.connection.sample(1);
+                //    this._linkLength = this._V.connection.node.getTotalLength();
+                //}
+                this.notify('link:pointerdown', evt, x, y);
                 break;
 
 
@@ -5437,6 +5434,15 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 
         var targetParentEvent = evt.target.parentNode.getAttribute('event');
         this.focus();
+
+    },
+
+    pointerdblclick: function(evt, x, y) {
+
+        var m = g.line(g.point(this.sourcePoint.x,this.sourcePoint.y), g.point(this.targetPoint.x,this.targetPoint.y)).midpoint();
+        x = m.x-8;
+        y = m.y-8;
+        org.dedu.draw.CellView.prototype.pointerdblclick.apply(this, arguments);
 
     },
 
@@ -5457,8 +5463,11 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 
                     _.each(viewsInArea, function(view) {
 
+                        if(this.paper.findViewByModel(this.model.get('source').id)==view){
+                            return;
+                        }
                         // skip connecting to the element in case '.': { magnet: false } attribute present
-                        if (view.el.getAttribute('magnet') !== 'false') {
+                        if (view.el.getAttribute('magnet') == 'true') {
 
                             // find distance from the center of the model to pointer coordinates
                             distance = view.model.getBBox().center().distance(pointer);
@@ -5505,7 +5514,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 
                     }, this);
 
-                    this._closestView && this._closestView.highlight(this._closestEnd.selector, { connecting: true, snapping: true });
+                    this._closestView  && this._closestView.highlight(this._closestEnd.selector, { connecting: true, snapping: true });
 
                     this.model.set(this._arrowhead, this._closestEnd || { x: x, y: y }, { ui: true });
 
@@ -5593,9 +5602,8 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
                     this.model.set(arrowhead, arrowheadValue, { ui: true });
                     this.trigger.apply(this.model, 'link:complete');
                 }else{
-                    this.remove();
+                    this.model.remove({ ui: true });
                 }
-
             }
             this._afterArrowheadMove();
         }
@@ -5809,14 +5817,14 @@ org.dedu.draw.Graph = Backbone.Model.extend({
 
         opt = _.extend({}, opt, { clear: true });
 
-        var collection = this.get('cells');
+        var cells = this.get('cells').models;
 
-        if (collection.length === 0) return this;
+        if (cells.length === 0) return this;
 
         this.trigger('batch:start', { batchName: 'clear' });
 
         // The elements come after the links.
-        var cells = collection.sortBy(function(cell) {
+        _.sortBy(cells,function(cell) {
             return cell.isLink() ? 1 : 2;
         });
 
@@ -5880,18 +5888,22 @@ org.dedu.draw.shape.basic.Generic = org.dedu.draw.Element.extend({
 org.dedu.draw.shape.basic.Rect  = org.dedu.draw.shape.basic.Generic.extend({
     markup: '<g class="rotatable"><g class="scalable"><rect/></g><text/></g>',
     defaults: org.dedu.draw.util.deepSupplement({
+        size: {
+            width: 60,
+            height: 40
+        },
         type: 'basic.Rect',
         attrs: {
             'rect': {
                 fill: '#ffffff',
                 stroke: '#000000',
-                width: 100,
-                height: 60
+                width: 60,
+                height: 40
             },
             'text': {
                 fill: '#000000',
                 text: '',
-                'font-size': 14,
+                'font-size': 10,
                 'ref-x': .5,
                 'ref-y': .5,
                 'text-anchor': 'middle',
@@ -5901,8 +5913,132 @@ org.dedu.draw.shape.basic.Rect  = org.dedu.draw.shape.basic.Generic.extend({
         }
 
     }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
-})
+});
 
+org.dedu.draw.shape.basic.CRect = org.dedu.draw.shape.basic.Rect.extend({
+    defaults:org.dedu.draw.util.deepSupplement({
+        attrs:{
+            'rect':{
+                rx:7,
+                ry:7
+            }
+        }
+    },org.dedu.draw.shape.basic.Rect.prototype.defaults)
+});
+
+org.dedu.draw.shape.basic.Circle = org.dedu.draw.shape.basic.Generic.extend({
+
+    markup: '<g class="rotatable"><g class="scalable"><circle/></g><text/></g>',
+
+    defaults: org.dedu.draw.util.deepSupplement({
+
+        type: 'basic.Circle',
+        size: { width: 60, height: 60 },
+        attrs: {
+            'circle': {
+                fill: '#ffffff',
+                stroke: '#000000',
+                r: 30,
+                cx:0,
+                cy:0
+            },
+            'text': {
+                'font-size': 14,
+                text: '',
+                'text-anchor': 'middle',
+                'ref-x': .5,
+                'ref-y': .5,
+                'y-alignment': 'middle',
+                fill: '#000000',
+                'font-family': 'Arial, helvetica, sans-serif'
+            }
+        }
+    }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
+});
+
+
+org.dedu.draw.shape.basic.Ellipse = org.dedu.draw.shape.basic.Generic.extend({
+
+    markup: '<g class="rotatable"><g class="scalable"><ellipse/></g><text/></g>',
+
+    defaults: org.dedu.draw.util.deepSupplement({
+
+        type: 'basic.Ellipse',
+        size: { width: 60, height: 40 },
+        attrs: {
+            'ellipse': {
+                fill: '#ffffff',
+                stroke: '#000000',
+                rx: 30,
+                ry: 20,
+            },
+            'text': {
+                'font-size': 14,
+                text: '',
+                'text-anchor': 'middle',
+                'ref-x': .5,
+                'ref-y': .5,
+                'y-alignment': 'middle',
+                fill: '#000000',
+                'font-family': 'Arial, helvetica, sans-serif'
+            }
+        }
+    }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
+});
+
+org.dedu.draw.shape.basic.Polygon = org.dedu.draw.shape.basic.Generic.extend({
+
+    markup: '<g class="rotatable"><g class="scalable"><polygon/></g><text/></g>',
+
+    defaults: org.dedu.draw.util.deepSupplement({
+
+        type: 'basic.Polygon',
+        size: { width: 60, height: 40 },
+        attrs: {
+            'polygon': {
+                fill: '#ffffff',
+                stroke: '#000000'
+            },
+            'text': {
+                'font-size': 14,
+                text: '',
+                'text-anchor': 'middle',
+                'ref-x': .5,
+                'ref-dy': 20,
+                'y-alignment': 'middle',
+                fill: '#000000',
+                'font-family': 'Arial, helvetica, sans-serif'
+            }
+        }
+    }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
+});
+
+org.dedu.draw.shape.basic.Polyline = org.dedu.draw.shape.basic.Generic.extend({
+
+    markup: '<g class="rotatable"><g class="scalable"><polyline/></g><text/></g>',
+
+    defaults: org.dedu.draw.util.deepSupplement({
+
+        type: 'basic.Polyline',
+        size: { width: 60, height: 40 },
+        attrs: {
+            'polyline': {
+                fill: '#ffffff',
+                stroke: '#000000'
+            },
+            'text': {
+                'font-size': 14,
+                text: '',
+                'text-anchor': 'middle',
+                'ref-x': .5,
+                'ref-dy': 20,
+                'y-alignment': 'middle',
+                fill: '#000000',
+                'font-family': 'Arial, helvetica, sans-serif'
+            }
+        }
+    }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
+});
 
 org.dedu.draw.shape.basic.PortsModelInterface = {
     initialize:function(){
@@ -5949,11 +6085,15 @@ org.dedu.draw.shape.basic.PortsModelInterface = {
 };
 
 org.dedu.draw.shape.basic.PortsViewInterface = {
-    initialize: function () {
+    initialize: function (options) {
 
+        if(options.skip_render){
+            return;
+        }
+
+        org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
         // `Model` emits the `process:ports` whenever it's done configuring the `attrs` object for ports.
         this.listenTo(this.model, 'process:ports', this.update);
-        org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
         this.model.on('change:selected',function(){
             if(this.model.get("selected")){
                 this.focus();
@@ -6042,14 +6182,14 @@ org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
                         stroke: '#000000'
                     },
                     '.port-body': {
-                        r: 10,
+                        r: 5,
                         magnet: true,
                         stroke: '#000000'
                     },
                     text: {
                         'pointer-events': 'none',
                     },
-                    '.label': { text: 'Model', 'ref-x': .5, 'ref-y': 10, ref: '.body', 'text-anchor': 'middle', fill: '#000000' },
+                    '.label': { 'font-size': 10,text: 'Model', 'ref-x': .5, 'ref-y': 10, ref: '.body', 'text-anchor': 'middle', fill: '#000000' },
                     '.inPorts .port-label': { x:-15, dy: 4, 'text-anchor': 'end', fill: '#000000' },
                     '.outPorts .port-label':{ x: 15, dy: 4, fill: '#000000' }
                 }
@@ -6285,13 +6425,16 @@ org.dedu.draw.shape.simple.PortsModelInterface = {
 };
 
 org.dedu.draw.shape.simple.SuspendPortViewInterface = {
-    initialize:function(){
+    initialize:function(options){
+        if(options.skip_render){
+            return;
+        }
+        org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
         //this.listenTo(this, 'add:ports', this.update);
         //this.listenTo(this,'remove:ports',this.update);
         _.bindAll(this,"showSuspendPort","hideSuspendPort");
         this.$el.on('mouseenter',this.showSuspendPort);
         this.$el.on('mouseleave',this.hideSuspendPort);
-        org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
 
         _.bindAll(this,"addTipMagnet","removeTipMagnet");
 
@@ -6407,7 +6550,7 @@ org.dedu.draw.shape.simple.GenericView = org.dedu.draw.ElementView.extend(
         addTipMagnet: function (el, opt) {
             var port = V(el);
 
-            if(!$(".tip-"+port.attr('port'),this.$el)[0]){
+            if(port.attr('port') && !$(".tip-"+port.attr('port'),this.$el)[0]){
 
                 var tip = V('circle',{class:"tip tip-"+port.attr('port'),transform:port.attr('transform'),r:15,fill:'black',opacity:0.3});
                 this.rotatableNode.append(tip);
@@ -6449,7 +6592,8 @@ org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
     ].join(''),
 
     defaults: org.dedu.draw.util.deepSupplement({
-       type: 'uml.StartState', 
+       type: 'uml.StartState',
+       size: { width: 25, height: 25 },
        port_ref_position:{
             portup:{
                 'ref-x':0,
@@ -6488,7 +6632,8 @@ org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
             '</g>'
         ].join(''),
         defaults: org.dedu.draw.util.deepSupplement({
-            type: 'uml.EndState', 
+            type: 'uml.EndState',
+            size: { width: 25, height: 25 },
             port_ref_position: {
                 portup: {
                     'ref-x': 0,
@@ -6521,7 +6666,6 @@ org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
        }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
 });
 
-
 org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
     markup: [
         '<g class="rotatable">',
@@ -6537,6 +6681,7 @@ org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
     defaults: org.dedu.draw.util.deepSupplement({
 
         type: 'uml.State',
+        size: { width: 60, height: 40 },
 
         attrs: {
             '.uml-state-body': {
@@ -6544,8 +6689,8 @@ org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
                 'fill': '#fff9ca', 'stroke': '#333', 'stroke-width': 1
             },
             '.uml-state-name': {
-                'ref': '.uml-state-body', 'ref-x': .5, 'ref-y': 5, 'text-anchor': 'middle',
-                'fill': '#000000', 'font-family': 'Courier New', 'font-size': 16,
+                'ref': '.uml-state-body', 'ref-x': .5, 'ref-y':0, 'text-anchor': 'middle',
+                'fill': '#000000', 'font-family': 'Courier New', 'font-size': 12,
                 'font-weight':'bold'
             },
             '.uml-state-separator': {
@@ -6553,7 +6698,7 @@ org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
             },
             '.uml-state-events': {
                 'ref': '.uml-state-separator', 'ref-x': 5, 'ref-y': 5,
-                'fill': '#000000', 'font-family': 'Courier New', 'font-size': 14,
+                'fill': '#000000', 'font-family': 'Courier New', 'font-size': 10,
                 'display':'block'
             }
         },
@@ -6566,11 +6711,14 @@ org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
 
 org.dedu.draw.shape.uml.StateView = org.dedu.draw.shape.simple.GenericView.extend({
 
-    initialize: function () {
+    initialize: function (options) {
+        if(options.skip_render){
+            return;
+        }
+        org.dedu.draw.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
         this.model.on('change:name', this.updateName,this);
         this.model.on('change:events', this.updateEvents,this);
         this.model.on('change:size', this.updatePath,this);
-        org.dedu.draw.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
     },
 
     render:function(){
@@ -6591,6 +6739,7 @@ org.dedu.draw.shape.uml.StateView = org.dedu.draw.shape.simple.GenericView.exten
             height:size.height+textBbox.height
         });
     },
+
     updateName: function () {
         this.vel.findOne('.uml-state-name').text(this.model.get('name'));
     },
@@ -6613,6 +6762,7 @@ org.dedu.draw.shape.uml.StateView = org.dedu.draw.shape.simple.GenericView.exten
             fill:"#ffc21d"
         });
     },
+
     unfocus:function(){
         this.vel.findOne('.uml-state-body').attr({
             fill:"#fff9ca"
@@ -6638,6 +6788,10 @@ org.dedu.draw.shape.uml.StartStateView  = org.dedu.draw.shape.simple.GenericView
 });
 
 org.dedu.draw.shape.uml.EndStateView  = org.dedu.draw.shape.simple.GenericView.extend({
+    initialize: function (options) {
+        this.circle_index  = 2;
+        org.dedu.draw.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
+    },
     focus: function () {
         this.vel.findOne('.uml-state-body').attr({
             fill:"#ffc21d"
@@ -6829,7 +6983,6 @@ org.dedu.draw.Paper = Backbone.View.extend({
         }, this);
     },
 
-
     getModelById:function(id){
 
         return this.model.getCell(id);
@@ -6961,6 +7114,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
             this.lasso = rect;
             V(this.vis).append(rect);
         }
+        this.trigger("blank_pointDown");
     },
 
     blank_pointMove:function(evt,x,y){
@@ -7235,3 +7389,69 @@ org.dedu.draw.Chart = org.dedu.draw.Paper.extend({
         V(this.svg).attr({style:style});
     }
 });
+
+/**
+ * Created by lmz on 16/5/3.
+ */
+
+
+
+
+var namespace = org.dedu.draw.shape;
+
+var defaultViewClass = org.dedu.draw.ElementView;
+
+var tmp_chart = new org.dedu.draw.Chart({
+    el: $('#tmp_chart'),
+    width: 36,
+    height: 36,
+    tabindex:1,
+    gridSize: 1,
+    style: {
+
+    }
+});
+
+function renderView(node_type,options){
+    var view = createViewForModel(node_type,options);
+    V(tmp_chart.vis).append(view.el);
+    view.paper = tmp_chart;
+    view.render();
+
+    return view;
+}
+
+function createViewForModel(node_type,options) {
+    var view_type = node_type + "View";
+
+    var namespaceViewClass = org.dedu.draw.util.getByPath(namespace, view_type, ".");
+    var namespaceClass = org.dedu.draw.util.getByPath(namespace, node_type, ".");
+
+    var ViewClass = namespaceViewClass || defaultViewClass;
+
+    var cell = new namespaceClass(options);
+
+    var view = new ViewClass({
+        model: cell,
+        skip_render: true,
+        paper: tmp_chart
+    });
+    return view;
+}
+function getPaleteeSvg(category,node_type,options){
+    var $tmp_a = $('<a href="javascript:void(0);" class="geItem" style="overflow: hidden; width: 40px; height: 40px; padding: 1px;">');
+    var $tmp_svg = $('<svg style="width: 36px; height: 36px; display: block; position: relative; overflow: hidden; cursor: move; "></svg>');
+    $tmp_a.append($tmp_svg);
+    var view = renderView(node_type,options);
+
+    $tmp_svg.append($(view.el));
+    $tmp_a[0].type = node_type;
+    $tmp_a[0].category = category;
+
+    //free memory
+    delete view.model;
+    delete view;
+
+    return $tmp_a;
+    //console.log($tmp_a);
+}

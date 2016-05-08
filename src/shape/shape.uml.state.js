@@ -211,6 +211,10 @@ org.dedu.draw.shape.uml.StartStateView  = org.dedu.draw.shape.simple.GenericView
 });
 
 org.dedu.draw.shape.uml.EndStateView  = org.dedu.draw.shape.simple.GenericView.extend({
+    initialize: function (options) {
+        this.circle_index  = 2;
+        org.dedu.draw.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
+    },
     focus: function () {
         this.vel.findOne('.uml-state-body').attr({
             fill:"#ffc21d"

@@ -8,54 +8,9 @@
         <link rel="stylesheet" href="vendor/bootstrap/dist/css/bootstrap.css">
         <link rel="stylesheet" type="text/css" href="../dist/style.css">
         <link rel="stylesheet" href="../dist/font-awesome/css/font-awesome.min.css">
-
-        <style>
-            #palette-search{
-                display: block;
-            }
-            #palette-container .geItem {
-                display: inline-block;
-                background-repeat: no-repeat;
-                background-position: 50% 50%;
-                border: 1px solid transparent;
-                border-radius: 2px;
-                cursor: move;
-            }
-
-            .panel-default > .panel-heading{
-                padding: 5px;
-                border-top-left-radius: 0px;
-                border-top-right-radius: 0px;
-                border-color: #f3f3f3;
-            }
-            a:hover, a:focus{
-                text-decoration: none;
-            }
-            .palette-header{
-                padding:0;
-            }
-            .panel-body{
-                background: #f6f6f6;
-                padding: 6px;
-            }
-
-            .panel-body .geItem:hover {
-                border: 1px solid gray !important;
-            }
-
-            #workspace{
-                left:187px;
-            }
-            #palette-separator{
-                position: absolute;
-                top: 5px;
-                left: 180px;
-                bottom: 10px;
-                width: 7px;
-                background: url(../dist/images/grip.png) no-repeat 50% 50%;
-                cursor: col-resize;
-            }
-        </style>
+        <link rel="stylesheet" href="css/index.css">
+        <link rel="stylesheet" href="css/palette.css">
+        <link rel="stylesheet" href="css/workspace.css">
     </head>
     <body>
 
@@ -73,9 +28,17 @@
         </div>
         <div id="palette-separator" class="ui-draggable"></div>
         <div id="workspace">
+            <div id="designer_header">
+                <div id="toolbar">
+
+                </div>
+            </div>
             <ul id="workspace-tabs" class="red-ui-tabs"><li class="red-ui-tab active" style="width: 98.9399%;"><a href="#7d91eb90.45fd04" class="red-ui-tab-label" title="Flow 1"><span>Flow 1</span></a></li></ul>
             <div id="workspace-add-tab"><a id="btn-workspace-add-tab" href="#"><i class="fa fa-plus"></i></a></div>
             <div id="chart" class="ui-droppable" style="margin-top: 0px;"></div>
+            <div id="chart_ext">
+                <textarea id="linker_text_edit"></textarea>
+            </div>
             <div id="workspace-toolbar" style="display: none;"></div>
             <div id="workspace-footer">
                 <a class="workspace-footer-button" id="btn-zoom-out" href="#"><i class="fa fa-minus"></i></a>
@@ -104,30 +67,31 @@
         <script src="vendor/bootstrap/dist/js/bootstrap.js"></script>
         <script src="vendor/jquery-ui/jquery-ui.js"></script>
         <script src="vendor/d3/d3.js"></script>
+        <script src="js/jquery.autogrow-textarea.js"></script>
     
 
-        <!--<script src="../dist/joint_chart.js"></script>-->
+        <script src="../dist/joint_chart.js"></script>
 
         <!-- joint_chart: -->
        
-        <script src="../src/geometry.js"></script>
-        <script src="../src/vectorizer.js"></script>
-        <script src="../src/core.js"></script>
-        <script src="../src/cell.js"></script>
-        <script src="../src/element.js"></script>
-        <script src="../src/link.js"></script>
-        <script src="../src/graph.js"></script>
-        <script src="../src/shape/shape.basic.js"></script>
-        <script src="../src/shape/shape.devs.js"></script>
-        <script src="../src/shape/shape.node.js"></script>
-        <script src="../src/shape/shape.simple.js"></script>
-        <script src="../src/shape/shape.uml.state.js"></script>
-        <script src="../src/shape/shape.uml.class.js"></script>
-        <script src="../src/paper.js"></script>
-        <script src="../src/chart.js"></script>
-        <script src="../src/connectors/connectors.normal.js"></script>
-        <script src="../src/plugins/plugins.Halo.js"></script>
-        <script src="../src/plugins/plugins.PlainSvg.js"></script>
+        <!--<script src="../src/geometry.js"></script>-->
+        <!--<script src="../src/vectorizer.js"></script>-->
+        <!--<script src="../src/core.js"></script>-->
+        <!--<script src="../src/cell.js"></script>-->
+        <!--<script src="../src/element.js"></script>-->
+        <!--<script src="../src/link.js"></script>-->
+        <!--<script src="../src/graph.js"></script>-->
+        <!--<script src="../src/shape/shape.basic.js"></script>-->
+        <!--<script src="../src/shape/shape.devs.js"></script>-->
+        <!--<script src="../src/shape/shape.node.js"></script>-->
+        <!--<script src="../src/shape/shape.simple.js"></script>-->
+        <!--<script src="../src/shape/shape.uml.state.js"></script>-->
+        <!--<script src="../src/shape/shape.uml.class.js"></script>-->
+        <!--<script src="../src/paper.js"></script>-->
+        <!--<script src="../src/chart.js"></script>-->
+        <!--<script src="../src/connectors/connectors.normal.js"></script>-->
+        <!--<script src="../src/plugins/plugins.Halo.js"></script>-->
+        <!--<script src="../src/plugins/plugins.PlainSvg.js"></script>-->
         
 
         <!-- demo: -->

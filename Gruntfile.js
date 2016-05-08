@@ -19,6 +19,8 @@ module.exports = function(grunt){
 
             'src/paper.js',
             'src/chart.js',
+
+            'src/plugins/plugins.PlainSvg.js'
         ],
         plugins:{
             'shape.devs':['src/shape/shape.devs.js'],

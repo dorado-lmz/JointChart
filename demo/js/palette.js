@@ -76,8 +76,6 @@ joint.palette = (function(){
         });
     }
 
-
-
     function drag_palette_separator(){
         $('#palette-separator').draggable({
             axis: "x",

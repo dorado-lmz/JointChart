@@ -142,7 +142,7 @@ org.dedu.draw.shape.simple.GenericView = org.dedu.draw.ElementView.extend(
         addTipMagnet: function (el, opt) {
             var port = V(el);
 
-            if(!$(".tip-"+port.attr('port'),this.$el)[0]){
+            if(port.attr('port') && !$(".tip-"+port.attr('port'),this.$el)[0]){
 
                 var tip = V('circle',{class:"tip tip-"+port.attr('port'),transform:port.attr('transform'),r:15,fill:'black',opacity:0.3});
                 this.rotatableNode.append(tip);

@@ -134,7 +134,7 @@ var link6 = new org.dedu.draw.Link({
         }
     }
 });
-//graph.addCell(link6);
+graph.addCell(link6);
 
 
 

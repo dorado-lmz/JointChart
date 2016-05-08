@@ -8,27 +8,20 @@ joint.keyboard = (function() {
     var chart = joint.chart.chart;
     var graph = joint.chart.graph;
     function init(){
-
+        init_event();
         chart.on("paper:selection_create",function(evt){
             if(this.model.selectionSet.length == 0){
                 RED.keyboard.remove(/* backspace */ 8);
             }else{
-                RED.keyboard.add(/* backspace */ 8,function(){deleteSelection();d3.event.preventDefault();});
+                RED.keyboard.add(/* backspace */ 8, function () {
+                    if($('#chart_ext #linker_text_edit').is(":hidden")){
+                        deleteSelection();
+                        d3.event.preventDefault();
+                    }
+
+                });
             }
         },chart);
-
-        chart.on('cell:pointerdblclick',function(cellView){
-            if(cellView instanceof org.dedu.draw.shape.uml.StateView){
-                var event = prompt("please input event",'');
-                if (event!=null && event!=""){
-                    var events = cellView.model.get('events');
-                    events.push(event);
-                    cellView.model.trigger('change:events');
-                }
-            }
-        },chart);
-        init_event();
-
     }
 
     function init_event(){

@@ -365,9 +365,18 @@ org.dedu.draw.CellView = Backbone.View.extend({
         if (el === this.el) {
             return prevSelector;
         }
-
         var nthChild = V(el).index() + 1;
-        var selector = el.tagName + ':nth-child(' + nthChild + ')';
+        //if(el.tagName == 'circle'){
+        //    nthChild += 1;
+        //}else{
+        //    nthChild += 1;
+        //}
+
+        var classnames = '';
+        el.classList.forEach(function (classname) {
+           classnames += '.'+classname;
+        });
+        var selector = el.tagName + classnames + ':nth-child(' + nthChild + ')';
 
         if (prevSelector) {
             selector += ' > ' + prevSelector;

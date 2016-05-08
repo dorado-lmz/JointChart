@@ -29,7 +29,8 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
     defaults: {
         type: 'link',
         source: {},
-        target: {}
+        target: {},
+        labels:undefined
     },
 
     isLink: function() {
@@ -76,8 +77,13 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
             }else{
                 this.unfocus();
             }
-
         },this);
+
+        this.model.on('change:labels', function () {
+            this.renderLabels();
+            this.updateLabelPositions();
+        },this);
+
     },
 
     // Returns a function observing changes on an end of the link. If a change happens and new end is a new model,
@@ -514,6 +520,12 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
         return this;
     },
 
+    hideLabels:function(){
+        $(this._V.labels.node).hide();
+    },
+    showLabel: function () {
+        $(this._V.labels.node).show();
+    },
 
     findRoute: function (oldVertices) {
         var namespace = org.dedu.draw.routers;
@@ -874,9 +886,6 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
         this.unhighlight('connection_line');
     },
 
-    remove: function () {
-        this.$el.remove();
-    },
 
     unhighlight: function (el) {
         this._V[el].attr({'stroke':'#888'});
@@ -884,7 +893,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 
     pointerdown: function (evt,x,y) {
         org.dedu.draw.CellView.prototype.pointerdown.apply(this, arguments);
-        this.notify('link:pointerdown', evt, x, y);
+
 
         this._dx = x;
         this._dy = y;
@@ -912,15 +921,16 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
                 }
                 break;
 
-            case 'label':
-                if (this.can('labelMove')) {
-                    this._action = 'label-move';
-                    this._labelIdx = parseInt(V(labelNode).attr('label-idx'), 10);
-                    // Precalculate samples so that we don't have to do that
-                    // over and over again while dragging the label.
-                    this._samples = this._V.connection.sample(1);
-                    this._linkLength = this._V.connection.node.getTotalLength();
-                }
+            case 'connection_background':
+                //if (this.can('labelMove')) {
+                //    this._action = 'label-move';
+                //    this._labelIdx = parseInt(V(labelNode).attr('label-idx'), 10);
+                //    // Precalculate samples so that we don't have to do that
+                //    // over and over again while dragging the label.
+                //    this._samples = this._V.connection.sample(1);
+                //    this._linkLength = this._V.connection.node.getTotalLength();
+                //}
+                this.notify('link:pointerdown', evt, x, y);
                 break;
 
 
@@ -929,6 +939,15 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 
         var targetParentEvent = evt.target.parentNode.getAttribute('event');
         this.focus();
+
+    },
+
+    pointerdblclick: function(evt, x, y) {
+
+        var m = g.line(g.point(this.sourcePoint.x,this.sourcePoint.y), g.point(this.targetPoint.x,this.targetPoint.y)).midpoint();
+        x = m.x-8;
+        y = m.y-8;
+        org.dedu.draw.CellView.prototype.pointerdblclick.apply(this, arguments);
 
     },
 
@@ -949,8 +968,11 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 
                     _.each(viewsInArea, function(view) {
 
+                        if(this.paper.findViewByModel(this.model.get('source').id)==view){
+                            return;
+                        }
                         // skip connecting to the element in case '.': { magnet: false } attribute present
-                        if (view.el.getAttribute('magnet') !== 'false') {
+                        if (view.el.getAttribute('magnet') == 'true') {
 
                             // find distance from the center of the model to pointer coordinates
                             distance = view.model.getBBox().center().distance(pointer);
@@ -997,7 +1019,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 
                     }, this);
 
-                    this._closestView && this._closestView.highlight(this._closestEnd.selector, { connecting: true, snapping: true });
+                    this._closestView  && this._closestView.highlight(this._closestEnd.selector, { connecting: true, snapping: true });
 
                     this.model.set(this._arrowhead, this._closestEnd || { x: x, y: y }, { ui: true });
 
@@ -1085,9 +1107,8 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
                     this.model.set(arrowhead, arrowheadValue, { ui: true });
                     this.trigger.apply(this.model, 'link:complete');
                 }else{
-                    this.remove();
+                    this.model.remove({ ui: true });
                 }
-
             }
             this._afterArrowheadMove();
         }

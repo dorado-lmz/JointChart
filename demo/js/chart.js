@@ -5,6 +5,12 @@
 joint.chart = (function(){
 
 
+
+
+    $('#chart_ext #linker_text_edit').autoTextarea({
+        maxHeight:220
+    });
+
     var basicElements = {
         'basic':{
             'basic.Rect':{
@@ -89,8 +95,45 @@ joint.chart = (function(){
         });
     }
 
+    function init_event(){
+        chart.on('cell:pointerdblclick',function(cellView,event,x,y){
+            if(cellView instanceof org.dedu.draw.shape.uml.StateView){
+                var event = prompt("please input event",'');
+                if (event!=null && event!=""){
+                    var events = cellView.model.get('events');
+                    events.push(event);
+                    cellView.model.trigger('change:events');
+                }
+            }
+            if(cellView instanceof org.dedu.draw.LinkView){
+                cellView.hideLabels();
+                $('#chart_ext #linker_text_edit').css({
+                    left:x,
+                    top:y,
+                    display:'block'
+                });
+                chart.on('blank_pointDown', function () {
+                    var val = $('#chart_ext #linker_text_edit').val();
+                    if(val.length!=0){
+                        cellView.model.set('labels',[{
+                            position: {distance:.5},
+                            attrs:{text: { text: val }}
+                        }]);
+                    }else{
+                        cellView.model.set('labels',null);
+                    }
+                    $('#chart_ext #linker_text_edit').hide();
+                    cellView.showLabel();
+                    chart.off('blank_pointDown');
+                });
+            }
+        },chart);
+
+    }
+
     function init(){
         chart_drop();
+        init_event();
     }
 
     return {
