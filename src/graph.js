@@ -1,10 +1,25 @@
+/**
+ * `org.dedu.draw.GraphCells` stores all the cell models
+ * @class
+ * @augments  Backbone.Collection
+ */
 org.dedu.draw.GraphCells = Backbone.Collection.extend({
+    /**
+     * graph处理cell的namespace
+     * @member {Object}
+     * @memberof org.dedu.draw.GraphCells`
+     */
     cellNamespace: org.dedu.draw.shape,
     initialize:function(models,opt){
         if(opt.cellNamespace){
             this.cellNamespace = opt.cellNamespace;
         }
     },
+    /**
+     * @method model
+     * @param attrs
+     * @param options
+     */
     model:function(attrs,options){
         var namespace = options.collection.cellNamespace;
 
@@ -17,7 +32,12 @@ org.dedu.draw.GraphCells = Backbone.Collection.extend({
     }
 });
 
-
+/**
+ * `org.dedu.draw.Graph` A model holding all the cells (elements and links) of the diagram
+ * * property `cells` stores all the cells
+ * @class
+ * @augments Backbone.Model
+ */
 org.dedu.draw.Graph = Backbone.Model.extend({
 
     initialize:function(attrs,opt){
@@ -37,7 +57,7 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         // Make all the events fired in the `cells` collection available.
         // to the outside world.
         this.get("cells").on("all",this.trigger,this);
-        //this.get('cells').on('remove', this._removeCell, this);
+        this.get('cells').on('remove', this._removeCell, this);
 
 
         // Outgoing edges per node. Note that we use a hash-table for the list
@@ -61,7 +81,6 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         cells.on('add', this._restructureOnAdd, this);
         cells.on('remove', this._restructureOnRemove, this);
     },
-
 
     _restructureOnAdd: function(cell) {
 
@@ -96,7 +115,11 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         }
     },
 
-
+    /**
+     * graphCells是否存在`id`指定的cell
+     * @param {Number} id
+     * @returns {boolean}
+     */
     isExist:function(id){
         var models = this.get('cells').models;
         for(var i=0;i<models.length;i++){
@@ -107,14 +130,57 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         return false;
     },
 
-    getCellByRedID:function(id) {
+    /**
+     * get cell by redID
+     * @param {String} redID
+     * @returns {org.dedu.draw.Cell}
+     */
+    getCellByRedID:function(redID) {
         var models = this.get('cells').models;
         for(var i in models){
-            if(models[i].get('redID') == id){
+            if(models[i].get('redID') == redID){
                 return models[i];
             }
         }
+    },
+    /**
+     * get a cell from the graph by its `id`
+     * @param {String} id
+     * @returns {org.dedu.draw.Cell}
+     */
+    getCell: function(id) {
+        return this.get('cells').get(id);
+    },
 
+    /**
+     * like {@link org.dedu.draw.Graph~getCell},Get all the elemnet and links in the graph.
+     * @returns {Array<org.dedu.draw.Cell>}
+     */
+    getCells: function() {
+        return this.get('cells').toArray();
+    },
+
+    /**
+     * Get all the elements in the graph (i.e. omit links).
+     * @returns {Array<org.dedu.draw.Element>}
+     */
+    getElements: function() {
+
+        return this.get('cells').filter(function(cell) {
+
+            return cell instanceof org.dedu.draw.Element;
+        });
+    },
+
+    /**
+     * Get all the links in the graph (i.e. omit elements).
+     * @returns {Array<org.dedu.draw.Link>}
+     */
+    getLinks: function() {
+        return this.get('cells').filter(function(cell) {
+
+            return cell instanceof joint.dia.Link;
+        });
     },
 
     selectAll:function(){
@@ -123,6 +189,21 @@ org.dedu.draw.Graph = Backbone.Model.extend({
             model.focus();
         });
         this.selectionSet = this.get('cells').models;
+    },
+
+    getAllPosition: function () {
+        var nodes = {};
+        this.get('cells').models.forEach(function(model){
+            if(model instanceof org.dedu.draw.Element){
+
+                if(model instanceof org.dedu.draw.shape.node_red.subflowportModel){
+                    nodes[model.get('index')-1] = {position:model.get('position'),type:'subflowport'};
+                }else{
+                    nodes[model.get('redID')] = {position:model.get('position')};
+                }
+            }
+        });
+        return nodes;
     },
 
     updateSelection: function (selection_models_new) {
@@ -149,14 +230,29 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         }
     },
 
-
+    /**
+     * Add a new cell to the graph. If cell is an array, all the cells in the array will be added to the graph.
+     * @param {org.dedu.draw.Cell} cell
+     * @param options
+     * @returns {org.dedu.draw.Graph}
+     * @example
+     *
+     *  var rect = new org.dedu.draw.shape.basic.Rect({
+     *   position: { x: 100, y: 100 },
+     *   size: { width: 70, height: 30 },
+     *   attrs: { text: { text: 'my rectangle' } }
+     *   });
+     *   var rect2 = rect.clone();
+     *   var graph = new org.dedu.draw.Graph();
+     *   graph.addCell(rect).addCell(rect2);
+     *
+     */
     addCell:function(cell,options){
         this.get('cells').add(this._prepareCell(cell), options || {});
         var args ;
         var self = this;
         if(cell instanceof org.dedu.draw.Link){
             cell.on('link:complete',function(){
- 
                 args = {
                     source: this.get('source'),
                     target: this.get('target'),
@@ -176,10 +272,56 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         return this;
     },
 
+    /**
+     * Add new cells to the graph. This is just a syntactic sugar to the addCell method. Calling addCell with an array of cells is an equivalent to calling addCells.
+     * @param {Array<org.dedu.draw.Cell>} cells
+     * @param options
+     * @returns {org.dedu.draw.Graph}
+     */
+    addCells: function(cells, options) {
+
+        options = options || {};
+        options.position = cells.length;
+
+        _.each(cells, function(cell) {
+            options.position--;
+            this.addCell(cell, options);
+        }, this);
+
+        return this;
+    },
+
+    /**
+     * like {@link org.dedu.draw.Graph~addCells},用于加载很多cell时
+     * @param cells
+     * @param opt
+     * @returns {org.dedu.draw.Graph}
+     */
+    resetCells: function(cells, opt) {
+
+        this.get('cells').reset(_.map(cells, this._prepareCell, this), opt);
+
+        return this;
+    },
+
     _prepareCell:function(cell){
+        var attrs = (cell instanceof Backbone.Model) ? cell.attributes : cell;
+
+        if (_.isUndefined(attrs.z)) {
+            attrs.z = this.maxZIndex() + 1;
+        }
+
+        if (!_.isString(attrs.type)) {
+            throw new TypeError('dia.Graph: cell type must be a string.');
+        }
         return cell;
     },
 
+    maxZIndex: function() {
+
+        var lastCell = this.get('cells').last();
+        return lastCell ? (lastCell.get('z') || 0) : 0;
+    },
 
     clear: function(opt) {
 
@@ -225,15 +367,5 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         var args = Array.prototype.slice.call(arguments, 1);
         this.trigger.apply(this, [evt].concat(args));
     },
-
-    // Get a cell by `id`.
-    getCell: function(id) {
-        return this.get('cells').get(id);
-    },
-
-    getElements: function() {
-        return _.map(this._nodes, function(exists, node) { return this.getCell(node); }, this);
-    },
-
 });
 

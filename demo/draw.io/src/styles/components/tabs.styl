@@ -1,0 +1,60 @@
+ul.red-ui-tabs
+    list-style-type: none;
+    padding:0;
+    margin: 0;
+    display: block;
+    height: 35px;
+    box-sizing:border-box;
+    white-space: nowrap;
+    border-bottom: 1px solid primary-border-color;
+    background: #fff;
+    disable-selection()
+
+    li
+        box-sizing: border-box;
+        display: inline-block;
+        border-left: 1px solid  primary-border-color;
+        border-top: 1px solid  primary-border-color;
+        border-right: 1px solid primary-border-color;
+        border-bottom: 1px solid primary-border-color;
+        background: tab-background-inactive;
+        margin: 3px 3px 0 3px;
+        height: 32px;
+        line-height: 29px;
+        max-width: 200px;
+        width: 14%;
+        overflow: hidden;
+        white-space: nowrap;
+        position: relative;
+
+        img
+            margin-left: -8px;
+            margin-right: 3px;
+            margin-top: -2px;
+            opacity: 0.1;
+            width: 20px;
+            height: 20px;
+            vertical-align: middle;
+
+        a.red-ui-tab-label
+            display: block;
+            font-size: 14px;
+            padding-left: 12px;
+            width: 100%;
+            height: 100%;
+            color: #666;
+            text-decoration: none;
+
+        &.active
+            background: tab-background-active;
+            font-weight: bold;
+            border-bottom: 1px solid #fff;
+            & a
+                color: #333;
+            & img
+                opacity: 0.2;
+
+        &:not(.active) a:hover
+            color: workspace-button-color-hover;
+            background: tab-background-hover;
+

@@ -1,15 +1,54 @@
+/**
+ * `org.dedu.draw.Paper` 是{@link org.dedu.draw.Graph}的view
+ * @class
+ * @augments Backbone.View
+ */
 org.dedu.draw.Paper = Backbone.View.extend({
+    /**
+     * 渲染元素的class
+     * @member {String}
+     * @memberof org.dedu.draw.Paper
+     * @default
+     */
     className: 'paper',
+
+    /**
+     * `org.dedu.draw.Paper`的默认属性
+     * @member {Object}
+     * @memberof org.dedu.draw.Paper
+     */
     options: {
 
+        /**
+         * @property {Number} options.width=800 - 渲染区域的宽度
+         */
         width: 800,
+        /**
+         * @property {Number} options.height=600 - 渲染区域的高度
+         */
         height: 600,
+        /**
+         * @property {Object} options.origin={x:0,y:0} - x,y coordinates in top-left corner
+         */
         origin: { x: 0, y: 0 }, // x,y coordinates in top-left corner
 
+        /**
+         * @property {Number} options.gridSize=1 - 网格大小
+         */
         gridSize:1,
         perpendicularLinks: false,
+        /**
+         * @property {org.dedu.draw.ElementView} options.elementView - 默认的elementView
+         */
         elementView: org.dedu.draw.ElementView,
+        /**
+         *  @property {org.dedu.draw.LinkView} options.LinkView - 默认的LinkView
+         */
         linkView: org.dedu.draw.LinkView,
+
+        /**
+         * @property {Object} options.interactive - 哪些元素可以进行交互
+         */
         interactive: {
             labelMove: false
         },
@@ -64,6 +103,9 @@ org.dedu.draw.Paper = Backbone.View.extend({
         // i.e. link source/target can be a point e.g. link.get('source') ==> { x: 100, y: 100 };
         linkPinning: false,
 
+        /**
+         *  @property {org.dedu.draw.shape} options.cellViewNamespace - 默认的cellViewNamespace
+         */
         cellViewNamespace: org.dedu.draw.shape
     },
 
@@ -122,14 +164,20 @@ org.dedu.draw.Paper = Backbone.View.extend({
       "mousemove .vis":"canvasMouseMove",
       "mouseup .vis":"canvasMouseUp",
       "mouseover .element":"cellMouseover",
-        'dblclick': 'mousedblclick',
-        'click': 'mouseclick',
+      "dblclick": "mousedblclick",
+      "click": "mouseclick",
 
     },
 
+    /**
+     * render cell that be added to `org.dedu.draw.Graph`
+     * @method onCellAdded
+     * @param {org.dedu.draw.Cell} cell
+     * @param graph
+     * @param opt
+     */
     onCellAdded:function(cell,graph,opt){
         this.renderView(cell);
-
     },
     
     removeView: function (cell) {
@@ -155,7 +203,11 @@ org.dedu.draw.Paper = Backbone.View.extend({
     },
 
 
-    // Find a view for a model `cell`. `cell` can also be a string representing a model `id`.
+    /**
+     * Find a view for a model `cell`. `cell` can also be a string representing a model `id`.
+     * @param {org.dedu.draw.Cell} cell
+     * @returns {org.dedu.draw.CellView}
+     */
     findViewByModel: function(cell) {
 
         var id = _.isString(cell) ? cell : cell.id;
@@ -177,11 +229,21 @@ org.dedu.draw.Paper = Backbone.View.extend({
         }, this);
     },
 
+    /**
+     * Find a cell, the id of which is equal to `id`
+     * @param {String} id
+     * @returns {org.dedu.draw.Cell}
+     */
     getModelById:function(id){
 
         return this.model.getCell(id);
     },
 
+    /**
+     * 渲染`cell`
+     * @param {org.dedu.draw.Cell} cell - the model cell to be rendered
+     * @returns {org.dedu.draw.CellView}
+     */
     renderView:function(cell){
         var view = this._views[cell.id] = this.createViewForModel(cell);
         V(this.vis).append(view.el);
@@ -190,8 +252,12 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
         return view;
     },
-    //Find the first view clibing up the DOM tree starting at element 'el'.Note that `el` can also
-    // be a selector or a jQuery object.
+    /**
+     * Find the first view clibing up the DOM tree starting at element 'el'.Note that `el` can also be a selector or a jQuery object.
+     * @param {String|JQueryObject} $el
+     * @returns {*}
+     */
+
     findView:function($el){
         var el = _.isString($el)
         ?this.viewport.querySelector($el)
@@ -271,6 +337,31 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
     },
 
+    /**
+     * 更改原点
+     * @param {Number} ox - 新原点的x坐标
+     * @param {Number} oy - 新原点的y坐标
+     * @memberof org.dedu.draw.Paper
+     */
+    setOrigin:function(ox,oy) {
+        this.options.origin.x = ox || 0;
+        this.options.origin.y = oy || 0;
+
+        V(this.viewport).translate(ox,oy,{absolut:true});
+
+        this.trigger('translate',ox,oy);  //trigger event translate
+    },
+
+    setDimensions:function(width,height) {
+           width = this.options.width = width || this.options.width;
+           height = this.options.height = height || this.options.height;
+
+           V(this.svg).attr({width:width,height:height});
+           V(this.outer_background).attr({width:width,height:height,fill:'#fff'});
+
+           this.trigger('resize',width,height);
+    },
+
     // Cell highlighting
     // -----------------
     onCellHighlight: function (cellView, el) {
@@ -282,6 +373,16 @@ org.dedu.draw.Paper = Backbone.View.extend({
     },
 
 
+    // Interaction.
+    // ------------
+
+    /**
+     * 空白处 mouse down
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     blank_pointDown:function(evt,x,y){
         this.model.cancelSelection();
 
@@ -311,6 +412,13 @@ org.dedu.draw.Paper = Backbone.View.extend({
         this.trigger("blank_pointDown");
     },
 
+    /**
+     * 空白处 mouse move
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     blank_pointMove:function(evt,x,y){
         var mouse_position = [evt.offsetX, evt.offsetY];
         var lasso = this.lasso;
@@ -343,6 +451,13 @@ org.dedu.draw.Paper = Backbone.View.extend({
         }
     },
 
+    /**
+     * 空白处 mouse up
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     blank_pointUp:function(evt,x,y){
         var lasso = this.lasso;
         var mouse_mode = this.mouse_mode;
@@ -378,6 +493,17 @@ org.dedu.draw.Paper = Backbone.View.extend({
         this.trigger('paper:selection_create', evt);
     },
 
+
+    /**
+     *  mouse down
+     *  * 判断鼠标点击的位置
+     *  1. 图元上,则调用该图元的事件处理函数
+     *  2. 空白处,则调用 {@link org.dedu.draw.Paper~blank_pointDown}
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     canvasMouseDown:function(evt){
 
         evt.preventDefault();
@@ -403,6 +529,16 @@ org.dedu.draw.Paper = Backbone.View.extend({
         this.trigger('paper:selection_create', evt);
     },
 
+    /**
+     *  mouse move
+     *  * 判断鼠标点击的位置
+     *  1. 图元上,则调用该图元的事件处理函数
+     *  2. 空白处,则调用 {@link org.dedu.draw.Paper~blank_pointMove}
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     canvasMouseMove:function(evt){
 
         evt.preventDefault();
@@ -432,6 +568,16 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
     },
 
+    /**
+     *  mouse up
+     *  * 判断鼠标点击的位置
+     *  1. 图元上,则调用该图元的事件处理函数
+     *  2. 空白处,则调用 {@link org.dedu.draw.Paper~blank_pointUp}
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     canvasMouseUp:function(evt){
         evt = org.dedu.draw.util.normalizeEvent(evt);
 
@@ -450,31 +596,11 @@ org.dedu.draw.Paper = Backbone.View.extend({
         }
     },
 
-
-    setOrigin:function(ox,oy) {
-        this.options.origin.x = ox || 0;
-        this.options.origin.y = oy || 0;
-
-        V(this.viewport).translate(ox,oy,{absolut:true});
-
-        this.trigger('translate',ox,oy);  //trigger event translate
-    },
-
-    setDimensions:function(width,height) {
-           width = this.options.width = width || this.options.width;
-           height = this.options.height = height || this.options.height;
-
-           V(this.svg).attr({width:width,height:height});
-           V(this.outer_background).attr({width:width,height:height,fill:'#fff'});
-
-           this.trigger('resize',width,height);
-    },
-
-    // Interaction.
-    // ------------
-
+    /**
+     * 双击事件
+     * @param {Event} evt
+     */
     mousedblclick: function(evt) {
-
         evt.preventDefault();
         evt = org.dedu.draw.util.normalizeEvent(evt);
 
@@ -493,6 +619,10 @@ org.dedu.draw.Paper = Backbone.View.extend({
         }
     },
 
+    /**
+     * 单击事件
+     * @param {Event} evt
+     */
     mouseclick: function(evt) {
 
         // Trigger event when mouse not moved.
@@ -518,20 +648,6 @@ org.dedu.draw.Paper = Backbone.View.extend({
         this._mousemoved = 0;
     },
 
-    pointermove:function(){
-        console.log("move~");
-    },
-
-    touchstart:function(){
-        console.log("touch");
-
-    },
-
-    touchmove:function(){
-        console.log("touchmove");
-
-    },
-
     cellMouseover:function(evt){
 
         evt = org.dedu.draw.util.normalizeEvent(evt);
@@ -553,6 +669,13 @@ org.dedu.draw.Paper = Backbone.View.extend({
         return true; //Event guarded. Paper should not react on it in any way.
     },
 
+    /**
+     * get default linkview {@link org.dedu.draw.Paper~options.linkView}
+     * @method getDefaultLink
+     * @param cellView
+     * @param magnet
+     * @returns {*}
+     */
     getDefaultLink: function (cellView, magnet) {
 
         return _.isFunction(this.options.defaultLink)

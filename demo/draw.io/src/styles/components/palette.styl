@@ -1,0 +1,131 @@
+#palette
+    position absolute
+    top 0px
+    bottom 0px
+    left 0px
+    background palette-header-background
+    width 180px
+    border 1px solid primary-border-color
+    text-align center
+
+    #palette-search
+        position: absolute;
+        top: 0;
+        left:0;
+        right:0;
+        overflow: hidden;
+        background: #ffffff;
+        text-align: center;
+        height: 35px;
+        padding: 3px;
+        border-bottom: 1px solid primary-border-color;
+        box-sizing:border-box;
+
+        input
+            border-radius: 0;
+            border: none;
+            width: 100%;
+            box-shadow: none;
+            -webkit-box-shadow: none;
+            padding: 3px 17px 3px 22px;
+            margin: 0px;
+            height: 30px;
+            box-sizing:border-box;
+            &:focus
+                border:none
+                outline:none
+                box-shadow: none
+
+
+        #palette-search-clear
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            display: none;
+
+        i
+            font-size: 10px
+            color: #666
+            &.fa-search
+                position: absolute;
+                pointer-events: none;
+                left: 12px;
+                top: 12px;
+            &.fa-times
+                position: absolute
+                right: 7px
+                top: 12px
+
+    #palette-footer
+        component-footer()
+
+    .palette-button
+        component-footer-button()
+
+    .palette-scroll
+        position: absolute;
+        top: 35px;
+        right: 0;
+        bottom: 25px;
+        left:0;
+        padding: 0;
+        overflow-y: auto;
+        box-sizing:border-box;
+
+    .palette-category
+        margin:0
+        border-bottom: 1px solid #ccc;
+        .panel-heading
+            background: palette-header-background;
+            cursor: pointer;
+            text-align: left;
+            padding: 9px;
+            font-weight: bold;
+            overflow: hidden
+            white-space: nowrap
+            text-overflow: ellipsis
+            border-radius:0
+
+            .panel-title
+                text-align:left
+                & a
+                    font-size: 14px
+                    text-decoration none
+                    &::before
+                        content:"\f107"
+                        -webkit-transform: rotate(0deg);
+                        font: normal normal normal 14px/1 FontAwesome;
+                        margin-right .5em
+                    &.collapsed::before
+                        content:"\f107"
+                        -webkit-transform: rotate(-90deg);
+                        -webkit-transition: all 0.2s ease-in-out;
+                        display:inline-block
+                        font: normal normal normal 14px/1 FontAwesome;
+                        margin-right .5em
+        .panel-collapse
+            border-radius:0
+            &>.panel-body
+              padding: 3px
+              & a
+                display: inline-block;
+                text-decoration: none;
+                margin: 5px;
+                font-size: 20px;
+                padding: 5px;
+                color:blue
+                &:hover
+                    background: #8676e6;
+                    & i[class*="iconoo-"]
+                        color: #fff
+                & i[class*="iconoo-"]
+                    transition: all .2s
+
+
+
+
+
+
+

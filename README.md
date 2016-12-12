@@ -7,7 +7,7 @@ If you want to work on joint-chart locally, use the following guidelines to get 
 
 # Dependencies
 
-* Node.js
+* Node.js(v0.10~)
 * grunt-cli
 * bower
 * git

@@ -1,6 +1,14 @@
 org.dedu.draw.shape = {basic:{}};
 
+/**
+ * 不能连线的图元
+ * @class
+ * @augments org.dedu.draw.Element.
+ */
 org.dedu.draw.shape.basic.Generic = org.dedu.draw.Element.extend({
+    /**
+     * @override
+     */
     defaults:org.dedu.draw.util.deepSupplement({
         type:'basic.Generic',
         attrs:{
@@ -168,7 +176,16 @@ org.dedu.draw.shape.basic.Polyline = org.dedu.draw.shape.basic.Generic.extend({
     }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
 });
 
+/**
+ * `org.dedu.draw.shape.basic.PortsModelInterface` 增加inPort和outPort,用于link
+ * @class
+ */
 org.dedu.draw.shape.basic.PortsModelInterface = {
+    /**
+     * initialize
+     * *增加对port的update
+     * @ memberof org.dedu.draw.shape.basic.PortsModelInterface
+     */
     initialize:function(){
         this.updatePortsAttrs();
         this.on('change:inPorts change:outPorts',this.updatePortsAttrs,this);
@@ -176,25 +193,31 @@ org.dedu.draw.shape.basic.PortsModelInterface = {
         //Call the 'initialize()' of the partent.
         this.constructor.__super__.constructor.__super__.initialize.apply(this,arguments);
     },
-    updatePortsAttrs: function (eventName) {
+    /**
+     * update port css
+     * @memberof org.dedu.draw.shape.basic.PortsModelInterface
+     */
+    updatePortsAttrs: function () {
         // Delete previously set attributes for ports.
         var currAttrs = this.get('attrs');
-
+        _.each(this._portSelectors, function(selector) {
+            if (currAttrs[selector]) delete currAttrs[selector];
+        });
         // This holds keys to the `attrs` object for all the port specific attribute that
         // we set in this method. This is necessary in order to remove previously set
         // attributes for previous ports.
         this._portSelectors = [];
 
-
         var attrs = {};
         _.each(this.get('inPorts'), function (portName, index, ports) {
             var portAttributes = this.getPortAttrs(portName,index,ports.length,'.inPorts','in');
+            this._portSelectors = this._portSelectors.concat(_.keys(portAttributes));
             _.extend(attrs,portAttributes);
         },this);
 
         _.each(this.get('outPorts'), function(portName, index, ports) {
             var portAttributes = this.getPortAttrs(portName, index, ports.length, '.outPorts', 'out');
-           // this._portSelectors = this._portSelectors.concat(_.keys(portAttributes));
+            this._portSelectors = this._portSelectors.concat(_.keys(portAttributes));
             _.extend(attrs, portAttributes);
         }, this);
 
@@ -207,18 +230,40 @@ org.dedu.draw.shape.basic.PortsModelInterface = {
         // Let the outside world (mainly the `ModelView`) know that we're done configuring the `attrs` object.
         this.trigger('process:ports');
     },
+    /**
+     * get port selector
+     * @param {String} name - port'name
+     * @returns {string}
+     */
     getPortSelector: function (name) {
+        var selector = '.inPorts';
+        var index = this.get('inPorts').indexOf(name);
 
+        if (index < 0) {
+            selector = '.outPorts';
+            index = this.get('outPorts').indexOf(name);
+
+            if (index < 0) throw new Error("getPortSelector(): Port doesn't exist.");
+        }
+        return selector + '>g:nth-child(' + (index + 1) + ')>.port-body';
     }
 };
 
+/**
+ * `org.dedu.draw.shape.basic.PortsViewInterface` 是 `org.dedu.draw.shape.basic.PortsModelInterface`的view
+ * @class
+ */
 org.dedu.draw.shape.basic.PortsViewInterface = {
-    initialize: function (options) {
 
+    /**
+     * initialize
+     * @param options
+     * @memberof org.dedu.draw.shape.basic.PortsViewInterface
+     */
+    initialize: function (options) {
         if(options.skip_render){
             return;
         }
-
         org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
         // `Model` emits the `process:ports` whenever it's done configuring the `attrs` object for ports.
         this.listenTo(this.model, 'process:ports', this.update);
@@ -228,17 +273,24 @@ org.dedu.draw.shape.basic.PortsViewInterface = {
             }else{
                 this.unfocus();
             }
-
         },this);
     },
+
+    /**
+     * `update` in order to override
+     * @memberof org.dedu.draw.shape.basic.PortsViewInterface
+     */
     update: function () {
         // First render ports so that `attrs` can be applied to those newly created DOM elements
         // in `ElementView.prototype.update()`.
         this.renderPorts();
         org.dedu.draw.ElementView.prototype.update.apply(this, arguments);
     },
+    /**
+     * render port
+     * @memberof org.dedu.draw.shape.basic.PortsViewInterface
+     */
     renderPorts: function () {
-
         var $inPorts = this.$('.inPorts').empty();
         var $outPorts = this.$('.outPorts').empty();
 

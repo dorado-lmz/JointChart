@@ -1,3 +1,19 @@
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module unless amdModuleId is set
+    define([], function () {
+      return (root['org'] = factory());
+    });
+  } else if (typeof module === 'object' && module.exports) {
+    // Node. Does not work with strict CommonJS, but
+    // only CommonJS-like environments that support module.exports,
+    // like Node.
+    module.exports = factory();
+  } else {
+    root['org'] = factory();
+  }
+}(this, function () {
+
 // Vectorizer.
 // -----------
 
@@ -2154,7 +2170,9 @@ var org = {
 
             // `joint.routers` namespace.
             routers: {},
-
+            /**
+             * @namespace org.dedu.draw.util
+             */
             util: {
 
                 // Return a simple hash code from a string. See http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/.
@@ -2170,6 +2188,17 @@ var org = {
                     return hash;
                 },
 
+                /**
+                 * Return a value at the path in a nested object. delim is the delimiter used in the path
+                 * @example
+                 * 
+                 * joint.util.getByPath({ a: { aa: { aaa: 3 } } }, 'a/aa/aaa', '/');//3
+                 * 
+                 * @param {Object} obj
+                 * @param {String} path
+                 * @param {String} delim
+                 * @returns {*}
+                 */
                 getByPath: function(obj, path, delim) {
 
                     delim = delim || '/';
@@ -2187,6 +2216,20 @@ var org = {
                     return obj;
                 },
 
+                /**
+                 * Set a value at the path in a nested object. delim is the delimiter used in the path
+                 *  Returns the augmented object
+                 *  @example
+                 *  
+                 *  joint.util.setByPath({ b: {bb:{}} }, 'b/bb/bbb', 2, '/');
+                 *  //{ b: {bb:{bbb:2}} },
+                 *  
+                 * @param {Object} obj
+                 * @param {String} path
+                 * @param {*} value
+                 * @param {String} delim
+                 * @returns {Object}
+                 */
                 setByPath: function(obj, path, value, delim) {
 
                     delim = delim || '/';
@@ -2209,6 +2252,18 @@ var org = {
                     return obj;
                 },
 
+                /**
+                 * Unset (delete) a property at the path in a nested object. delim is the delimiter used in the path. Returns the augmented object.
+                 * @example
+                 * 
+                 * joint.util.unsetByPath({ a: { aa: { aaa: 3 } } }, 'a/aa/aaa', '/');
+                 * // { a: { aa: {} } }
+                 * 
+                 * @param {Object} obj
+                 * @param {String} path
+                 * @param {String} delim
+                 * @returns {Object}
+                 */
                 unsetByPath: function(obj, path, delim) {
 
                     delim = delim || '/';
@@ -2234,6 +2289,28 @@ var org = {
                     return obj;
                 },
 
+                /**
+                 * Flatten a nested object up until the stop function returns true.
+                 * * The  stop function takes the value of the node currently traversed
+                 * * delim is a delimiter for the combined keys in the resulting object
+                 * @example
+                 * org.dedu.draw.flattenObject({
+                 *  a:{
+                 *      a1:{
+                 *          a2:1
+                 *      }
+                 *  }
+                 * ),"/",function(v){return !!v.a2;}}
+                 * result:
+                 * {
+                 * "a/a1/a2":1
+                 * }
+                 *
+                 * @param {Object} obj
+                 * @param {String} delim
+                 * @param stop
+                 * @returns {Object}
+                 */
                 flattenObject: function(obj, delim, stop) {
 
                     delim = delim || '/';
@@ -2266,6 +2343,10 @@ var org = {
                     return ret;
                 },
 
+                /**
+                 * Return a pseudo-UUID.
+                 * @returns {string}
+                 */
                 uuid: function() {
 
                     // credit: http://stackoverflow.com/posts/2117523/revisions
@@ -2277,7 +2358,11 @@ var org = {
                     });
                 },
 
-                // Generate global unique id for obj and store it as a property of the object.
+                /** Generate global unique id for obj and store it as a property of the object.
+                 * Return an identifier unique for the page.
+                 * @param {Object} obj
+                 * @returns {string|*}
+                 */
                 guid: function(obj) {
 
                     this.guid.id = this.guid.id || 1;
@@ -2334,13 +2419,14 @@ var org = {
                     return target;
                 },
 
-                // Copy all properties to the first argument from the following
-                // arguments only in case if they don't exists in the first argument.
-                // All the function propererties in the first argument will get
-                // additional property base pointing to the extenders same named
-                // property function's call method.
+                /**
+                 * * Copy all properties to the first argument from the following \
+                 * arguments only in case if they don't exists in the first argument.
+                 * * All the function propererties in the first argument will get \
+                 *  additional property base pointing to the extenders same named property function's call method.
+                 * @returns {*}
+                 */
                 supplement: function() {
-
                     this.mixin.supplement = true;
                     var ret = this.mixin.apply(this, arguments);
                     this.mixin.supplement = false;
@@ -2356,7 +2442,10 @@ var org = {
                     return ret;
                 },
 
-                // Same as `supplement()` but deep version.
+                /** Same as `supplement()` but deep version.
+                 * @method deepSupplement
+                 * @returns {*}
+                 */
                 deepSupplement: function() {
 
                     this.mixin.deep = this.mixin.supplement = true;
@@ -2365,6 +2454,16 @@ var org = {
                     return ret;
                 },
 
+                /**
+                 * get orginal event
+                 * @method normalizeEvent
+                 * @param {JQueryEvent|*} evt
+                 * @example
+                 * 
+                 * var evt = org.dedu.draw.util.normalizeEvent(evt);
+                 * 
+                 * @returns {*}
+                 */
                 normalizeEvent: function(evt) {
 
                     var touchEvt = evt.originalEvent && evt.originalEvent.changedTouches && evt.originalEvent.changedTouches[0];
@@ -2698,6 +2797,12 @@ var org = {
                     img.src = url;
                 },
 
+                /**
+                 * Return a bounding box of the element el and can handle both HTML and SVG elements
+                 * The resulting object is of the form:`{ x: Number, y: Number, width: Number, height: Number }`
+                 * @param {DOMObject|SVGObject} el
+                 * @returns {*}
+                 */
                 getElementBBox: function(el) {
 
                     var $el = $(el);
@@ -2768,8 +2873,20 @@ var org = {
                     });
                 },
 
-                // Sets attributes on the given element and its descendants based on the selector.
-                // `attrs` object: { [SELECTOR1]: { attrs1 }, [SELECTOR2]: { attrs2}, ... } e.g. { 'input': { color : 'red' }}
+                /** Sets attributes on the given element and its descendants based on the selector.
+                *`attrs` object: { [SELECTOR1]: { attrs1 }, [SELECTOR2]: { attrs2}, ... } e.g. { 'input': { color : 'red' }}
+                 * @method setAttributesBySelector
+                 * @param {DOMObject|SVGObject} element
+                 * @param {Object} attrs
+                 * @example
+                 * 
+                 * var myEl = document.querySelector('.mydiv');
+                 * org.dedu.draw.util.setAttributesBySelector(myEl,{
+                 *  '.mydiv': { 'data-foo': 'bar' },    // Note the reference to the myEl element itself.
+                 *  'input': { 'value': 'my value' }   // descendant input
+                 * });
+                 * 
+                */
                 setAttributesBySelector: function(element, attrs) {
 
                     var $element = $(element);
@@ -3094,11 +3211,23 @@ var org = {
                     }
                 },
 
+                /**
+                 * @namespace org.dedu.draw.util.format
+                 */
                 format: {
 
-                    // Formatting numbers via the Python Format Specification Mini-language.
-                    // See http://docs.python.org/release/3.1.3/library/string.html#format-specification-mini-language.
-                    // Heavilly inspired by the D3.js library implementation.
+                    /** Formatting numbers via the Python Format Specification Mini-language.
+                     * See http://docs.python.org/release/3.1.3/library/string.html#format-specification-mini-language.
+                     * Heavilly inspired by the D3.js library implementation.
+                     * @method number
+                     * @example
+                     * 
+                     * joint.util.format.number('.2f', 5)    // 5.00
+                     * joint.util.format.number('03d', 5)    // 005
+                     * joint.util.format.number('.1%', .205)    // 20.5%
+                     * joint.util.format.number('*^9', 5)    // ****5****
+                     * 
+                     */
                     number: function(specifier, value, locale) {
 
                         locale = locale || {
@@ -3345,10 +3474,14 @@ var org = {
     }
 }
 
+/**
+ * `org.dedu.draw.Cell` 是`joint_chart`所有图形的父类
+ * @class
+ * @augments Backbone.Model
+ */
 org.dedu.draw.Cell = Backbone.Model.extend({
 
-
-    constructor:function(attributes,options){
+    constructor: function (attributes, options) {
         var defaults;
         var attrs = attributes || {};
         this.cid = _.uniqueId('c');
@@ -3359,23 +3492,46 @@ org.dedu.draw.Cell = Backbone.Model.extend({
             attrs = _.merge({}, defaults, attrs);
             //</custom code>
         }
-        attrs.redID = attrs.redID || (1+Math.random()*4294967295).toString(16);  //be used by user program
+        attrs.redID = attrs.redID || (1 + Math.random() * 4294967295).toString(16);  //be used by user program
         this.set(attrs, options);
         this.initialize.apply(this, arguments);
     },
 
-    initialize:function(options){
-        if(!options || !options.id){
-            this.set('id',org.dedu.draw.util.uuid(),{silent: true});
+    /**
+     * initialize:
+     * * set id
+     * * process all attrs of port {@link org.dedu.draw.Cell#processPorts|processPorts}
+     * @method
+     * @instance
+     * @param {Object} options
+     * @memberof org.dedu.draw.Cell
+     */
+    initialize: function (options) {
+        if (!options || !options.id) {
+            this.set('id', org.dedu.draw.util.uuid(), {silent: true});
         }
         // Collect ports defined in `attrs` and keep collecting whenever `attrs` object changes.
         this.processPorts();
     },
 
-    isLink: function() {
+    /**
+     * whether is link
+     * @method isLink
+     * @instance
+     * @returns {boolean}
+     * @memberof org.dedu.draw.Cell
+     */
+    isLink: function () {
         return false;
     },
 
+    /**
+     * @method toFront
+     * @instance
+     * @param opt
+     * @returns {org.dedu.draw.Cell}
+     * @memberof org.dedu.draw.Cell
+     */
     toFront: function (opt) {
         if (this.collection) {
             opt = opt || {};
@@ -3393,10 +3549,17 @@ org.dedu.draw.Cell = Backbone.Model.extend({
         return this;
     },
 
-    transition:function(path,value,opt,delim){
+    transition: function (path, value, opt, delim) {
 
     },
 
+    /**
+     * process all attrs of port and called by {@link org.dedu.draw.Cell#initialize|initialize}
+     * @method processPorts
+     * @instance
+     * @memberof org.dedu.draw.Cell
+     *
+     */
     processPorts: function () {
         // Whenever `attrs` changes, we extract ports from the `attrs` object and store it
         // in a more accessible way. Also, if any port got removed and there were links that had `target`/`source`
@@ -3407,19 +3570,16 @@ org.dedu.draw.Cell = Backbone.Model.extend({
         // Collect ports from the `attrs` object.
         var ports = {};
         _.each(this.get('attrs'), function (attrs, selector) {
-            if(attrs && attrs.port){
+            if (attrs && attrs.port) {
                 // `port` can either be directly an `id` or an object containing an `id` (and potentially other data).
                 if (!_.isUndefined(attrs.port.id)) {
                     ports[attrs.port.id] = attrs.port;
-                }else{
-                    ports[attrs.port] = { id: attrs.port };
+                } else {
+                    ports[attrs.port] = {id: attrs.port};
                 }
 
             }
         });
-
-
-
 
         // Update the `ports` object.
         this.ports = ports;
@@ -3429,30 +3589,37 @@ org.dedu.draw.Cell = Backbone.Model.extend({
     attr: function (attrs, value, opt) {
 
         var args = Array.prototype.slice.call(arguments);
-        if(_.isString(attrs)){
+        if (_.isString(attrs)) {
             // Get/set an attribute by a special path syntax that delimits
             // nested objects by the colon character.
             args[0] = 'attrs/' + attrs;
-        }else{
-            args[0] = {'attrs':attrs};
+        } else {
+            args[0] = {'attrs': attrs};
         }
-        return this.prop.apply(this,args);
+        return this.prop.apply(this, args);
     },
 
-    // A convenient way to set nested properties.
-    // This method merges the properties you'd like to set with the ones
-    // stored in the cell and makes sure change events are properly triggered.
-    // You can either set a nested property with one object
-    // or use a property path.
-    // The most simple use case is:
-    // `cell.prop('name/first', 'John')` or
-    // `cell.prop({ name: { first: 'John' } })`.
-    // Nested arrays are supported too:
-    // `cell.prop('series/0/data/0/degree', 50)` or
-    // `cell.prop({ series: [ { data: [ { degree: 50 } ] } ] })`.
+    /**
+     *  A convenient way to set nested properties.
+     *  * This method merges the properties you'd like to set with the ones stored in the cell and makes sure change events are properly triggered.
+     *  * You can either set a nested property with one object or use a property path.
+     *
+     * @instance
+     * @method prop
+     * @param {String} props
+     * @param {*} value
+     * @param {Object} opt
+     * @returns {*}
+     * @memberof org.dedu.draw.Cell
+     * @example
+     * cell.prop('name/first', 'John')
+     * cell.prop({ name: { first: 'John' } })
+     * cell.prop('series/0/data/0/degree', 50)
+     * cell.prop({ series: [ { data: [ { degree: 50 } ] } ] })
+     */
     prop: function (props, value, opt) {
         var delim = '/';
-        if(_.isString(props)){
+        if (_.isString(props)) {
             // Get/set an attribute by a special path syntax that delimits
             // nested objects by the colon character.
             if (arguments.length > 1) {
@@ -3479,7 +3646,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
                 // Pure integer keys will cause issues and are therefore not allowed.
                 var initializer = update;
                 var prevProperty = property;
-                _.each(pathArray, function(key) {
+                _.each(pathArray, function (key) {
                     initializer = initializer[prevProperty] = (_.isFinite(Number(key)) ? [] : {});
                     prevProperty = key;
                 });
@@ -3495,45 +3662,45 @@ org.dedu.draw.Cell = Backbone.Model.extend({
                 var attributes = _.merge(baseAttributes, update);
                 // Finally, set the property to the updated attributes.
                 return this.set(property, attributes[property], opt);
-            }else{
+            } else {
                 return org.dedu.draw.util.getByPath(this.attributes, props, delim);
             }
 
         }
-        return this.set(_.merge({},this.attributes,props),value);
+        return this.set(_.merge({}, this.attributes, props), value);
     },
 
     isEmbeddedIn: function (cell, opt) {
 
-        var cellId = _.isString(cell)?cell:cell.id;
+        var cellId = _.isString(cell) ? cell : cell.id;
         var parentId = this.get('parent');
 
-        opt = _.defaults({deep:true},opt);
+        opt = _.defaults({deep: true}, opt);
 
         // See getEmbeddedCells().
-        if(this.collection && opt.deep){
+        if (this.collection && opt.deep) {
 
-            while(parentId){
+            while (parentId) {
                 if (parentId === cellId) {
                     return true;
                 }
                 parentId = this.collection.get(parentId).get('parent');
             }
             return false;
-        }else{
+        } else {
             // When this cell is not part of a collection check
             // at least whether it's a direct child of given cell.
             return parentId === cellId;
         }
 
     },
-    
+
     remove: function (opt) {
         opt = opt || {};
 
         var collection = this.collection;
 
-        if(collection){
+        if (collection) {
 
         }
 
@@ -3552,7 +3719,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
         return this;
     },
 
-    getEmbeddedCells: function(opt) {
+    getEmbeddedCells: function (opt) {
 
         opt = opt || {};
 
@@ -3583,7 +3750,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
 
                     // depthFirst algorithm
                     cells = this.getEmbeddedCells();
-                    _.each(cells, function(cell) {
+                    _.each(cells, function (cell) {
                         cells.push.apply(cells, cell.getEmbeddedCells(opt));
                     });
                 }
@@ -3598,30 +3765,30 @@ org.dedu.draw.Cell = Backbone.Model.extend({
         return [];
     },
 
-    unembed: function(cell, opt) {
+    unembed: function (cell, opt) {
 
-    //    this.trigger('batch:start', { batchName: 'unembed' });
+        //    this.trigger('batch:start', { batchName: 'unembed' });
 
         cell.unset('parent', opt);
         this.set('embeds', _.without(this.get('embeds'), cell.id), opt);
 
-   //     this.trigger('batch:stop', { batchName: 'unembed' });
+        //     this.trigger('batch:stop', { batchName: 'unembed' });
 
         return this;
     },
 
     focus: function () {
-        this.set('selected',true);
+        this.set('selected', true);
     },
 
-    unfocus:function(){
-        this.set('selected',false);
+    unfocus: function () {
+        this.set('selected', false);
     },
 
     // Isolated cloning. Isolated cloning has two versions: shallow and deep (pass `{ deep: true }` in `opt`).
     // Shallow cloning simply clones the cell and returns a new cell with different ID.
     // Deep cloning clones the cell and all its embedded cells recursively.
-    clone: function(opt) {
+    clone: function (opt) {
 
         opt = opt || {};
 
@@ -3639,27 +3806,45 @@ org.dedu.draw.Cell = Backbone.Model.extend({
             // Deep cloning.
 
             // For a deep clone, simply call `graph.cloneCells()` with the cell and all its embedded cells.
-            return _.values(org.dedu.draw.Graph.prototype.cloneCells.call(null, [this].concat(this.getEmbeddedCells({ deep: true }))));
+            return _.values(org.dedu.draw.Graph.prototype.cloneCells.call(null, [this].concat(this.getEmbeddedCells({deep: true}))));
         }
     },
 
 
 });
 
+/**
+ * `org.dedu.draw.CellView` 是{@link org.dedu.draw.Cell}的view
+ * @class
+ * @augments  Backbone.View
+ */
 org.dedu.draw.CellView = Backbone.View.extend({
-     tagName: 'g',
+    /**
+     * @member {String}
+     * @default
+     * @const
+     * @instance
+     * @memberof org.dedu.draw.CellView
+     */
+    tagName: 'g',
 
-    attributes:function(){
-        return {'model-id':this.model.id}
-     },
-
-    constructor:function(options){
-        this._configure(options);
-        Backbone.View.apply(this,arguments);
+    /**
+     * set the attribute of dom node Dom节点的attribute
+     * @returns {{model-id: *}}
+     * @instance
+     * @memberof org.dedu.draw.CellView
+     */
+    attributes: function () {
+        return {'model-id': this.model.id}
     },
 
-    _configure:function(options){
-        if(this.options) options = _.extend({},_.result(this,"options"),options);
+    constructor: function (options) {
+        this._configure(options);
+        Backbone.View.apply(this, arguments);
+    },
+
+    _configure: function (options) {
+        if (this.options) options = _.extend({}, _.result(this, "options"), options);
 
         this.options = options;
         // Make sure a global unique id is assigned to this view. Store this id also to the properties object.
@@ -3670,43 +3855,45 @@ org.dedu.draw.CellView = Backbone.View.extend({
 
     },
 
-    initialize:function(options){
+    initialize: function (options) {
 
     },
 
     // Override the Backbone `_ensureElement()` method in order to create a `<g>` node that wraps
     // all the nodes of the Cell view.
-    _ensureElement: function() {
+    _ensureElement: function () {
 
         var el;
 
         if (!this.el) {
-
             var attrs = _.extend({
                 id: this.id
             }, _.result(this, 'attributes'));
             if (this.className) attrs['class'] = _.result(this, 'className');
             el = V(_.result(this, 'tagName'), attrs).node;
-
         } else {
-
             el = _.result(this, 'el');
         }
-
         this.setElement(el, false);
     },
 
     // Utilize an alternative DOM manipulation API by
     // adding an element reference wrapped in Vectorizer.
-    _setElement: function(el) {
+    _setElement: function (el) {
         this.$el = el instanceof Backbone.$ ? el : Backbone.$(el);
         this.el = this.$el[0];
         this.vel = V(this.el);
     },
 
-    // Construct a unique selector for the `el` element within this view.
-    // `prevSelector` is being collected through the recursive call.
-    // No value for `prevSelector` is expected when using this method.
+
+    /**
+     * Construct a unique selector for the `el` element within this view.得到`el`的css选择器
+     * @param {DOMObject} el
+     * @param [prevSelector] - 使用该方法时,不需要传递实参,它仅被用作递归
+     * @returns {*}
+     * @instance
+     * @memberof org.dedu.draw.CellView
+     */
     getSelector: function (el, prevSelector) {
 
         if (el === this.el) {
@@ -3721,7 +3908,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
 
         var classnames = '';
         el.classList.forEach(function (classname) {
-           classnames += '.'+classname;
+            classnames += '.' + classname;
         });
         var selector = el.tagName + classnames + ':nth-child(' + nthChild + ')';
 
@@ -3732,7 +3919,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
         return this.getSelector(el.parentNode, selector);
     },
 
-    
+
     getStrokeBBox: function (el) {
         // Return a bounding box rectangle that takes into account stroke.
         // Note that this is a naive and ad-hoc implementation that does not
@@ -3743,26 +3930,38 @@ org.dedu.draw.CellView = Backbone.View.extend({
         var isMagnet = !!el;
 
         el = el || this.el;
-        var bbox = V(el).bbox(false,this.paper.viewport);
+        var bbox = V(el).bbox(false, this.paper.viewport);
 
         var strokeWidth;
-        if(isMagnet){
+        if (isMagnet) {
             strokeWidth = V(el).attr('stroke-width');
-        }else{
+        } else {
             strokeWidth = this.model.attr('rect/stroke-width') || this.model.attr('circle/stroke-width') || this.model.attr('ellipse/stroke-width') || this.model.attr('path/stroke-width');
         }
 
         strokeWidth = parseFloat(strokeWidth) || 0;
 
-        return g.rect(bbox).moveAndExpand({ x: -strokeWidth / 2, y: -strokeWidth / 2, width: strokeWidth, height: strokeWidth });
+        return g.rect(bbox).moveAndExpand({
+            x: -strokeWidth / 2,
+            y: -strokeWidth / 2,
+            width: strokeWidth,
+            height: strokeWidth
+        });
     },
 
-    getBBox:function(){
+    /**
+     * 返回元素的最大外接矩形,用于判断两个图形是否相交
+     * @method
+     * @returns {*}
+     * @instance
+     * @memberof org.dedu.draw.CellView
+     */
+    getBBox: function () {
         return g.rect(this.vel.bbox());
     },
 
     highlight: function (el, opt) {
-        el = !el ? this.el : $(el,$(this.el))[0] || this.el;
+        el = !el ? this.el : $(el, $(this.el))[0] || this.el;
 
         // set partial flag if the highlighted element is not the entire view.
         opt = opt || {};
@@ -3782,40 +3981,51 @@ org.dedu.draw.CellView = Backbone.View.extend({
         return this;
     },
 
-    // Find the closest element that has the `magnet` attribute set to `true`. If there was not such
-    // an element found, return the root element of the cell view.
+    /**
+     * 找到最近的元素,并且改元素的 `magnet` 属性为true.如果没有这样的元素,则返回根元素
+     * @param {DOMObject} el
+     * @returns {*}
+     * @instance
+     * @memberof org.dedu.draw.CellView
+     */
     findMagnet: function (el) {
         var $el = this.$(el);
 
-        if($el.length === 0 || $el[0] === this.el){
+        if ($el.length === 0 || $el[0] === this.el) {
 
             // If the overall cell has set `magnet === false`, then return `undefined` to
             // announce there is no magnet found for this cell.
             // This is especially useful to set on cells that have 'ports'. In this case,
             // only the ports have set `magnet === true` and the overall element has `magnet === false`.
             var attrs = this.model.get('attrs') || {};
-            if(attrs['.'] && attrs['.']['magnet'] === false){
+            if (attrs['.'] && attrs['.']['magnet'] === false) {
                 return undefined;
             }
             return this.el;
         }
 
-        if($el.attr('magnet')){
+        if ($el.attr('magnet')) {
             return $el[0];
         }
 
         return this.findMagnet($el.parent());
     },
-
-    findBySelector:function(selector){
+    /**
+     * 根据`selector`,查找在本view中的JQueryObject
+     * @param {JQueryObject} selector
+     * @returns {Backbone.$|*}
+     * @instance
+     * @memberof org.dedu.draw.CellView
+     */
+    findBySelector: function (selector) {
         // These are either descendants of `this.$el` of `this.$el` itself.
         // `.` is a special selector used to select the wrapping `<g>` element.
         var $selected = selector === '.' ? this.$el : this.$el.find(selector);
         return $selected;
     },
 
-    notify:function(evt){
-        if(this.paper){
+    notify: function (evt) {
+        if (this.paper) {
             var args = Array.prototype.slice.call(arguments, 1);
             // Trigger the event on both the element itself and also on the paper.
             this.trigger.apply(this, [evt].concat(args));
@@ -3824,40 +4034,54 @@ org.dedu.draw.CellView = Backbone.View.extend({
         }
     },
 
-    pointerdblclick: function(evt, x, y) {
+    pointerdblclick: function (evt, x, y) {
 
         this.notify('cell:pointerdblclick', evt, x, y);
     },
 
-    pointerclick: function(evt, x, y) {
+    pointerclick: function (evt, x, y) {
         this.notify('cell:pointerclick', evt, x, y);
     },
 
 
-    mouseover: function(evt) {
+    mouseover: function (evt) {
 
         this.notify('cell:mouseover', evt);
     },
 
-    pointermove: function(evt, x, y) {
+    pointermove: function (evt, x, y) {
 
         this.notify('cell:pointermove', evt, x, y);
     },
 
-    pointerdown:function(evt,x,y){
+    pointerdown: function (evt, x, y) {
         this.notify('cell:pointerdown', evt, x, y);
     },
 
-    pointerup: function(evt, x, y) {
+    pointerup: function (evt, x, y) {
         this.notify('cell:pointerup', evt, x, y);
     },
 
 });
 
-
-
+/**
+ * `org.dedu.draw.Element`是所有节点的父类
+ * @class
+ * @augments org.dedu.draw.Cell
+ */
 org.dedu.draw.Element = org.dedu.draw.Cell.extend({
-
+    /**
+     * @member {Object} defaults - 默认属性
+     * @property {Object} defaults.position
+     * @property {number} defaults.position.x=0
+     * @property {number} defaults.position.y=0
+     * @property {Object} defaults.size
+     * @property {number} defaults.size.width=0
+     * @property {number} defaults.size.height=0
+     * @property {number} defaults.angle=0
+     * @property {number} defaults.selected=false
+     * @memberof org.dedu.draw.Element
+     */
     defaults: {
         position: {
             x: 0,
@@ -3874,7 +4098,14 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
     position:function(x,y,opt){
 
     },
-
+    /**
+     * @method translate - 更改position
+     * @param {Number} tx - x轴偏移量
+     * @param {Number} ty - y轴偏移量
+     * @param {Object} opt
+     * @returns {org.dedu.draw.Element}
+     * @memberof org.dedu.draw.Element
+     */
     translate:function(tx,ty,opt){
         tx = tx || 0;
         ty = ty || 0;
@@ -3908,6 +4139,14 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
 
     },
 
+    /**
+     * @method resize - 更改resize
+     * @param {Number} width - 宽度
+     * @param {Number} height - 高度
+     * @param {Object} opt
+     * @returns {org.dedu.draw.Element}
+     * @memberof org.dedu.draw.Element
+     */
     resize: function (width, height, opt) {
         this.set('size', { width: width, height: height }, opt);
         return this;
@@ -3915,9 +4154,31 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
 
 });
 
-
+/**
+ * `org.dedu.draw.ElementView`是`org.dedu.draw.Element`的view
+ * @class
+ * @augments  org.dedu.draw.CellView
+ */
 org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
-
+    /**
+     * 用于attrs的特殊属性
+     * * style : An object containing CSS styles for a subelement
+     * * text : Valid only for <text> subelements.  text attribute contains the text that will be set either directly to the <text> subelement or its <tspan> children depending on whether the text is multiline or not (contains '\n' character(s)).
+     * * html :
+     * * ref-x : [.5/'50%'/20] > 相对于ref的参照物，x轴的相对距离，如果使用[0,1]或百分比的形式表示比例，或者20表示20px的相对偏移
+     * * ref-y : 与ref-x相似
+     * * ref-dx : Make x-coordinate of the subelement relative to the right edge of the element referenced to by the selector in ref attribute.
+     * * ref-dy : Make y-coordinate of the subelement relative to the bottom edge of the element referenced to by the selector in ref attribute.
+     * * ref-width :
+     * * ref-height :
+     * * ref : 'css selector' > 比如图元中的label使用svg的text标签实现，label相对于图元处于正中间，这种相对定位，使用ref属性
+     * * x-alignment' : 如果设置为'middle',子元素会相对于该元素水平居中
+     * * y-alignment' : 垂直居中
+     * * port : An object containing at least an id property. This property uniquely identifies the port. If a link gets connected to a magnet that has also a port object defined, the id property of the port object will be copied to the port property of the source/target of the link.
+     * @member {Array}
+     * @memberof org.dedu.draw.ElementView
+     *
+     */
     SPECIAL_ATTRIBUTES:[
         'style',
         'text',
@@ -3934,6 +4195,12 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         'port'
     ],
 
+    /**
+     * set the attribute of dom node Dom节点的attribute
+     * @returns {String}
+     * @instance
+     * @memberof org.dedu.draw.ElementView
+     */
     className:function(){
         return 'element node '+this.model.get('type').replace('.',' ','g')
     },
@@ -4000,7 +4267,12 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         this.update();
     },
 
-    // Default is to process the `attrs` object and set attributes on subelements based on the selectors.
+    /**
+     * Default is to process the `attrs` object and set attributes on subelements based on the selectors.
+     * @method update
+     * @param [cell]
+     * @param renderingOnlyAttrs
+     */
     update: function(cell, renderingOnlyAttrs) {
 
         var allAttrs = this.model.get('attrs');
@@ -4144,6 +4416,15 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         }
     },
 
+    /**
+     * 相对定位
+     * @private
+     * @mehtod positionRelative
+     * @param vel
+     * @param bbox
+     * @param attributes
+     * @param nodesBySelector
+     */
     positionRelative: function(vel, bbox, attributes, nodesBySelector) {
 
         var ref = attributes['ref'];
@@ -4352,6 +4633,13 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         this.vel.attr('transform','translate('+position.x+','+position.y+')');
     },
 
+    /**
+     * 在`rect`内的view
+     * @method findMagnetsInArea
+     * @param rect
+     * @param opt
+     * @returns {Array}
+     */
     findMagnetsInArea:function(rect, opt) {
         rect = g.rect(rect);
         var views = [this.up,this.down,this.left,this.right];
@@ -4363,6 +4651,13 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         },this);
     },
 
+    /**
+     * 处理鼠标按下事件
+     * @method pointerdown
+     * @param {Event} evt
+     * @param {Number} x - 鼠标点击位置的x坐标
+     * @param {Number} y - 鼠标点击位置的y坐标
+     */
     pointerdown:function(evt,x,y){
         var paper = this.paper;
 
@@ -4407,7 +4702,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
                  link.set({
                      source: {
                          id: this.model.id,
-                         redID:this.model.get('redID'),
+                         redID: this.model.get('redID'),
                          selector: this.getSelector(evt.target),
                          port: evt.target.getAttribute('port')
                      },
@@ -4415,11 +4710,6 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
              }
              link.set({
                  target: { x: x, y: y },
-                 attrs: {
-                     '.marker-target': {
-                         d: 'M 10 0 L 0 5 L 10 10 z'
-                     }
-                 }
              });
 
 
@@ -4442,6 +4732,14 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         this._closestView = null;
     },
 
+    /**
+     * 处理鼠标move事件
+     * @method pointermove
+     * @param {Event} evt
+     * @param {Number} tx
+     * @param {Number} ty
+     * @param localPoint
+     */
     pointermove:function(evt,tx,ty,localPoint){
         if(this._linkView){
             // let the linkview deal with this event
@@ -4469,6 +4767,13 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         }
     },
 
+    /**
+     * 处理鼠标up事件
+     * @method pointerup
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     */
     pointerup:function(evt,x,y){
         if (this._linkView) {
 
@@ -4493,8 +4798,34 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
 
 });
 
+/**
+ * source or target
+ * @typeof {Object} org.dedu.draw.Link~Vertex
+ * @property {String} id - vertex'id
+ * @property {String} redID - vertex'redID
+ * @property {Selector} selector - css
+ * @property {String} port - port'name
+ */
+
+/**
+ * `org.dedu.draw.Link` 是所有link的父类
+ * Properties source and target determine to which elements the link is connected to. Both objects are of the form<org.dedu.draw.Link~Vertex>:
+ *
+ * {
+ *   id: <id of an element>,
+ *   selector: <CSS selector>,
+ *   port: <id of a port>
+ * }
+ *
+ * @class
+ * @augments org.dedu.draw.Cell
+ */
 org.dedu.draw.Link = org.dedu.draw.Cell.extend({
-    // The default markup for links.
+    /**
+     * The default markup for links.
+     * @member {Array}
+     * @memberof org.dedu.draw.Link
+     */
     markup: [
         '<path class="connection_background"/>',
         '<path class="connection_outline"/>',
@@ -4508,6 +4839,11 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
         // '<g class="link-tools"/>'
     ].join(''),
 
+    /**
+     * The default labelMarkup for links.
+     * @member {Array}
+     * @memberof org.dedu.draw.Link
+     */
     labelMarkup: [
         '<g class="label">',
         '<rect />',
@@ -4515,28 +4851,125 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
         '</g>'
     ].join(''),
 
+    /**
+     * The default arrowHeadMarkup for links.箭头
+     * @member {Array}
+     * @memberof org.dedu.draw.Link
+     */
     arrowheadMarkup: [
         '<g class="marker-arrowhead-group marker-arrowhead-group-<%= end %>">',
         '<path class="marker-arrowhead" end="<%= end %>" d="M 26 0 L 0 13 L 26 26 z" />',
         '</g>'
     ].join(''),
 
+    /**
+     * @member {Object} defaults - 默认属性
+     * @property {String} defaults.type='link'
+     * @property {org.dedu.draw.Link~Vertex} source
+     * @property {org.dedu.draw.Link~Vertex} target
+     * @property {Object} labels
+     * @property {Object} attrs
+     * @override
+     * @memberof org.dedu.draw.Link
+     */
     defaults: {
         type: 'link',
         source: {},
         target: {},
-        labels:undefined
+        labels:undefined,
+        attrs: {
+            '.marker-target': {
+                d: 'M 10 0 L 0 5 L 10 10 z'
+            }
+        }
     },
 
-    isLink: function() {
+    /**
+     *  A convenient way to set labels. Currently set values will be mixined with `value` if used as a setter.
+     * * The link model has a property labels that contains the whole array of labels of that link. Each item of that array has the form:
+     *
+     * {
+     *   position: <number>,
+     *   attrs: { <selector>: <SVG attributes> }
+}    * }
+     *
+     * @example
+     *
+     * link.label(0, {
+     *      position: .5,
+     *      attrs: {
+     *          rect: { fill: 'white' },
+     *          text: { fill: 'blue', text: 'my label' }
+     *       }
+     *   });
+     *
+     * @param {Number} idx
+     * @param {Object} value
+     * @returns {*}
+     */
+    label: function(idx, value) {
 
+        idx = idx || 0;
+
+        var labels = this.get('labels') || [];
+
+        // Is it a getter?
+        if (arguments.length === 0 || arguments.length === 1) {
+
+            return labels[idx];
+        }
+
+        var newValue = _.merge({}, labels[idx], value);
+
+        var newLabels = labels.slice();
+        newLabels[idx] = newValue;
+
+        return this.set({ labels: newLabels });
+    },
+
+    /**
+     * Return the source element of the link or null if there is none.
+     * @returns {*|org.dedu.draw.Cell|null}
+     */
+    getSourceElement: function() {
+
+        var source = this.get('source');
+
+        return (source && source.id && this.graph && this.graph.getCell(source.id)) || null;
+    },
+
+    /**
+     * Return the target element of the link or null if there is none.
+     * @returns {*|org.dedu.draw.Cell|null}
+     */
+    getTargetElement: function() {
+
+        var target = this.get('target');
+
+        return (target && target.id && this.graph && this.graph.getCell(target.id)) || null;
+    },
+    /**
+     * 返回true
+     * @override
+     * @returns {boolean}
+     * @memberof org.dedu.draw.Link
+     */
+    isLink: function() {
         return true;
     }
 });
 
-
+/**
+ * `org.dedu.draw.LinkView`是{@link org.dedu.draw.link}的view and is responsible for rendering a link with properties defined in its model
+ * @class
+ * @augments org.dedu.draw.CellView
+ */
 org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 
+    /**
+     * @override
+     * @returns {string}
+     */
     className: function() {
         return _.unique(this.model.get("type").split(".").concat("link")).join(" ")
     },
@@ -5181,10 +5614,14 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
         this._beforeArrowheadMove();
     },
 
-    // Return `true` if the link is allowed to perform a certain UI `feature`.
-    // Example: `can('vertexMove')`, `can('labelMove')`.
+    /**
+     * Return `true` if the link is allowed to perform a certain UI `feature`.
+     * @example
+     *  `can('vertexMove')`, `can('labelMove')`.
+     * @param {String} feature
+     * @returns {boolean}
+     */
     can: function(feature) {
-
         var interactive = _.isFunction(this.options.interactive) ? this.options.interactive(this, 'pointerdown') : this.options.interactive;
         if (!_.isObject(interactive) || interactive[feature] !== false) return true;
         return false;
@@ -5616,6 +6053,11 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     
 
 },{
+    /**
+     * get port of vertex
+     * @param {org.dedu.draw.Link~Vertex} end
+     * @returns {string}
+     */
     makeSelector: function (end) {
         var selector = '[model-id="' + end.id + '"]';
         // `port` has a higher precendence over `selector`. This is because the selector to the magnet
@@ -5630,13 +6072,28 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     }
 });
 
+/**
+ * `org.dedu.draw.GraphCells` stores all the cell models
+ * @class
+ * @augments  Backbone.Collection
+ */
 org.dedu.draw.GraphCells = Backbone.Collection.extend({
+    /**
+     * graph处理cell的namespace
+     * @member {Object}
+     * @memberof org.dedu.draw.GraphCells`
+     */
     cellNamespace: org.dedu.draw.shape,
     initialize:function(models,opt){
         if(opt.cellNamespace){
             this.cellNamespace = opt.cellNamespace;
         }
     },
+    /**
+     * @method model
+     * @param attrs
+     * @param options
+     */
     model:function(attrs,options){
         var namespace = options.collection.cellNamespace;
 
@@ -5649,7 +6106,12 @@ org.dedu.draw.GraphCells = Backbone.Collection.extend({
     }
 });
 
-
+/**
+ * `org.dedu.draw.Graph` A model holding all the cells (elements and links) of the diagram
+ * * property `cells` stores all the cells
+ * @class
+ * @augments Backbone.Model
+ */
 org.dedu.draw.Graph = Backbone.Model.extend({
 
     initialize:function(attrs,opt){
@@ -5669,7 +6131,7 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         // Make all the events fired in the `cells` collection available.
         // to the outside world.
         this.get("cells").on("all",this.trigger,this);
-        //this.get('cells').on('remove', this._removeCell, this);
+        this.get('cells').on('remove', this._removeCell, this);
 
 
         // Outgoing edges per node. Note that we use a hash-table for the list
@@ -5693,7 +6155,6 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         cells.on('add', this._restructureOnAdd, this);
         cells.on('remove', this._restructureOnRemove, this);
     },
-
 
     _restructureOnAdd: function(cell) {
 
@@ -5728,7 +6189,11 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         }
     },
 
-
+    /**
+     * graphCells是否存在`id`指定的cell
+     * @param {Number} id
+     * @returns {boolean}
+     */
     isExist:function(id){
         var models = this.get('cells').models;
         for(var i=0;i<models.length;i++){
@@ -5739,14 +6204,57 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         return false;
     },
 
-    getCellByRedID:function(id) {
+    /**
+     * get cell by redID
+     * @param {String} redID
+     * @returns {org.dedu.draw.Cell}
+     */
+    getCellByRedID:function(redID) {
         var models = this.get('cells').models;
         for(var i in models){
-            if(models[i].get('redID') == id){
+            if(models[i].get('redID') == redID){
                 return models[i];
             }
         }
+    },
+    /**
+     * get a cell from the graph by its `id`
+     * @param {String} id
+     * @returns {org.dedu.draw.Cell}
+     */
+    getCell: function(id) {
+        return this.get('cells').get(id);
+    },
 
+    /**
+     * like {@link org.dedu.draw.Graph~getCell},Get all the elemnet and links in the graph.
+     * @returns {Array<org.dedu.draw.Cell>}
+     */
+    getCells: function() {
+        return this.get('cells').toArray();
+    },
+
+    /**
+     * Get all the elements in the graph (i.e. omit links).
+     * @returns {Array<org.dedu.draw.Element>}
+     */
+    getElements: function() {
+
+        return this.get('cells').filter(function(cell) {
+
+            return cell instanceof org.dedu.draw.Element;
+        });
+    },
+
+    /**
+     * Get all the links in the graph (i.e. omit elements).
+     * @returns {Array<org.dedu.draw.Link>}
+     */
+    getLinks: function() {
+        return this.get('cells').filter(function(cell) {
+
+            return cell instanceof joint.dia.Link;
+        });
     },
 
     selectAll:function(){
@@ -5755,6 +6263,21 @@ org.dedu.draw.Graph = Backbone.Model.extend({
             model.focus();
         });
         this.selectionSet = this.get('cells').models;
+    },
+
+    getAllPosition: function () {
+        var nodes = {};
+        this.get('cells').models.forEach(function(model){
+            if(model instanceof org.dedu.draw.Element){
+
+                if(model instanceof org.dedu.draw.shape.node_red.subflowportModel){
+                    nodes[model.get('index')-1] = {position:model.get('position'),type:'subflowport'};
+                }else{
+                    nodes[model.get('redID')] = {position:model.get('position')};
+                }
+            }
+        });
+        return nodes;
     },
 
     updateSelection: function (selection_models_new) {
@@ -5781,14 +6304,29 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         }
     },
 
-
+    /**
+     * Add a new cell to the graph. If cell is an array, all the cells in the array will be added to the graph.
+     * @param {org.dedu.draw.Cell} cell
+     * @param options
+     * @returns {org.dedu.draw.Graph}
+     * @example
+     *
+     *  var rect = new org.dedu.draw.shape.basic.Rect({
+     *   position: { x: 100, y: 100 },
+     *   size: { width: 70, height: 30 },
+     *   attrs: { text: { text: 'my rectangle' } }
+     *   });
+     *   var rect2 = rect.clone();
+     *   var graph = new org.dedu.draw.Graph();
+     *   graph.addCell(rect).addCell(rect2);
+     *
+     */
     addCell:function(cell,options){
         this.get('cells').add(this._prepareCell(cell), options || {});
         var args ;
         var self = this;
         if(cell instanceof org.dedu.draw.Link){
             cell.on('link:complete',function(){
- 
                 args = {
                     source: this.get('source'),
                     target: this.get('target'),
@@ -5808,10 +6346,56 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         return this;
     },
 
+    /**
+     * Add new cells to the graph. This is just a syntactic sugar to the addCell method. Calling addCell with an array of cells is an equivalent to calling addCells.
+     * @param {Array<org.dedu.draw.Cell>} cells
+     * @param options
+     * @returns {org.dedu.draw.Graph}
+     */
+    addCells: function(cells, options) {
+
+        options = options || {};
+        options.position = cells.length;
+
+        _.each(cells, function(cell) {
+            options.position--;
+            this.addCell(cell, options);
+        }, this);
+
+        return this;
+    },
+
+    /**
+     * like {@link org.dedu.draw.Graph~addCells},用于加载很多cell时
+     * @param cells
+     * @param opt
+     * @returns {org.dedu.draw.Graph}
+     */
+    resetCells: function(cells, opt) {
+
+        this.get('cells').reset(_.map(cells, this._prepareCell, this), opt);
+
+        return this;
+    },
+
     _prepareCell:function(cell){
+        var attrs = (cell instanceof Backbone.Model) ? cell.attributes : cell;
+
+        if (_.isUndefined(attrs.z)) {
+            attrs.z = this.maxZIndex() + 1;
+        }
+
+        if (!_.isString(attrs.type)) {
+            throw new TypeError('dia.Graph: cell type must be a string.');
+        }
         return cell;
     },
 
+    maxZIndex: function() {
+
+        var lastCell = this.get('cells').last();
+        return lastCell ? (lastCell.get('z') || 0) : 0;
+    },
 
     clear: function(opt) {
 
@@ -5857,22 +6441,20 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         var args = Array.prototype.slice.call(arguments, 1);
         this.trigger.apply(this, [evt].concat(args));
     },
-
-    // Get a cell by `id`.
-    getCell: function(id) {
-        return this.get('cells').get(id);
-    },
-
-    getElements: function() {
-        return _.map(this._nodes, function(exists, node) { return this.getCell(node); }, this);
-    },
-
 });
 
 
 org.dedu.draw.shape = {basic:{}};
 
+/**
+ * 不能连线的图元
+ * @class
+ * @augments org.dedu.draw.Element.
+ */
 org.dedu.draw.shape.basic.Generic = org.dedu.draw.Element.extend({
+    /**
+     * @override
+     */
     defaults:org.dedu.draw.util.deepSupplement({
         type:'basic.Generic',
         attrs:{
@@ -6040,7 +6622,16 @@ org.dedu.draw.shape.basic.Polyline = org.dedu.draw.shape.basic.Generic.extend({
     }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
 });
 
+/**
+ * `org.dedu.draw.shape.basic.PortsModelInterface` 增加inPort和outPort,用于link
+ * @class
+ */
 org.dedu.draw.shape.basic.PortsModelInterface = {
+    /**
+     * initialize
+     * *增加对port的update
+     * @ memberof org.dedu.draw.shape.basic.PortsModelInterface
+     */
     initialize:function(){
         this.updatePortsAttrs();
         this.on('change:inPorts change:outPorts',this.updatePortsAttrs,this);
@@ -6048,25 +6639,31 @@ org.dedu.draw.shape.basic.PortsModelInterface = {
         //Call the 'initialize()' of the partent.
         this.constructor.__super__.constructor.__super__.initialize.apply(this,arguments);
     },
-    updatePortsAttrs: function (eventName) {
+    /**
+     * update port css
+     * @memberof org.dedu.draw.shape.basic.PortsModelInterface
+     */
+    updatePortsAttrs: function () {
         // Delete previously set attributes for ports.
         var currAttrs = this.get('attrs');
-
+        _.each(this._portSelectors, function(selector) {
+            if (currAttrs[selector]) delete currAttrs[selector];
+        });
         // This holds keys to the `attrs` object for all the port specific attribute that
         // we set in this method. This is necessary in order to remove previously set
         // attributes for previous ports.
         this._portSelectors = [];
 
-
         var attrs = {};
         _.each(this.get('inPorts'), function (portName, index, ports) {
             var portAttributes = this.getPortAttrs(portName,index,ports.length,'.inPorts','in');
+            this._portSelectors = this._portSelectors.concat(_.keys(portAttributes));
             _.extend(attrs,portAttributes);
         },this);
 
         _.each(this.get('outPorts'), function(portName, index, ports) {
             var portAttributes = this.getPortAttrs(portName, index, ports.length, '.outPorts', 'out');
-           // this._portSelectors = this._portSelectors.concat(_.keys(portAttributes));
+            this._portSelectors = this._portSelectors.concat(_.keys(portAttributes));
             _.extend(attrs, portAttributes);
         }, this);
 
@@ -6079,18 +6676,40 @@ org.dedu.draw.shape.basic.PortsModelInterface = {
         // Let the outside world (mainly the `ModelView`) know that we're done configuring the `attrs` object.
         this.trigger('process:ports');
     },
+    /**
+     * get port selector
+     * @param {String} name - port'name
+     * @returns {string}
+     */
     getPortSelector: function (name) {
+        var selector = '.inPorts';
+        var index = this.get('inPorts').indexOf(name);
 
+        if (index < 0) {
+            selector = '.outPorts';
+            index = this.get('outPorts').indexOf(name);
+
+            if (index < 0) throw new Error("getPortSelector(): Port doesn't exist.");
+        }
+        return selector + '>g:nth-child(' + (index + 1) + ')>.port-body';
     }
 };
 
+/**
+ * `org.dedu.draw.shape.basic.PortsViewInterface` 是 `org.dedu.draw.shape.basic.PortsModelInterface`的view
+ * @class
+ */
 org.dedu.draw.shape.basic.PortsViewInterface = {
-    initialize: function (options) {
 
+    /**
+     * initialize
+     * @param options
+     * @memberof org.dedu.draw.shape.basic.PortsViewInterface
+     */
+    initialize: function (options) {
         if(options.skip_render){
             return;
         }
-
         org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
         // `Model` emits the `process:ports` whenever it's done configuring the `attrs` object for ports.
         this.listenTo(this.model, 'process:ports', this.update);
@@ -6100,17 +6719,24 @@ org.dedu.draw.shape.basic.PortsViewInterface = {
             }else{
                 this.unfocus();
             }
-
         },this);
     },
+
+    /**
+     * `update` in order to override
+     * @memberof org.dedu.draw.shape.basic.PortsViewInterface
+     */
     update: function () {
         // First render ports so that `attrs` can be applied to those newly created DOM elements
         // in `ElementView.prototype.update()`.
         this.renderPorts();
         org.dedu.draw.ElementView.prototype.update.apply(this, arguments);
     },
+    /**
+     * render port
+     * @memberof org.dedu.draw.shape.basic.PortsViewInterface
+     */
     renderPorts: function () {
-
         var $inPorts = this.$('.inPorts').empty();
         var $outPorts = this.$('.outPorts').empty();
 
@@ -6153,19 +6779,21 @@ org.dedu.draw.connectors.normal = function (sourcePoint, targetPoint, vertices) 
 
     return d.join(' ');
 };
-/**
- * Created by y50-70 on 2/29/2016.
- */
 
 org.dedu.draw.shape.devs = {};
 
+/**
+ * `org.dedu.draw.shape.devs.Model` extends `org.dedu.draw.shape.basic.Generic` and `org.dedu.draw.shape.basic.PortsModelInterface`
+ * @class
+ * @augments org.dedu.draw.shape.basic.Generic
+ */
 org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
     _.extend(
         {},
         org.dedu.draw.shape.basic.PortsModelInterface,
         {
             markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><text class="label"/><g class="inPorts"/><g class="outPorts"/></g>',
-            portMarkup: '<g class="port port<%= id %>"><circle class="port-body"/><text class="port-label"/></g>',
+            portMarkup: '<g class="port port<%= id %>"><rect class="port-body"/><text class="port-label"/></g>',
 
             defaults: org.dedu.draw.util.deepSupplement({
 
@@ -6182,7 +6810,10 @@ org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
                         stroke: '#000000'
                     },
                     '.port-body': {
-                        r: 5,
+                        rx: 3,
+                        ry:3,
+                        width:10,
+                        height:10,
                         magnet: true,
                         stroke: '#000000'
                     },
@@ -6196,6 +6827,15 @@ org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
 
             }, org.dedu.draw.shape.basic.Generic.prototype.defaults),
 
+            /**
+             * get port css,it is called by {@link org.dedu.draw.shape.basic.PortsModelInterface~updatePortsAttrs}
+             * @param {String} portName - port name
+             * @param {Number} index
+             * @param {Number} total
+             * @param {String} selector - '.inPorts','.outPorts'
+             * @param {String} type - 'in','out'
+             * @returns {Object}
+             */
             getPortAttrs: function (portName,index,total,selector,type) {
                 var attrs = {};
 
@@ -6205,18 +6845,25 @@ org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
                 var portBodySelector = portSelector + '>.port-body';
 
                 attrs[portBodySelector] = {port:{id:portName || _.uniqueId(type),type:type}};
-                attrs[portSelector] = {ref:'.body','ref-y':(index + 0.5)*(1/total)};
+                attrs[portSelector] = {ref:'.body','ref-y':(index + 0.5)*(1/total)*this.get('size').height-5};
 
-                if(selector === '.outPorts'){attrs[portSelector]['ref-dx'] = 0;}
+                if(selector === '.outPorts'){
+                    attrs[portSelector]['ref-dx'] = -5; //relative to the right edge of the element referenced to by the selector in ref attribute
+                }else{
+                    attrs[portSelector]['ref-x'] = -5;  //relative to the left edge of the element referenced to by the selector in ref attribute
+                }
                 return attrs;
             },
 
         }
     )
-
-
 );
 
+/**
+ * `org.dedu.draw.shape.devs.ModelView` 是 `org.dedu.draw.shape.devs.Model`的view
+ * @class
+ * @augments org.dedu.draw.ElementView
+ */
 org.dedu.draw.shape.devs.ModelView = org.dedu.draw.ElementView.extend(
     _.extend(
         {},
@@ -6230,16 +6877,19 @@ org.dedu.draw.shape.devs.ModelView = org.dedu.draw.ElementView.extend(
             }
         })
 );
-/**
- * Created by y50-70 on 3/1/2016.
- */
-
 org.dedu.draw.shape.node = {};
-
+/**
+ * @class
+ * @augments org.dedu.draw.shape.devs.Model
+ */
 org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
     defaults:org.dedu.draw.util.deepSupplement({
         markup: '<g class="rotatable"><g class="scalable"><g class="body nodegroup"/></g><text class="label"/><g class="inPorts"/><g class="outPorts"/></g>',
         type:'node.Model',
+        size:{
+            width:120,
+            height:28
+        },
         attrs:{
             'rect.node': {'width': 140, height: 30},
             '.port-body': {
@@ -6249,7 +6899,7 @@ org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
             },
             'rect.node_button_button_shadow':{'width': 32, height: 26},
             'rect.node_button_button':{'width': 16, height: 18},
-            '.label': {'ref-x': .5, 'ref-y':.3, ref: '.node', 'text-anchor': 'middle', fill: '#000'},
+            '.label': {'ref-x':.5, 'ref-y':.3, ref: '.node', 'text-anchor': 'middle', fill: '#000',style:{'font-weight':'normal'}},
         }
 
     },org.dedu.draw.shape.devs.Model.prototype.defaults),
@@ -6270,6 +6920,10 @@ org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
     }
 });
 
+/**
+ * @class
+ * @augments org.dedu.draw.shape.devs.ModelView
+ */
 org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
 
     options:{},
@@ -6281,10 +6935,11 @@ org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
         //获取绑定数据
         var data = this.model.data;
         var size = this.model.get('size');
-        var node_height = 30;
 
         var allAttrs = this.model.get('attrs');
-        allAttrs['.label'].text = data.type;
+        var l = data._def.label;
+        l = (typeof l === "function" ? l.call(data) : l)||"";
+        allAttrs['.label'].text = l;
 
         //判断节点是否需要按钮
         if (data._def.button) {
@@ -6344,7 +6999,7 @@ org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
                 .attr("fill", "#000")
                 .attr("fill-opacity", "0.05")
                 .attr("height", function () {
-                    return Math.min(50, data.h);
+                    return Math.min(50, size.height);
                 });
             icon_group.append(icon_shade);
 
@@ -6358,7 +7013,7 @@ org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
 
             var icon_shade_border = V('path')
                 .attr("d", function () {
-                    return "M 30 1 l 0 " + (data.h - 2)
+                    return "M 30 1 l 0 " + (size.height - 2)
                 })
                 .attr("class", "node_icon_shade_border")
                 .attr("stroke-opacity", "0.1")
@@ -6370,7 +7025,7 @@ org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
             if ("right" == data._def.align) {
                 icon_group.attr('class', 'node_icon_group node_icon_group_' + data._def.align);
                 icon_shade_border.attr("d", function () {
-                    return "M 0 1 l 0 " + (data.h - 2)
+                    return "M 0 1 l 0 " + (size.height - 2)
                 });
                 //icon.attr('class','node_icon node_icon_'+d._def.align);
                 //icon.attr('class','node_icon_shade node_icon_shade_'+d._def.align);
@@ -6406,24 +7061,22 @@ org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
         this.vel.findOne('.node').removeClass('selected');
     }
 });
-/**
- * Created by lmz on 16/3/20.
- */
 
 org.dedu.draw.shape.simple = {};
-
-org.dedu.draw.shape.simple.PortsModelInterface = {
+/**
+ * SuspendPort model interface
+ * @class
+ */
+org.dedu.draw.shape.simple.SuspendPortModelInterface = {
     initialize:function(){
-
-    },
-    updatePortsAttrs: function (eventName) {
-
-    },
-    getPortSelector: function (name) {
 
     }
 };
 
+/**
+ * SuspendPort view interface
+ * @class
+ */
 org.dedu.draw.shape.simple.SuspendPortViewInterface = {
     initialize:function(options){
         if(options.skip_render){
@@ -6454,7 +7107,11 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
         this.renderSuspendPort();
         //this.update();
     },
-
+    /**
+     * 渲染suspend port
+     * @method renderSuspendPort
+     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     */
     renderSuspendPort: function () {
 
         var suspendTemplate = _.template(this.model.suspendPortMarkup);
@@ -6490,13 +7147,22 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
 
         this.trigger('add:ports');
     },
-
+    /**
+     * show suspend port
+     * method showSuspendPort
+     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     */
     showSuspendPort: function () {
         this.up.attr('display','block');
         this.right.attr('display','block');
         this.down.attr('display','block');
         this.left.attr('display','block');
     },
+    /**
+     * hide suspend port
+     * method hideSuspendPort
+     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     */
     hideSuspendPort: function () {
         this.up.attr('display','none');
         this.right.attr('display','none');
@@ -6505,6 +7171,11 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
     }
 };
 
+/**
+ * A model class implements suspend port
+ * @class
+ * @augments org.dedu.draw.shape.basic.Generic
+ */
 org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
     _.extend(
         {},
@@ -6527,6 +7198,16 @@ org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
 
                 }
             }, org.dedu.draw.shape.basic.Generic.prototype.defaults),
+            /**
+             * get relative position for port
+             * @param portName
+             * @param index
+             * @param total
+             * @param selector
+             * @param type
+             * @returns {{}}
+             * @memberof org.dedu.draw.shape.simple.Generic
+             */
             getPortAttrs: function (portName,index,total,selector,type) {
                 var attrs = {};
 
@@ -6544,20 +7225,31 @@ org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
         })
 );
 
-
+/**
+ * A view class implements suspend port
+ * @class
+ * @augments org.dedu.draw.ElementView
+ */
 org.dedu.draw.shape.simple.GenericView = org.dedu.draw.ElementView.extend(
     _.extend({},org.dedu.draw.shape.simple.SuspendPortViewInterface,{
+        /**
+         * 显示连接到port的提示
+         * @param {DOMObject} el - port对应的domObject
+         * @param {Object} [opt]
+         */
         addTipMagnet: function (el, opt) {
             var port = V(el);
-
             if(port.attr('port') && !$(".tip-"+port.attr('port'),this.$el)[0]){
-
                 var tip = V('circle',{class:"tip tip-"+port.attr('port'),transform:port.attr('transform'),r:15,fill:'black',opacity:0.3});
                 this.rotatableNode.append(tip);
-
             }
             this.showSuspendPort(); // show four ports
         },
+        /**
+         * 移除提示
+         * @param el
+         * @param opt
+         */
         removeTipMagnet: function (el, opt) {
             var port = V(el);
             if($(".tip-"+port.attr('port'),this.$el)[0]){
@@ -6582,6 +7274,11 @@ org.dedu.draw.shape.simple.GenericView = org.dedu.draw.ElementView.extend(
 org.dedu.draw.shape.uml = {
 };
 
+/**
+ * `StartState`
+ * @class
+ * @augments org.dedu.draw.shape.simple.Generic
+ */
 org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
     markup:[
         '<g class="rotatable">',
@@ -6622,6 +7319,10 @@ org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
     }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
 });
 
+/**
+ * @class
+ * @augments org.dedu.draw.shape.simple.Generic
+ */
 org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
         markup: [
             '<g class="rotatable">',
@@ -6666,6 +7367,10 @@ org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
        }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
 });
 
+/**
+ * @class
+ * @augments org.dedu.draw.shape.simple.Generic.
+ */
 org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
     markup: [
         '<g class="rotatable">',
@@ -6804,18 +7509,292 @@ org.dedu.draw.shape.uml.EndStateView  = org.dedu.draw.shape.simple.GenericView.e
         this.hideSuspendPort();
     }
 });
+/**
+ * Created by lmz on 16/5/5.
+ */
+
+org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
+
+    markup: [
+        '<g class="rotatable">',
+        '<g class="scalable">',
+        '<rect class="uml-class-name-rect"/><rect class="uml-class-attrs-rect"/><rect class="uml-class-methods-rect"/>',
+        '</g>',
+        '<text class="uml-class-name-text"/><text class="uml-class-attrs-text"/><text class="uml-class-methods-text"/>',
+        '</g>'
+    ].join(''),
+
+    defaults: org.dedu.draw.util.deepSupplement({
+
+        type: 'uml.Class',
+        size:{
+            width:60,
+            height:100
+        },
+        attrs: {
+            rect: { 'width': 200 },
+
+            '.uml-class-name-rect': { 'stroke': 'black', 'stroke-width': 1, 'fill': '#fff9ca' },
+            '.uml-class-attrs-rect': { 'stroke': 'black', 'stroke-width': 1, 'fill': '#fff9ca' },
+            '.uml-class-methods-rect': { 'stroke': 'black', 'stroke-width': 1, 'fill': '#fff9ca' },
+
+            '.uml-class-name-text': {
+                'ref': '.uml-class-name-rect', 'ref-y': .5, 'ref-x': .5, 'text-anchor': 'middle', 'y-alignment': 'middle', 'font-weight': 'bold',
+                'fill': 'black', 'font-size': 12,text:'xxx'
+            },
+            '.uml-class-attrs-text': {
+                'ref': '.uml-class-attrs-rect', 'ref-y': 5, 'ref-x': 5,
+                'fill': 'black', 'font-size': 12,
+            },
+            '.uml-class-methods-text': {
+                'ref': '.uml-class-methods-rect', 'ref-y': 5, 'ref-x': 5,
+                'fill': 'black', 'font-size': 12,
+            }
+        },
+
+        name: [],
+        attributes: [],
+        methods: []
+
+    }, org.dedu.draw.shape.basic.Generic.prototype.defaults),
+
+    initialize: function() {
+
+        this.on('change:name change:attributes change:methods', function() {
+            this.updateRectangles();
+            this.trigger('uml-update');
+        }, this);
+
+        this.updateRectangles();
+
+        org.dedu.draw.shape.basic.Generic.prototype.initialize.apply(this, arguments);
+    },
+
+    getClassName: function() {
+        return this.get('name');
+    },
+
+    updateRectangles: function() {
+
+        var attrs = this.get('attrs');
+
+        var rects = [
+            { type: 'name', text: this.getClassName() },
+            { type: 'attrs', text: this.get('attributes') },
+            { type: 'methods', text: this.get('methods') }
+        ];
+
+        var offsetY = 0;
+        var line_height = this.get('attrs')['.uml-class-name-text']['font-size'];
+        //console.log(line_height);
+
+        _.each(rects, function(rect) {
+
+            var lines = _.isArray(rect.text) ? rect.text : [rect.text];
+            var rectHeight = lines.length * line_height + line_height/2;
+
+            attrs['.uml-class-' + rect.type + '-text'].text = lines.join('\n');
+            attrs['.uml-class-' + rect.type + '-rect'].height = rectHeight;
+            attrs['.uml-class-' + rect.type + '-rect'].transform = 'translate(0,' + offsetY + ')';
+
+            offsetY += rectHeight;
+        });
+    }
+
+});
+
+org.dedu.draw.shape.uml.ClassView = org.dedu.draw.ElementView.extend({
+
+    initialize: function() {
+
+        org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
+
+        this.listenTo(this.model, 'uml-update', function() {
+            this.update();
+            this.resize();
+        });
+    }
+});
+
+org.dedu.draw.shape.uml.Abstract = org.dedu.draw.shape.uml.Class.extend({
+
+    defaults: org.dedu.draw.util.deepSupplement({
+        type: 'uml.Abstract',
+        attrs: {
+            '.uml-class-name-rect': { fill : '#e74c3c' },
+            '.uml-class-attrs-rect': { fill : '#c0392b' },
+            '.uml-class-methods-rect': { fill : '#c0392b' }
+        }
+    }, org.dedu.draw.shape.uml.Class.prototype.defaults),
+
+    getClassName: function() {
+        return ['<<Abstract>>', this.get('name')];
+    }
+
+});
+org.dedu.draw.shape.uml.AbstractView = org.dedu.draw.shape.uml.ClassView;
+
+org.dedu.draw.shape.uml.Interface = org.dedu.draw.shape.uml.Class.extend({
+
+    defaults: org.dedu.draw.util.deepSupplement({
+        type: 'uml.Interface',
+        attrs: {
+            '.uml-class-name-rect': { fill : '#f1c40f' },
+            '.uml-class-attrs-rect': { fill : '#f39c12' },
+            '.uml-class-methods-rect': { fill : '#f39c12' }
+        }
+    }, org.dedu.draw.shape.uml.Class.prototype.defaults),
+
+    getClassName: function() {
+        return ['<<Interface>>', this.get('name')];
+    }
+
+});
+org.dedu.draw.shape.uml.InterfaceView = org.dedu.draw.shape.uml.ClassView;
+
+org.dedu.draw.shape.uml.Generalization = org.dedu.draw.Link.extend({
+    defaults: {
+        type: 'uml.Generalization',
+        attrs: { '.marker-target': { d: 'M 20 0 L 0 10 L 20 20 z', fill: 'white' }}
+    }
+});
+
+org.dedu.draw.shape.uml.Implementation = org.dedu.draw.Link.extend({
+    defaults: {
+        type: 'uml.Implementation',
+        attrs: {
+            '.marker-target': { d: 'M 20 0 L 0 10 L 20 20 z', fill: 'white' },
+            '.connection': { 'stroke-dasharray': '3,3' }
+        }
+    }
+});
+
+org.dedu.draw.shape.uml.Aggregation = org.dedu.draw.Link.extend({
+    defaults: {
+        type: 'uml.Aggregation',
+        attrs: { '.marker-target': { d: 'M 40 10 L 20 20 L 0 10 L 20 0 z', fill: 'white' }}
+    }
+});
+
+org.dedu.draw.shape.uml.Composition = org.dedu.draw.Link.extend({
+    defaults: {
+        type: 'uml.Composition',
+        attrs: { '.marker-target': { d: 'M 40 10 L 20 20 L 0 10 L 20 0 z', fill: 'black' }}
+    }
+});
+
+org.dedu.draw.shape.uml.Association = org.dedu.draw.Link.extend({
+    defaults: { type: 'uml.Association' }
+});
+/**
+ * Created by lmz on 16/5/8.
+ */
+org.dedu.draw.shape.node_red = {};
+/**
+ * `subflowportModel` for node-red
+ * @class
+ * @augments org.dedu.draw.shape.devs.Model.
+ */
+org.dedu.draw.shape.node_red.subflowportModel = org.dedu.draw.shape.devs.Model.extend({
+    defaults:org.dedu.draw.util.deepSupplement({
+        markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><g class="inPorts"/><g class="outPorts"/><text class="port_label small_label"/><text class="port_label port_index"/></g>',
+        type:'node_red.subflowportModel',
+        size:{
+            width:40,
+            height:40
+        },
+        attrs:{
+            'rect.body':{
+                rx:'8',
+                ry:'8',
+                'stroke-dasharray': '5,5',
+                fill: '#eee',
+                stroke: '#999'
+            },
+            'text.small_label':{
+                'stroke-width': 0,
+                fill: '#888',
+                style:{'font-size': 10},
+                'alignment-baseline': 'middle',
+                'text-anchor': 'middle',
+                ref: '.body',
+                'ref-x': 20, 'ref-y':8,
+                text:'output'
+            },
+            'text.port_index':{
+                ref: '.body',
+                'ref-x': 20, 'ref-y':18,
+                'text':1
+            }
+
+        }
+    },org.dedu.draw.shape.devs.Model.prototype.defaults),
+    initialize: function (options) {
+        this.set("outPorts", options.outputs);
+        this.set("inPorts", options.inputs);
+        this.get('attrs')['text.port_index'].text = options.index;
+        org.dedu.draw.shape.devs.Model.prototype.initialize.apply(this,arguments);
+    }
+
+});
+
+org.dedu.draw.shape.node_red.subflowportModelView = org.dedu.draw.shape.devs.ModelView.extend({
+
+    renderView: function () {
+
+    }
+});
+/**
+ * `org.dedu.draw.Paper` 是{@link org.dedu.draw.Graph}的view
+ * @class
+ * @augments Backbone.View
+ */
 org.dedu.draw.Paper = Backbone.View.extend({
+    /**
+     * 渲染元素的class
+     * @member {String}
+     * @memberof org.dedu.draw.Paper
+     * @default
+     */
     className: 'paper',
+
+    /**
+     * `org.dedu.draw.Paper`的默认属性
+     * @member {Object}
+     * @memberof org.dedu.draw.Paper
+     */
     options: {
 
+        /**
+         * @property {Number} options.width=800 - 渲染区域的宽度
+         */
         width: 800,
+        /**
+         * @property {Number} options.height=600 - 渲染区域的高度
+         */
         height: 600,
+        /**
+         * @property {Object} options.origin={x:0,y:0} - x,y coordinates in top-left corner
+         */
         origin: { x: 0, y: 0 }, // x,y coordinates in top-left corner
 
+        /**
+         * @property {Number} options.gridSize=1 - 网格大小
+         */
         gridSize:1,
         perpendicularLinks: false,
+        /**
+         * @property {org.dedu.draw.ElementView} options.elementView - 默认的elementView
+         */
         elementView: org.dedu.draw.ElementView,
+        /**
+         *  @property {org.dedu.draw.LinkView} options.LinkView - 默认的LinkView
+         */
         linkView: org.dedu.draw.LinkView,
+
+        /**
+         * @property {Object} options.interactive - 哪些元素可以进行交互
+         */
         interactive: {
             labelMove: false
         },
@@ -6870,6 +7849,9 @@ org.dedu.draw.Paper = Backbone.View.extend({
         // i.e. link source/target can be a point e.g. link.get('source') ==> { x: 100, y: 100 };
         linkPinning: false,
 
+        /**
+         *  @property {org.dedu.draw.shape} options.cellViewNamespace - 默认的cellViewNamespace
+         */
         cellViewNamespace: org.dedu.draw.shape
     },
 
@@ -6928,14 +7910,20 @@ org.dedu.draw.Paper = Backbone.View.extend({
       "mousemove .vis":"canvasMouseMove",
       "mouseup .vis":"canvasMouseUp",
       "mouseover .element":"cellMouseover",
-        'dblclick': 'mousedblclick',
-        'click': 'mouseclick',
+      "dblclick": "mousedblclick",
+      "click": "mouseclick",
 
     },
 
+    /**
+     * render cell that be added to `org.dedu.draw.Graph`
+     * @method onCellAdded
+     * @param {org.dedu.draw.Cell} cell
+     * @param graph
+     * @param opt
+     */
     onCellAdded:function(cell,graph,opt){
         this.renderView(cell);
-
     },
     
     removeView: function (cell) {
@@ -6961,7 +7949,11 @@ org.dedu.draw.Paper = Backbone.View.extend({
     },
 
 
-    // Find a view for a model `cell`. `cell` can also be a string representing a model `id`.
+    /**
+     * Find a view for a model `cell`. `cell` can also be a string representing a model `id`.
+     * @param {org.dedu.draw.Cell} cell
+     * @returns {org.dedu.draw.CellView}
+     */
     findViewByModel: function(cell) {
 
         var id = _.isString(cell) ? cell : cell.id;
@@ -6983,11 +7975,21 @@ org.dedu.draw.Paper = Backbone.View.extend({
         }, this);
     },
 
+    /**
+     * Find a cell, the id of which is equal to `id`
+     * @param {String} id
+     * @returns {org.dedu.draw.Cell}
+     */
     getModelById:function(id){
 
         return this.model.getCell(id);
     },
 
+    /**
+     * 渲染`cell`
+     * @param {org.dedu.draw.Cell} cell - the model cell to be rendered
+     * @returns {org.dedu.draw.CellView}
+     */
     renderView:function(cell){
         var view = this._views[cell.id] = this.createViewForModel(cell);
         V(this.vis).append(view.el);
@@ -6996,8 +7998,12 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
         return view;
     },
-    //Find the first view clibing up the DOM tree starting at element 'el'.Note that `el` can also
-    // be a selector or a jQuery object.
+    /**
+     * Find the first view clibing up the DOM tree starting at element 'el'.Note that `el` can also be a selector or a jQuery object.
+     * @param {String|JQueryObject} $el
+     * @returns {*}
+     */
+
     findView:function($el){
         var el = _.isString($el)
         ?this.viewport.querySelector($el)
@@ -7077,6 +8083,31 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
     },
 
+    /**
+     * 更改原点
+     * @param {Number} ox - 新原点的x坐标
+     * @param {Number} oy - 新原点的y坐标
+     * @memberof org.dedu.draw.Paper
+     */
+    setOrigin:function(ox,oy) {
+        this.options.origin.x = ox || 0;
+        this.options.origin.y = oy || 0;
+
+        V(this.viewport).translate(ox,oy,{absolut:true});
+
+        this.trigger('translate',ox,oy);  //trigger event translate
+    },
+
+    setDimensions:function(width,height) {
+           width = this.options.width = width || this.options.width;
+           height = this.options.height = height || this.options.height;
+
+           V(this.svg).attr({width:width,height:height});
+           V(this.outer_background).attr({width:width,height:height,fill:'#fff'});
+
+           this.trigger('resize',width,height);
+    },
+
     // Cell highlighting
     // -----------------
     onCellHighlight: function (cellView, el) {
@@ -7088,6 +8119,16 @@ org.dedu.draw.Paper = Backbone.View.extend({
     },
 
 
+    // Interaction.
+    // ------------
+
+    /**
+     * 空白处 mouse down
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     blank_pointDown:function(evt,x,y){
         this.model.cancelSelection();
 
@@ -7117,6 +8158,13 @@ org.dedu.draw.Paper = Backbone.View.extend({
         this.trigger("blank_pointDown");
     },
 
+    /**
+     * 空白处 mouse move
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     blank_pointMove:function(evt,x,y){
         var mouse_position = [evt.offsetX, evt.offsetY];
         var lasso = this.lasso;
@@ -7149,6 +8197,13 @@ org.dedu.draw.Paper = Backbone.View.extend({
         }
     },
 
+    /**
+     * 空白处 mouse up
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     blank_pointUp:function(evt,x,y){
         var lasso = this.lasso;
         var mouse_mode = this.mouse_mode;
@@ -7184,6 +8239,17 @@ org.dedu.draw.Paper = Backbone.View.extend({
         this.trigger('paper:selection_create', evt);
     },
 
+
+    /**
+     *  mouse down
+     *  * 判断鼠标点击的位置
+     *  1. 图元上,则调用该图元的事件处理函数
+     *  2. 空白处,则调用 {@link org.dedu.draw.Paper~blank_pointDown}
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     canvasMouseDown:function(evt){
 
         evt.preventDefault();
@@ -7209,6 +8275,16 @@ org.dedu.draw.Paper = Backbone.View.extend({
         this.trigger('paper:selection_create', evt);
     },
 
+    /**
+     *  mouse move
+     *  * 判断鼠标点击的位置
+     *  1. 图元上,则调用该图元的事件处理函数
+     *  2. 空白处,则调用 {@link org.dedu.draw.Paper~blank_pointMove}
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     canvasMouseMove:function(evt){
 
         evt.preventDefault();
@@ -7238,6 +8314,16 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
     },
 
+    /**
+     *  mouse up
+     *  * 判断鼠标点击的位置
+     *  1. 图元上,则调用该图元的事件处理函数
+     *  2. 空白处,则调用 {@link org.dedu.draw.Paper~blank_pointUp}
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof org.dedu.draw.Paper
+     */
     canvasMouseUp:function(evt){
         evt = org.dedu.draw.util.normalizeEvent(evt);
 
@@ -7256,31 +8342,11 @@ org.dedu.draw.Paper = Backbone.View.extend({
         }
     },
 
-
-    setOrigin:function(ox,oy) {
-        this.options.origin.x = ox || 0;
-        this.options.origin.y = oy || 0;
-
-        V(this.viewport).translate(ox,oy,{absolut:true});
-
-        this.trigger('translate',ox,oy);  //trigger event translate
-    },
-
-    setDimensions:function(width,height) {
-           width = this.options.width = width || this.options.width;
-           height = this.options.height = height || this.options.height;
-
-           V(this.svg).attr({width:width,height:height});
-           V(this.outer_background).attr({width:width,height:height,fill:'#fff'});
-
-           this.trigger('resize',width,height);
-    },
-
-    // Interaction.
-    // ------------
-
+    /**
+     * 双击事件
+     * @param {Event} evt
+     */
     mousedblclick: function(evt) {
-
         evt.preventDefault();
         evt = org.dedu.draw.util.normalizeEvent(evt);
 
@@ -7299,6 +8365,10 @@ org.dedu.draw.Paper = Backbone.View.extend({
         }
     },
 
+    /**
+     * 单击事件
+     * @param {Event} evt
+     */
     mouseclick: function(evt) {
 
         // Trigger event when mouse not moved.
@@ -7324,20 +8394,6 @@ org.dedu.draw.Paper = Backbone.View.extend({
         this._mousemoved = 0;
     },
 
-    pointermove:function(){
-        console.log("move~");
-    },
-
-    touchstart:function(){
-        console.log("touch");
-
-    },
-
-    touchmove:function(){
-        console.log("touchmove");
-
-    },
-
     cellMouseover:function(evt){
 
         evt = org.dedu.draw.util.normalizeEvent(evt);
@@ -7359,6 +8415,13 @@ org.dedu.draw.Paper = Backbone.View.extend({
         return true; //Event guarded. Paper should not react on it in any way.
     },
 
+    /**
+     * get default linkview {@link org.dedu.draw.Paper~options.linkView}
+     * @method getDefaultLink
+     * @param cellView
+     * @param magnet
+     * @returns {*}
+     */
     getDefaultLink: function (cellView, magnet) {
 
         return _.isFunction(this.options.defaultLink)
@@ -7370,6 +8433,11 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
 });
 
+/**
+ * 添加svg的属性,主要为了和node-red~editor的兼容
+ * @class
+ * @augments org.dedu.draw.Paper
+ */
 org.dedu.draw.Chart = org.dedu.draw.Paper.extend({
     options: org.dedu.draw.util.supplement({
         tabindex: 1,
@@ -7395,63 +8463,76 @@ org.dedu.draw.Chart = org.dedu.draw.Paper.extend({
  */
 
 
+org.dedu.draw.plugins = {};
+
+org.dedu.draw.plugins.PlainSvg = (function () {
+    var namespace = org.dedu.draw.shape;
+
+    var defaultViewClass = org.dedu.draw.ElementView;
+    var tmp_chart = null;
+    // $(function(){
+    //     $('body').append($('<div id="tmp_chart"></div>'));
+    //     tmp_chart = new org.dedu.draw.Chart({
+    //         el: $('#tmp_chart'),
+    //         width: 36,
+    //         height: 36,
+    //         tabindex: 1,
+    //         gridSize: 1,
+    //         style: {}
+    //     });
+    // });
 
 
-var namespace = org.dedu.draw.shape;
+    function renderView(node_type, options) {
+        var view = createViewForModel(node_type, options);
+        V(tmp_chart.vis).append(view.el);
+        view.paper = tmp_chart;
+        view.render();
 
-var defaultViewClass = org.dedu.draw.ElementView;
-
-var tmp_chart = new org.dedu.draw.Chart({
-    el: $('#tmp_chart'),
-    width: 36,
-    height: 36,
-    tabindex:1,
-    gridSize: 1,
-    style: {
-
+        return view;
     }
-});
 
-function renderView(node_type,options){
-    var view = createViewForModel(node_type,options);
-    V(tmp_chart.vis).append(view.el);
-    view.paper = tmp_chart;
-    view.render();
+    function createViewForModel(node_type, options) {
+        var view_type = node_type + "View";
 
-    return view;
-}
+        var namespaceViewClass = org.dedu.draw.util.getByPath(namespace, view_type, ".");
+        var namespaceClass = org.dedu.draw.util.getByPath(namespace, node_type, ".");
 
-function createViewForModel(node_type,options) {
-    var view_type = node_type + "View";
+        var ViewClass = namespaceViewClass || defaultViewClass;
 
-    var namespaceViewClass = org.dedu.draw.util.getByPath(namespace, view_type, ".");
-    var namespaceClass = org.dedu.draw.util.getByPath(namespace, node_type, ".");
+        var cell = new namespaceClass(options);
 
-    var ViewClass = namespaceViewClass || defaultViewClass;
+        var view = new ViewClass({
+            model: cell,
+            skip_render: true,
+            paper: tmp_chart
+        });
+        return view;
+    }
 
-    var cell = new namespaceClass(options);
+    function getPaleteeSvg( node_type, options) {
 
-    var view = new ViewClass({
-        model: cell,
-        skip_render: true,
-        paper: tmp_chart
-    });
-    return view;
-}
-function getPaleteeSvg(category,node_type,options){
-    var $tmp_a = $('<a href="javascript:void(0);" class="geItem" style="overflow: hidden; width: 40px; height: 40px; padding: 1px;">');
-    var $tmp_svg = $('<svg style="width: 36px; height: 36px; display: block; position: relative; overflow: hidden; cursor: move; "></svg>');
-    $tmp_a.append($tmp_svg);
-    var view = renderView(node_type,options);
+        var $tmp_svg = $('<svg style="width: 36px; height: 36px; display: block; position: relative; overflow: hidden; cursor: move; "></svg>');
 
-    $tmp_svg.append($(view.el));
-    $tmp_a[0].type = node_type;
-    $tmp_a[0].category = category;
+        var view = renderView(node_type, options);
 
-    //free memory
-    delete view.model;
-    delete view;
+        $tmp_svg.append($(view.el));
 
-    return $tmp_a;
-    //console.log($tmp_a);
-}
+
+        //free memory
+        delete view.model;
+        delete view;
+
+        return $tmp_svg;
+        //console.log($tmp_a);
+    }
+
+    return {
+        getPaleteeSvg:getPaleteeSvg
+    }
+})();
+
+
+return org;
+
+}));

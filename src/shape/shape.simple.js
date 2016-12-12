@@ -1,21 +1,19 @@
-/**
- * Created by lmz on 16/3/20.
- */
 
 org.dedu.draw.shape.simple = {};
-
-org.dedu.draw.shape.simple.PortsModelInterface = {
+/**
+ * SuspendPort model interface
+ * @class
+ */
+org.dedu.draw.shape.simple.SuspendPortModelInterface = {
     initialize:function(){
-
-    },
-    updatePortsAttrs: function (eventName) {
-
-    },
-    getPortSelector: function (name) {
 
     }
 };
 
+/**
+ * SuspendPort view interface
+ * @class
+ */
 org.dedu.draw.shape.simple.SuspendPortViewInterface = {
     initialize:function(options){
         if(options.skip_render){
@@ -46,7 +44,11 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
         this.renderSuspendPort();
         //this.update();
     },
-
+    /**
+     * 渲染suspend port
+     * @method renderSuspendPort
+     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     */
     renderSuspendPort: function () {
 
         var suspendTemplate = _.template(this.model.suspendPortMarkup);
@@ -82,13 +84,22 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
 
         this.trigger('add:ports');
     },
-
+    /**
+     * show suspend port
+     * method showSuspendPort
+     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     */
     showSuspendPort: function () {
         this.up.attr('display','block');
         this.right.attr('display','block');
         this.down.attr('display','block');
         this.left.attr('display','block');
     },
+    /**
+     * hide suspend port
+     * method hideSuspendPort
+     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     */
     hideSuspendPort: function () {
         this.up.attr('display','none');
         this.right.attr('display','none');
@@ -97,6 +108,11 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
     }
 };
 
+/**
+ * A model class implements suspend port
+ * @class
+ * @augments org.dedu.draw.shape.basic.Generic
+ */
 org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
     _.extend(
         {},
@@ -119,6 +135,16 @@ org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
 
                 }
             }, org.dedu.draw.shape.basic.Generic.prototype.defaults),
+            /**
+             * get relative position for port
+             * @param portName
+             * @param index
+             * @param total
+             * @param selector
+             * @param type
+             * @returns {{}}
+             * @memberof org.dedu.draw.shape.simple.Generic
+             */
             getPortAttrs: function (portName,index,total,selector,type) {
                 var attrs = {};
 
@@ -136,20 +162,31 @@ org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
         })
 );
 
-
+/**
+ * A view class implements suspend port
+ * @class
+ * @augments org.dedu.draw.ElementView
+ */
 org.dedu.draw.shape.simple.GenericView = org.dedu.draw.ElementView.extend(
     _.extend({},org.dedu.draw.shape.simple.SuspendPortViewInterface,{
+        /**
+         * 显示连接到port的提示
+         * @param {DOMObject} el - port对应的domObject
+         * @param {Object} [opt]
+         */
         addTipMagnet: function (el, opt) {
             var port = V(el);
-
             if(port.attr('port') && !$(".tip-"+port.attr('port'),this.$el)[0]){
-
                 var tip = V('circle',{class:"tip tip-"+port.attr('port'),transform:port.attr('transform'),r:15,fill:'black',opacity:0.3});
                 this.rotatableNode.append(tip);
-
             }
             this.showSuspendPort(); // show four ports
         },
+        /**
+         * 移除提示
+         * @param el
+         * @param opt
+         */
         removeTipMagnet: function (el, opt) {
             var port = V(el);
             if($(".tip-"+port.attr('port'),this.$el)[0]){

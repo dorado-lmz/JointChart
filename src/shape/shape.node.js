@@ -1,13 +1,16 @@
-/**
- * Created by y50-70 on 3/1/2016.
- */
-
 org.dedu.draw.shape.node = {};
-
+/**
+ * @class
+ * @augments org.dedu.draw.shape.devs.Model
+ */
 org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
     defaults:org.dedu.draw.util.deepSupplement({
         markup: '<g class="rotatable"><g class="scalable"><g class="body nodegroup"/></g><text class="label"/><g class="inPorts"/><g class="outPorts"/></g>',
         type:'node.Model',
+        size:{
+            width:120,
+            height:28
+        },
         attrs:{
             'rect.node': {'width': 140, height: 30},
             '.port-body': {
@@ -17,7 +20,7 @@ org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
             },
             'rect.node_button_button_shadow':{'width': 32, height: 26},
             'rect.node_button_button':{'width': 16, height: 18},
-            '.label': {'ref-x': .5, 'ref-y':.3, ref: '.node', 'text-anchor': 'middle', fill: '#000'},
+            '.label': {'ref-x':.5, 'ref-y':.3, ref: '.node', 'text-anchor': 'middle', fill: '#000',style:{'font-weight':'normal'}},
         }
 
     },org.dedu.draw.shape.devs.Model.prototype.defaults),
@@ -38,6 +41,10 @@ org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
     }
 });
 
+/**
+ * @class
+ * @augments org.dedu.draw.shape.devs.ModelView
+ */
 org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
 
     options:{},
@@ -49,10 +56,11 @@ org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
         //获取绑定数据
         var data = this.model.data;
         var size = this.model.get('size');
-        var node_height = 30;
 
         var allAttrs = this.model.get('attrs');
-        allAttrs['.label'].text = data.type;
+        var l = data._def.label;
+        l = (typeof l === "function" ? l.call(data) : l)||"";
+        allAttrs['.label'].text = l;
 
         //判断节点是否需要按钮
         if (data._def.button) {
@@ -112,7 +120,7 @@ org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
                 .attr("fill", "#000")
                 .attr("fill-opacity", "0.05")
                 .attr("height", function () {
-                    return Math.min(50, data.h);
+                    return Math.min(50, size.height);
                 });
             icon_group.append(icon_shade);
 
@@ -126,7 +134,7 @@ org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
 
             var icon_shade_border = V('path')
                 .attr("d", function () {
-                    return "M 30 1 l 0 " + (data.h - 2)
+                    return "M 30 1 l 0 " + (size.height - 2)
                 })
                 .attr("class", "node_icon_shade_border")
                 .attr("stroke-opacity", "0.1")
@@ -138,7 +146,7 @@ org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
             if ("right" == data._def.align) {
                 icon_group.attr('class', 'node_icon_group node_icon_group_' + data._def.align);
                 icon_shade_border.attr("d", function () {
-                    return "M 0 1 l 0 " + (data.h - 2)
+                    return "M 0 1 l 0 " + (size.height - 2)
                 });
                 //icon.attr('class','node_icon node_icon_'+d._def.align);
                 //icon.attr('class','node_icon_shade node_icon_shade_'+d._def.align);

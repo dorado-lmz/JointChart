@@ -1,7 +1,21 @@
-
-
+/**
+ * `org.dedu.draw.Element`是所有节点的父类
+ * @class
+ * @augments org.dedu.draw.Cell
+ */
 org.dedu.draw.Element = org.dedu.draw.Cell.extend({
-
+    /**
+     * @member {Object} defaults - 默认属性
+     * @property {Object} defaults.position
+     * @property {number} defaults.position.x=0
+     * @property {number} defaults.position.y=0
+     * @property {Object} defaults.size
+     * @property {number} defaults.size.width=0
+     * @property {number} defaults.size.height=0
+     * @property {number} defaults.angle=0
+     * @property {number} defaults.selected=false
+     * @memberof org.dedu.draw.Element
+     */
     defaults: {
         position: {
             x: 0,
@@ -18,7 +32,14 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
     position:function(x,y,opt){
 
     },
-
+    /**
+     * @method translate - 更改position
+     * @param {Number} tx - x轴偏移量
+     * @param {Number} ty - y轴偏移量
+     * @param {Object} opt
+     * @returns {org.dedu.draw.Element}
+     * @memberof org.dedu.draw.Element
+     */
     translate:function(tx,ty,opt){
         tx = tx || 0;
         ty = ty || 0;
@@ -52,6 +73,14 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
 
     },
 
+    /**
+     * @method resize - 更改resize
+     * @param {Number} width - 宽度
+     * @param {Number} height - 高度
+     * @param {Object} opt
+     * @returns {org.dedu.draw.Element}
+     * @memberof org.dedu.draw.Element
+     */
     resize: function (width, height, opt) {
         this.set('size', { width: width, height: height }, opt);
         return this;
@@ -59,9 +88,31 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
 
 });
 
-
+/**
+ * `org.dedu.draw.ElementView`是`org.dedu.draw.Element`的view
+ * @class
+ * @augments  org.dedu.draw.CellView
+ */
 org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
-
+    /**
+     * 用于attrs的特殊属性
+     * * style : An object containing CSS styles for a subelement
+     * * text : Valid only for <text> subelements.  text attribute contains the text that will be set either directly to the <text> subelement or its <tspan> children depending on whether the text is multiline or not (contains '\n' character(s)).
+     * * html :
+     * * ref-x : [.5/'50%'/20] > 相对于ref的参照物，x轴的相对距离，如果使用[0,1]或百分比的形式表示比例，或者20表示20px的相对偏移
+     * * ref-y : 与ref-x相似
+     * * ref-dx : Make x-coordinate of the subelement relative to the right edge of the element referenced to by the selector in ref attribute.
+     * * ref-dy : Make y-coordinate of the subelement relative to the bottom edge of the element referenced to by the selector in ref attribute.
+     * * ref-width :
+     * * ref-height :
+     * * ref : 'css selector' > 比如图元中的label使用svg的text标签实现，label相对于图元处于正中间，这种相对定位，使用ref属性
+     * * x-alignment' : 如果设置为'middle',子元素会相对于该元素水平居中
+     * * y-alignment' : 垂直居中
+     * * port : An object containing at least an id property. This property uniquely identifies the port. If a link gets connected to a magnet that has also a port object defined, the id property of the port object will be copied to the port property of the source/target of the link.
+     * @member {Array}
+     * @memberof org.dedu.draw.ElementView
+     *
+     */
     SPECIAL_ATTRIBUTES:[
         'style',
         'text',
@@ -78,6 +129,12 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         'port'
     ],
 
+    /**
+     * set the attribute of dom node Dom节点的attribute
+     * @returns {String}
+     * @instance
+     * @memberof org.dedu.draw.ElementView
+     */
     className:function(){
         return 'element node '+this.model.get('type').replace('.',' ','g')
     },
@@ -144,7 +201,12 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         this.update();
     },
 
-    // Default is to process the `attrs` object and set attributes on subelements based on the selectors.
+    /**
+     * Default is to process the `attrs` object and set attributes on subelements based on the selectors.
+     * @method update
+     * @param [cell]
+     * @param renderingOnlyAttrs
+     */
     update: function(cell, renderingOnlyAttrs) {
 
         var allAttrs = this.model.get('attrs');
@@ -288,6 +350,15 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         }
     },
 
+    /**
+     * 相对定位
+     * @private
+     * @mehtod positionRelative
+     * @param vel
+     * @param bbox
+     * @param attributes
+     * @param nodesBySelector
+     */
     positionRelative: function(vel, bbox, attributes, nodesBySelector) {
 
         var ref = attributes['ref'];
@@ -496,6 +567,13 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         this.vel.attr('transform','translate('+position.x+','+position.y+')');
     },
 
+    /**
+     * 在`rect`内的view
+     * @method findMagnetsInArea
+     * @param rect
+     * @param opt
+     * @returns {Array}
+     */
     findMagnetsInArea:function(rect, opt) {
         rect = g.rect(rect);
         var views = [this.up,this.down,this.left,this.right];
@@ -507,6 +585,13 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         },this);
     },
 
+    /**
+     * 处理鼠标按下事件
+     * @method pointerdown
+     * @param {Event} evt
+     * @param {Number} x - 鼠标点击位置的x坐标
+     * @param {Number} y - 鼠标点击位置的y坐标
+     */
     pointerdown:function(evt,x,y){
         var paper = this.paper;
 
@@ -551,7 +636,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
                  link.set({
                      source: {
                          id: this.model.id,
-                         redID:this.model.get('redID'),
+                         redID: this.model.get('redID'),
                          selector: this.getSelector(evt.target),
                          port: evt.target.getAttribute('port')
                      },
@@ -559,11 +644,6 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
              }
              link.set({
                  target: { x: x, y: y },
-                 attrs: {
-                     '.marker-target': {
-                         d: 'M 10 0 L 0 5 L 10 10 z'
-                     }
-                 }
              });
 
 
@@ -586,6 +666,14 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         this._closestView = null;
     },
 
+    /**
+     * 处理鼠标move事件
+     * @method pointermove
+     * @param {Event} evt
+     * @param {Number} tx
+     * @param {Number} ty
+     * @param localPoint
+     */
     pointermove:function(evt,tx,ty,localPoint){
         if(this._linkView){
             // let the linkview deal with this event
@@ -613,6 +701,13 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         }
     },
 
+    /**
+     * 处理鼠标up事件
+     * @method pointerup
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     */
     pointerup:function(evt,x,y){
         if (this._linkView) {
 

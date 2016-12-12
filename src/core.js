@@ -12,7 +12,9 @@ var org = {
 
             // `joint.routers` namespace.
             routers: {},
-
+            /**
+             * @namespace org.dedu.draw.util
+             */
             util: {
 
                 // Return a simple hash code from a string. See http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/.
@@ -28,6 +30,17 @@ var org = {
                     return hash;
                 },
 
+                /**
+                 * Return a value at the path in a nested object. delim is the delimiter used in the path
+                 * @example
+                 * 
+                 * joint.util.getByPath({ a: { aa: { aaa: 3 } } }, 'a/aa/aaa', '/');//3
+                 * 
+                 * @param {Object} obj
+                 * @param {String} path
+                 * @param {String} delim
+                 * @returns {*}
+                 */
                 getByPath: function(obj, path, delim) {
 
                     delim = delim || '/';
@@ -45,6 +58,20 @@ var org = {
                     return obj;
                 },
 
+                /**
+                 * Set a value at the path in a nested object. delim is the delimiter used in the path
+                 *  Returns the augmented object
+                 *  @example
+                 *  
+                 *  joint.util.setByPath({ b: {bb:{}} }, 'b/bb/bbb', 2, '/');
+                 *  //{ b: {bb:{bbb:2}} },
+                 *  
+                 * @param {Object} obj
+                 * @param {String} path
+                 * @param {*} value
+                 * @param {String} delim
+                 * @returns {Object}
+                 */
                 setByPath: function(obj, path, value, delim) {
 
                     delim = delim || '/';
@@ -67,6 +94,18 @@ var org = {
                     return obj;
                 },
 
+                /**
+                 * Unset (delete) a property at the path in a nested object. delim is the delimiter used in the path. Returns the augmented object.
+                 * @example
+                 * 
+                 * joint.util.unsetByPath({ a: { aa: { aaa: 3 } } }, 'a/aa/aaa', '/');
+                 * // { a: { aa: {} } }
+                 * 
+                 * @param {Object} obj
+                 * @param {String} path
+                 * @param {String} delim
+                 * @returns {Object}
+                 */
                 unsetByPath: function(obj, path, delim) {
 
                     delim = delim || '/';
@@ -92,6 +131,28 @@ var org = {
                     return obj;
                 },
 
+                /**
+                 * Flatten a nested object up until the stop function returns true.
+                 * * The  stop function takes the value of the node currently traversed
+                 * * delim is a delimiter for the combined keys in the resulting object
+                 * @example
+                 * org.dedu.draw.flattenObject({
+                 *  a:{
+                 *      a1:{
+                 *          a2:1
+                 *      }
+                 *  }
+                 * ),"/",function(v){return !!v.a2;}}
+                 * result:
+                 * {
+                 * "a/a1/a2":1
+                 * }
+                 *
+                 * @param {Object} obj
+                 * @param {String} delim
+                 * @param stop
+                 * @returns {Object}
+                 */
                 flattenObject: function(obj, delim, stop) {
 
                     delim = delim || '/';
@@ -124,6 +185,10 @@ var org = {
                     return ret;
                 },
 
+                /**
+                 * Return a pseudo-UUID.
+                 * @returns {string}
+                 */
                 uuid: function() {
 
                     // credit: http://stackoverflow.com/posts/2117523/revisions
@@ -135,7 +200,11 @@ var org = {
                     });
                 },
 
-                // Generate global unique id for obj and store it as a property of the object.
+                /** Generate global unique id for obj and store it as a property of the object.
+                 * Return an identifier unique for the page.
+                 * @param {Object} obj
+                 * @returns {string|*}
+                 */
                 guid: function(obj) {
 
                     this.guid.id = this.guid.id || 1;
@@ -192,13 +261,14 @@ var org = {
                     return target;
                 },
 
-                // Copy all properties to the first argument from the following
-                // arguments only in case if they don't exists in the first argument.
-                // All the function propererties in the first argument will get
-                // additional property base pointing to the extenders same named
-                // property function's call method.
+                /**
+                 * * Copy all properties to the first argument from the following \
+                 * arguments only in case if they don't exists in the first argument.
+                 * * All the function propererties in the first argument will get \
+                 *  additional property base pointing to the extenders same named property function's call method.
+                 * @returns {*}
+                 */
                 supplement: function() {
-
                     this.mixin.supplement = true;
                     var ret = this.mixin.apply(this, arguments);
                     this.mixin.supplement = false;
@@ -214,7 +284,10 @@ var org = {
                     return ret;
                 },
 
-                // Same as `supplement()` but deep version.
+                /** Same as `supplement()` but deep version.
+                 * @method deepSupplement
+                 * @returns {*}
+                 */
                 deepSupplement: function() {
 
                     this.mixin.deep = this.mixin.supplement = true;
@@ -223,6 +296,16 @@ var org = {
                     return ret;
                 },
 
+                /**
+                 * get orginal event
+                 * @method normalizeEvent
+                 * @param {JQueryEvent|*} evt
+                 * @example
+                 * 
+                 * var evt = org.dedu.draw.util.normalizeEvent(evt);
+                 * 
+                 * @returns {*}
+                 */
                 normalizeEvent: function(evt) {
 
                     var touchEvt = evt.originalEvent && evt.originalEvent.changedTouches && evt.originalEvent.changedTouches[0];
@@ -556,6 +639,12 @@ var org = {
                     img.src = url;
                 },
 
+                /**
+                 * Return a bounding box of the element el and can handle both HTML and SVG elements
+                 * The resulting object is of the form:`{ x: Number, y: Number, width: Number, height: Number }`
+                 * @param {DOMObject|SVGObject} el
+                 * @returns {*}
+                 */
                 getElementBBox: function(el) {
 
                     var $el = $(el);
@@ -626,8 +715,20 @@ var org = {
                     });
                 },
 
-                // Sets attributes on the given element and its descendants based on the selector.
-                // `attrs` object: { [SELECTOR1]: { attrs1 }, [SELECTOR2]: { attrs2}, ... } e.g. { 'input': { color : 'red' }}
+                /** Sets attributes on the given element and its descendants based on the selector.
+                *`attrs` object: { [SELECTOR1]: { attrs1 }, [SELECTOR2]: { attrs2}, ... } e.g. { 'input': { color : 'red' }}
+                 * @method setAttributesBySelector
+                 * @param {DOMObject|SVGObject} element
+                 * @param {Object} attrs
+                 * @example
+                 * 
+                 * var myEl = document.querySelector('.mydiv');
+                 * org.dedu.draw.util.setAttributesBySelector(myEl,{
+                 *  '.mydiv': { 'data-foo': 'bar' },    // Note the reference to the myEl element itself.
+                 *  'input': { 'value': 'my value' }   // descendant input
+                 * });
+                 * 
+                */
                 setAttributesBySelector: function(element, attrs) {
 
                     var $element = $(element);
@@ -952,11 +1053,23 @@ var org = {
                     }
                 },
 
+                /**
+                 * @namespace org.dedu.draw.util.format
+                 */
                 format: {
 
-                    // Formatting numbers via the Python Format Specification Mini-language.
-                    // See http://docs.python.org/release/3.1.3/library/string.html#format-specification-mini-language.
-                    // Heavilly inspired by the D3.js library implementation.
+                    /** Formatting numbers via the Python Format Specification Mini-language.
+                     * See http://docs.python.org/release/3.1.3/library/string.html#format-specification-mini-language.
+                     * Heavilly inspired by the D3.js library implementation.
+                     * @method number
+                     * @example
+                     * 
+                     * joint.util.format.number('.2f', 5)    // 5.00
+                     * joint.util.format.number('03d', 5)    // 005
+                     * joint.util.format.number('.1%', .205)    // 20.5%
+                     * joint.util.format.number('*^9', 5)    // ****5****
+                     * 
+                     */
                     number: function(specifier, value, locale) {
 
                         locale = locale || {

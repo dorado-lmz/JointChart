@@ -5,6 +5,11 @@
 org.dedu.draw.shape.uml = {
 };
 
+/**
+ * `StartState`
+ * @class
+ * @augments org.dedu.draw.shape.simple.Generic
+ */
 org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
     markup:[
         '<g class="rotatable">',
@@ -45,6 +50,10 @@ org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
     }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
 });
 
+/**
+ * @class
+ * @augments org.dedu.draw.shape.simple.Generic
+ */
 org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
         markup: [
             '<g class="rotatable">',
@@ -89,6 +98,10 @@ org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
        }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
 });
 
+/**
+ * @class
+ * @augments org.dedu.draw.shape.simple.Generic.
+ */
 org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
     markup: [
         '<g class="rotatable">',

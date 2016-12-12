@@ -1,0 +1,65 @@
+disable-selection()
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+component-border()
+   border: 1px solid primary-border-color;
+   box-sizing: border-box;
+
+workspace-button()
+    disable-selection()
+    color: $workspace-button-color;
+    box-sizing: border-box;
+    display: inline-block;
+    background: $workspace-button-background;
+    border: 1px solid $secondary-border-color;
+    text-align: center;
+    margin:0;
+    text-decoration: none;
+    cursor:pointer;
+    &.disabled {
+        cursor: default;
+        color: $workspace-button-color-disabled;
+    }
+    &:not(.disabled):hover {
+        text-decoration: none;
+        color: $workspace-button-color-hover;
+        background: $workspace-button-background-hover;
+    }
+    &:not(.disabled):focus {
+        color: $workspace-button-color-focus;
+        text-decoration: none;
+    }
+    &:not(.disabled):active {
+        color: $workspace-button-color-active;
+        background: $workspace-button-background-active;
+        text-decoration: none;
+    }
+
+
+component-footer()
+    border-top: 1px solid $primary-border-color;
+    background: #f3f3f3;
+    text-align: right;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 25px;
+    line-height: 23px;
+    padding: 0 10px;
+
+
+component-footer-button()
+    workspace-button()
+    font-size: 11px;
+    line-height: 17px;
+    width: 18px;
+    height: 18px;
+    &.text-button
+        width: auto;
+        padding: 0 5px;
+

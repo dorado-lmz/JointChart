@@ -1,0 +1,23 @@
+{
+	"tags": {
+		"allowUnknownTags" : true
+	},
+	"source": {
+  	    "include": ["src"],
+  	    "exclude": ["src/vectorizer.js","src/geometry.js"]
+  	},
+	"plugins": ["plugins/markdown"],
+	"templates": {
+		"cleverLinks": true,
+		"monospaceLinks": true,
+		"default": {
+			"outputSourceFiles" : false
+		},
+		"applicationName": "Joint_Chart"
+	},
+	"markdown": {
+		"parser": "gfm",
+		"hardwrap": true,
+		"tags": ["examples"]
+	}
+}
