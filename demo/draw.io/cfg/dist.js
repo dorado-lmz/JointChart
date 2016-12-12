@@ -12,7 +12,7 @@ let BowerWebpackPlugin = require('bower-webpack-plugin');
 let config = Object.assign({}, baseConfig, {
   entry: path.join(__dirname, '../src/index'),
   cache: false,
-  devtool: 'sourcemap',
+  devtool: false,
   plugins: [
     new webpack.optimize.DedupePlugin(),
     new webpack.DefinePlugin({
@@ -26,7 +26,15 @@ let config = Object.assign({}, baseConfig, {
     new webpack.optimize.AggressiveMergingPlugin(),
     new webpack.NoErrorsPlugin()
   ],
-  module: defaultSettings.getDefaultModules()
+  module: defaultSettings.getDefaultModules(),
+  externals:{
+    "jquery": "jQuery",
+    "lodash": "_",
+    "backbone": "Backbone",
+    "joint_chart": "org",
+    "react": "React",
+    "react-dom": "ReactDOM"
+  }
 });
 
 // Add needed loaders to the defaults here

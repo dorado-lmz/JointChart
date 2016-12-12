@@ -1,7 +1,6 @@
-import {Accordion,Panel} from 'react-bootstrap'
-
+import Accordion from 'react-bootstrap/lib/Accordion'
+import Panel from 'react-bootstrap/lib/Panel'
 import React from 'react';
-import createFragment from 'react-addons-create-fragment';
 
 class PaletteComponent extends React.Component {
 	constructor(){
@@ -26,7 +25,6 @@ class PaletteComponent extends React.Component {
                     <ElemComponent category={category} elems={Object.keys(basicElements[category])}/>
 		             	</Panel>
 	            	)}
-
 	            </Accordion>
 	            <div id="palette-footer">
 	                <a className="palette-button" id="palette-collapse-all" href="#">

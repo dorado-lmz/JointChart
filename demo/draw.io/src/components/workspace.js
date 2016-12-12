@@ -4,7 +4,6 @@ import $ from 'jquery';
 import Backbone from 'backbone';
 //import {org} from 'imports?$=jquery,_=lodash,Backbone=backbone!../joint_chart.min.js';
 import org from 'joint_chart';
-
 import {getConfigByType} from '../stores/chart_utils.js';
 
 class WorkspaceComponent extends React.Component {
