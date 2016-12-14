@@ -1,0 +1,132 @@
+@mixin stickCenterH {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+@mixin stickCenterV {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.stickCenter,
+.iconoo-state-end::before,
+.iconoo-terminate::before,
+.iconoo-terminate::after,
+.iconoo-history::before,
+.iconoo-history::after {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.iconoo-state-start {
+  height: 1.5em;
+  width: 1.5em;
+  border-radius: 50%;
+  border: strokeSize solid;
+  background: currentColor;
+}
+.iconoo-state-end {
+  height: 1.5em;
+  width: 1.5em;
+  border-radius: 50%;
+  border: 5px solid;
+}
+.iconoo-state-end::before {
+  border-radius: 50%;
+  position: absolute;
+  width: 0.7em;
+  height: 0.7em;
+  background: currentColor;
+}
+.iconoo-state {
+  width: 1.5em;
+  height: 1em;
+  border-radius: 0.2em;
+  box-shadow: 0 0 0 2px;
+}
+.iconoo-branch {
+  width: 1em;
+  height: 1em;
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 2px;
+}
+.iconoo-terminate {
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px;
+  transform: rotate(45deg);
+}
+.iconoo-terminate::before,
+.iconoo-terminate::after {
+  box-shadow: inset 0 0 0 1em;
+}
+.iconoo-terminate::before {
+  width: 1.5em;
+  height: 2px;
+}
+.iconoo-terminate::after {
+  height: 1.5em;
+  width: 2px;
+}
+.iconoo-history {
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px;
+}
+.iconoo-history::before {
+  height: 2px;
+  width: 0.8em;
+  box-shadow: inset 0 0 0 2px;
+}
+.iconoo-history::after {
+  height: 0.9em;
+  width: 2px;
+  box-shadow: -0.4em 0 0, 0.4em 0 0;
+}
+.iconoo-detail-history {
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px;
+}
+.iconoo-detail-history::before {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 1;
+  left: 0.3em;
+  margin: 0 auto;
+  height: 2px;
+  width: 0.6em;
+  box-shadow: inset 0 0 0 2px;
+}
+.iconoo-detail-history::after {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  content: "*" !important;
+  height: 0.7em;
+  width: 2px;
+  box-shadow: -0.45em 0 0, 0.15em 0 0;
+  text-indent: 0.3em;
+}
+[class*="iconoo-"] {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  font-style: normal;
+  text-align: left;
+  direction: ltr;
+}
+[class*="iconoo-"]::before,
+[class*="iconoo-"]::after {
+  content: '';
+}
+[class*="iconoo-"],
+[class*="iconoo-"] * {
+  box-sizing: border-box;
+}

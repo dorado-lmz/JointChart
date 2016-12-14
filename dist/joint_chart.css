@@ -1,0 +1,78 @@
+.element *{
+    vector-effect: non-scaling-stroke;
+}
+
+#shape_controls{
+    position: absolute;
+    pointer-events:none;
+}
+.shape_controller {
+    position: absolute;
+    border-style: solid;
+    border-width: 1px;
+    background: white;
+    pointer-events:auto;
+    width:6px;
+    height:6px;
+    border-color: rgb(136, 51, 51);
+}
+
+.shape_controller.n.w {
+    left: -4px;
+    top: -4px;
+    cursor: nw-resize;
+}
+.shape_controller.n.e{
+
+    cursor: ne-resize;
+}
+.shape_controller.s.w{
+
+    cursor: sw-resize;
+}
+.shape_controller.s.e{
+
+    cursor: se-resize;
+}
+
+.highlighted{
+    fill: #ff7f0e !important;
+}
+
+.connection_background{
+    fill:none;
+    cursor: crosshair;
+    stroke: #fff;
+    opacity: 0;
+    stroke-width: 20;
+}
+.connection_outline{
+    fill:none;
+    cursor: crosshair;
+    stroke: #fff;
+    stroke-width: 4;
+    pointer-events: none;
+}
+.connection_line{
+    fill:none;
+    cursor: crosshair;
+    stroke-width:3;
+    pointer-events: none;
+}
+
+.selected{
+    stroke-width: 2;
+    stroke: #ff7f0e !important;
+}
+
+.suspend:hover{
+    cursor:crosshair;
+}
+
+.marker-arrowheads {
+    opacity: 0;
+    cursor: move;
+    cursor: -webkit-grab;
+    cursor: -moz-grab;
+    /*   display: none;   */   /* setting `display: none` on .marker-arrowheads effectivelly switches of links reconnecting */
+}
