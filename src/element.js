@@ -1,9 +1,9 @@
 /**
- * `org.dedu.draw.Element`是所有节点的父类
+ * `dedu.Element`是所有节点的父类
  * @class
- * @augments org.dedu.draw.Cell
+ * @augments dedu.Cell
  */
-org.dedu.draw.Element = org.dedu.draw.Cell.extend({
+dedu.Element = dedu.Cell.extend({
     /**
      * @member {Object} defaults - 默认属性
      * @property {Object} defaults.position
@@ -14,7 +14,7 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
      * @property {number} defaults.size.height=0
      * @property {number} defaults.angle=0
      * @property {number} defaults.selected=false
-     * @memberof org.dedu.draw.Element
+     * @memberof dedu.Element
      */
     defaults: {
         position: {
@@ -37,8 +37,8 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
      * @param {Number} tx - x轴偏移量
      * @param {Number} ty - y轴偏移量
      * @param {Object} opt
-     * @returns {org.dedu.draw.Element}
-     * @memberof org.dedu.draw.Element
+     * @returns {dedu.Element}
+     * @memberof dedu.Element
      */
     translate:function(tx,ty,opt){
         tx = tx || 0;
@@ -78,8 +78,8 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
      * @param {Number} width - 宽度
      * @param {Number} height - 高度
      * @param {Object} opt
-     * @returns {org.dedu.draw.Element}
-     * @memberof org.dedu.draw.Element
+     * @returns {dedu.Element}
+     * @memberof dedu.Element
      */
     resize: function (width, height, opt) {
         this.set('size', { width: width, height: height }, opt);
@@ -89,11 +89,11 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
 });
 
 /**
- * `org.dedu.draw.ElementView`是`org.dedu.draw.Element`的view
+ * `dedu.ElementView`是`dedu.Element`的view
  * @class
- * @augments  org.dedu.draw.CellView
+ * @augments  dedu.CellView
  */
-org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
+dedu.ElementView = dedu.CellView.extend({
     /**
      * 用于attrs的特殊属性
      * * style : An object containing CSS styles for a subelement
@@ -110,7 +110,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
      * * y-alignment' : 垂直居中
      * * port : An object containing at least an id property. This property uniquely identifies the port. If a link gets connected to a magnet that has also a port object defined, the id property of the port object will be copied to the port property of the source/target of the link.
      * @member {Array}
-     * @memberof org.dedu.draw.ElementView
+     * @memberof dedu.ElementView
      *
      */
     SPECIAL_ATTRIBUTES:[
@@ -133,7 +133,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
      * set the attribute of dom node Dom节点的attribute
      * @returns {String}
      * @instance
-     * @memberof org.dedu.draw.ElementView
+     * @memberof dedu.ElementView
      */
     className:function(){
         return 'element node '+this.model.get('type').replace('.',' ','g')
@@ -144,7 +144,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         if(options.skip_render){
             return;
         }
-        org.dedu.draw.CellView.prototype.initialize.apply(this, arguments);
+        dedu.CellView.prototype.initialize.apply(this, arguments);
 
         _.bindAll(this, 'translate', 'resize', 'rotate');
 
@@ -660,7 +660,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
 
 
             this.restrictedArea = paper.getRestrictedArea(this);
-            org.dedu.draw.CellView.prototype.pointerdown.apply(this, arguments);
+            dedu.CellView.prototype.pointerdown.apply(this, arguments);
             this.notify('element:pointerdown', evt, x, y);
         }
         this._closestView = null;
@@ -696,7 +696,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
 
             //this._dx = g.snapToGrid(x, grid);
             //this._dy = g.snapToGrid(y, grid);
-            org.dedu.draw.CellView.prototype.pointermove.apply(this, arguments);
+            dedu.CellView.prototype.pointermove.apply(this, arguments);
             this.notify('element:pointermove', evt, tx, ty);
         }
     },
@@ -726,7 +726,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
 
         }else{
             this.notify('element:pointerup', evt, x, y);
-            org.dedu.draw.CellView.prototype.pointerup.apply(this, arguments);
+            dedu.CellView.prototype.pointerup.apply(this, arguments);
         }
     }
 

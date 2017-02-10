@@ -6,17 +6,48 @@ import React from 'react';
 import PaletteComponent from './palette.js';
 import WorkspaceComponent from './workspace.js';
 import SidebarComponent from './sidebar.js';
+import SettingsComponent from './SettingsComponent.js';
+
 
 class AppComponent extends React.Component {
+  constructor(){
+    super();
+    this.graph = new dedu.Graph({},{
+      tabs: true
+    });
+    this.state = {
+      dialog: {
+        show: false
+      }
+    }
+    this.openDialog = this.openDialog.bind(this);
+    this.closeDialog = this.closeDialog.bind(this);
+  }
   render() {
     return (
       <div className="index">
         <PaletteComponent />
-        <WorkspaceComponent />
+        <WorkspaceComponent graph={this.graph} openDialog={this.openDialog}/>
         <SeparatorComponent position="sidebar"/>
-        <SidebarComponent/>
+        <SidebarComponent graph={this.graph}/>
+        <SettingsComponent dialog={this.state.dialog} closeDialog={this.closeDialog}/>
       </div>
     );
+  }
+  closeDialog(){
+    this.setState({
+      dialog: {
+        show: false
+      }
+    })
+  }
+  openDialog(config){
+    this.setState({
+      dialog: {
+        show: true,
+        config: config
+      }
+    })
   }
 }
 

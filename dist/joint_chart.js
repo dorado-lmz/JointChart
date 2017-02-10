@@ -1,19 +1,3 @@
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    // AMD. Register as an anonymous module unless amdModuleId is set
-    define([], function () {
-      return (root['org'] = factory());
-    });
-  } else if (typeof module === 'object' && module.exports) {
-    // Node. Does not work with strict CommonJS, but
-    // only CommonJS-like environments that support module.exports,
-    // like Node.
-    module.exports = factory();
-  } else {
-    root['org'] = factory();
-  }
-}(this, function () {
-
 // Vectorizer.
 // -----------
 
@@ -2156,1330 +2140,1326 @@ var g = (function() {
 
 })();
 
-
-SVGElement.prototype.getTransformToElement = SVGElement.prototype.getTransformToElement || function (toElement) {
-            return toElement.getScreenCTM().inverse().multiply(this.getScreenCTM());
+SVGElement.prototype.getTransformToElement = SVGElement.prototype.getTransformToElement || function(toElement) {
+    return toElement.getScreenCTM().inverse().multiply(this.getScreenCTM());
 };
 
-var org = {
-    dedu: {
-        draw: {
+var dedu = {
 
-            // `joint.connectors` namespace.
-            connectors: {},
 
-            // `joint.routers` namespace.
-            routers: {},
-            /**
-             * @namespace org.dedu.draw.util
-             */
-            util: {
+    // `joint.connectors` namespace.
+    connectors: {},
 
-                // Return a simple hash code from a string. See http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/.
-                hashCode: function(str) {
+    // `joint.routers` namespace.
+    routers: {},
+    /**
+     * @namespace dedu.util
+     */
+    util: {
 
-                    var hash = 0;
-                    if (str.length == 0) return hash;
-                    for (var i = 0; i < str.length; i++) {
-                        var c = str.charCodeAt(i);
-                        hash = ((hash << 5) - hash) + c;
-                        hash = hash & hash; // Convert to 32bit integer
-                    }
-                    return hash;
-                },
+        // Return a simple hash code from a string. See http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/.
+        hashCode: function(str) {
 
-                /**
-                 * Return a value at the path in a nested object. delim is the delimiter used in the path
-                 * @example
-                 * 
-                 * joint.util.getByPath({ a: { aa: { aaa: 3 } } }, 'a/aa/aaa', '/');//3
-                 * 
-                 * @param {Object} obj
-                 * @param {String} path
-                 * @param {String} delim
-                 * @returns {*}
-                 */
-                getByPath: function(obj, path, delim) {
+            var hash = 0;
+            if (str.length == 0) return hash;
+            for (var i = 0; i < str.length; i++) {
+                var c = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + c;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return hash;
+        },
 
-                    delim = delim || '/';
-                    var keys = path.split(delim);
-                    var key;
+        /**
+         * Return a value at the path in a nested object. delim is the delimiter used in the path
+         * @example
+         * 
+         * joint.util.getByPath({ a: { aa: { aaa: 3 } } }, 'a/aa/aaa', '/');//3
+         * 
+         * @param {Object} obj
+         * @param {String} path
+         * @param {String} delim
+         * @returns {*}
+         */
+        getByPath: function(obj, path, delim) {
 
-                    while (keys.length) {
-                        key = keys.shift();
-                        if (Object(obj) === obj && key in obj) {
-                            obj = obj[key];
-                        } else {
-                            return undefined;
-                        }
-                    }
-                    return obj;
-                },
+            delim = delim || '/';
+            var keys = path.split(delim);
+            var key;
 
-                /**
-                 * Set a value at the path in a nested object. delim is the delimiter used in the path
-                 *  Returns the augmented object
-                 *  @example
-                 *  
-                 *  joint.util.setByPath({ b: {bb:{}} }, 'b/bb/bbb', 2, '/');
-                 *  //{ b: {bb:{bbb:2}} },
-                 *  
-                 * @param {Object} obj
-                 * @param {String} path
-                 * @param {*} value
-                 * @param {String} delim
-                 * @returns {Object}
-                 */
-                setByPath: function(obj, path, value, delim) {
+            while (keys.length) {
+                key = keys.shift();
+                if (Object(obj) === obj && key in obj) {
+                    obj = obj[key];
+                } else {
+                    return undefined;
+                }
+            }
+            return obj;
+        },
 
-                    delim = delim || '/';
+        /**
+         * Set a value at the path in a nested object. delim is the delimiter used in the path
+         *  Returns the augmented object
+         *  @example
+         *  
+         *  joint.util.setByPath({ b: {bb:{}} }, 'b/bb/bbb', 2, '/');
+         *  //{ b: {bb:{bbb:2}} },
+         *  
+         * @param {Object} obj
+         * @param {String} path
+         * @param {*} value
+         * @param {String} delim
+         * @returns {Object}
+         */
+        setByPath: function(obj, path, value, delim) {
 
-                    var keys = path.split(delim);
-                    var diver = obj;
-                    var i = 0;
+            delim = delim || '/';
 
-                    if (path.indexOf(delim) > -1) {
+            var keys = path.split(delim);
+            var diver = obj;
+            var i = 0;
 
-                        for (var len = keys.length; i < len - 1; i++) {
-                            // diver creates an empty object if there is no nested object under such a key.
-                            // This means that one can populate an empty nested object with setByPath().
-                            diver = diver[keys[i]] || (diver[keys[i]] = {});
-                        }
-                        diver[keys[len - 1]] = value;
-                    } else {
-                        obj[path] = value;
-                    }
-                    return obj;
-                },
+            if (path.indexOf(delim) > -1) {
 
-                /**
-                 * Unset (delete) a property at the path in a nested object. delim is the delimiter used in the path. Returns the augmented object.
-                 * @example
-                 * 
-                 * joint.util.unsetByPath({ a: { aa: { aaa: 3 } } }, 'a/aa/aaa', '/');
-                 * // { a: { aa: {} } }
-                 * 
-                 * @param {Object} obj
-                 * @param {String} path
-                 * @param {String} delim
-                 * @returns {Object}
-                 */
-                unsetByPath: function(obj, path, delim) {
+                for (var len = keys.length; i < len - 1; i++) {
+                    // diver creates an empty object if there is no nested object under such a key.
+                    // This means that one can populate an empty nested object with setByPath().
+                    diver = diver[keys[i]] || (diver[keys[i]] = {});
+                }
+                diver[keys[len - 1]] = value;
+            } else {
+                obj[path] = value;
+            }
+            return obj;
+        },
 
-                    delim = delim || '/';
+        /**
+         * Unset (delete) a property at the path in a nested object. delim is the delimiter used in the path. Returns the augmented object.
+         * @example
+         * 
+         * joint.util.unsetByPath({ a: { aa: { aaa: 3 } } }, 'a/aa/aaa', '/');
+         * // { a: { aa: {} } }
+         * 
+         * @param {Object} obj
+         * @param {String} path
+         * @param {String} delim
+         * @returns {Object}
+         */
+        unsetByPath: function(obj, path, delim) {
 
-                    // index of the last delimiter
-                    var i = path.lastIndexOf(delim);
+            delim = delim || '/';
 
-                    if (i > -1) {
+            // index of the last delimiter
+            var i = path.lastIndexOf(delim);
 
-                        // unsetting a nested attribute
-                        var parent = joint.util.getByPath(obj, path.substr(0, i), delim);
+            if (i > -1) {
 
-                        if (parent) {
-                            delete parent[path.slice(i + 1)];
-                        }
+                // unsetting a nested attribute
+                var parent = joint.util.getByPath(obj, path.substr(0, i), delim);
 
-                    } else {
+                if (parent) {
+                    delete parent[path.slice(i + 1)];
+                }
 
-                        // unsetting a primitive attribute
-                        delete obj[path];
-                    }
+            } else {
 
-                    return obj;
-                },
+                // unsetting a primitive attribute
+                delete obj[path];
+            }
 
-                /**
-                 * Flatten a nested object up until the stop function returns true.
-                 * * The  stop function takes the value of the node currently traversed
-                 * * delim is a delimiter for the combined keys in the resulting object
-                 * @example
-                 * org.dedu.draw.flattenObject({
-                 *  a:{
-                 *      a1:{
-                 *          a2:1
-                 *      }
-                 *  }
-                 * ),"/",function(v){return !!v.a2;}}
-                 * result:
-                 * {
-                 * "a/a1/a2":1
-                 * }
-                 *
-                 * @param {Object} obj
-                 * @param {String} delim
-                 * @param stop
-                 * @returns {Object}
-                 */
-                flattenObject: function(obj, delim, stop) {
+            return obj;
+        },
 
-                    delim = delim || '/';
-                    var ret = {};
+        /**
+         * Flatten a nested object up until the stop function returns true.
+         * * The  stop function takes the value of the node currently traversed
+         * * delim is a delimiter for the combined keys in the resulting object
+         * @example
+         * dedu.flattenObject({
+         *  a:{
+         *      a1:{
+         *          a2:1
+         *      }
+         *  }
+         * ),"/",function(v){return !!v.a2;}}
+         * result:
+         * {
+         * "a/a1/a2":1
+         * }
+         *
+         * @param {Object} obj
+         * @param {String} delim
+         * @param stop
+         * @returns {Object}
+         */
+        flattenObject: function(obj, delim, stop) {
 
-                    for (var key in obj) {
+            delim = delim || '/';
+            var ret = {};
 
-                        if (!obj.hasOwnProperty(key)) continue;
+            for (var key in obj) {
 
-                        var shouldGoDeeper = typeof obj[key] === 'object';
-                        if (shouldGoDeeper && stop && stop(obj[key])) {
-                            shouldGoDeeper = false;
-                        }
+                if (!obj.hasOwnProperty(key)) continue;
 
-                        if (shouldGoDeeper) {
+                var shouldGoDeeper = typeof obj[key] === 'object';
+                if (shouldGoDeeper && stop && stop(obj[key])) {
+                    shouldGoDeeper = false;
+                }
 
-                            var flatObject = this.flattenObject(obj[key], delim, stop);
+                if (shouldGoDeeper) {
 
-                            for (var flatKey in flatObject) {
-                                if (!flatObject.hasOwnProperty(flatKey)) continue;
-                                ret[key + delim + flatKey] = flatObject[flatKey];
-                            }
+                    var flatObject = this.flattenObject(obj[key], delim, stop);
 
-                        } else {
-
-                            ret[key] = obj[key];
-                        }
+                    for (var flatKey in flatObject) {
+                        if (!flatObject.hasOwnProperty(flatKey)) continue;
+                        ret[key + delim + flatKey] = flatObject[flatKey];
                     }
 
-                    return ret;
-                },
+                } else {
 
-                /**
-                 * Return a pseudo-UUID.
-                 * @returns {string}
-                 */
-                uuid: function() {
+                    ret[key] = obj[key];
+                }
+            }
 
-                    // credit: http://stackoverflow.com/posts/2117523/revisions
+            return ret;
+        },
 
-                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                        var r = Math.random() * 16 | 0;
-                        var v = c == 'x' ? r : (r & 0x3 | 0x8);
-                        return v.toString(16);
-                    });
-                },
+        /**
+         * Return a pseudo-UUID.
+         * @returns {string}
+         */
+        uuid: function() {
 
-                /** Generate global unique id for obj and store it as a property of the object.
-                 * Return an identifier unique for the page.
-                 * @param {Object} obj
-                 * @returns {string|*}
-                 */
-                guid: function(obj) {
+            // credit: http://stackoverflow.com/posts/2117523/revisions
 
-                    this.guid.id = this.guid.id || 1;
-                    obj.id = (obj.id === undefined ? 'j_' + this.guid.id++ : obj.id);
-                    return obj.id;
-                },
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0;
+                var v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        },
 
-                // Copy all the properties to the first argument from the following arguments.
-                // All the properties will be overwritten by the properties from the following
-                // arguments. Inherited properties are ignored.
-                mixin: function() {
+        /** Generate global unique id for obj and store it as a property of the object.
+         * Return an identifier unique for the page.
+         * @param {Object} obj
+         * @returns {string|*}
+         */
+        guid: function(obj) {
 
-                    var target = arguments[0];
+            this.guid.id = this.guid.id || 1;
+            obj.id = (obj.id === undefined ? 'j_' + this.guid.id++ : obj.id);
+            return obj.id;
+        },
 
-                    for (var i = 1, l = arguments.length; i < l; i++) {
+        // Copy all the properties to the first argument from the following arguments.
+        // All the properties will be overwritten by the properties from the following
+        // arguments. Inherited properties are ignored.
+        mixin: function() {
 
-                        var extension = arguments[i];
+            var target = arguments[0];
 
-                        // Only functions and objects can be mixined.
+            for (var i = 1, l = arguments.length; i < l; i++) {
 
-                        if ((Object(extension) !== extension) &&
-                            !_.isFunction(extension) &&
-                            (extension === null || extension === undefined)) {
+                var extension = arguments[i];
 
-                            continue;
+                // Only functions and objects can be mixined.
+
+                if ((Object(extension) !== extension) &&
+                    !_.isFunction(extension) &&
+                    (extension === null || extension === undefined)) {
+
+                    continue;
+                }
+
+
+                _.each(extension, function(copy, key) {
+
+                    if (this.mixin.deep && (Object(copy) === copy)) {
+
+                        if (!target[key]) {
+
+                            target[key] = _.isArray(copy) ? [] : {};
                         }
-                        
 
-                        _.each(extension, function(copy, key) {
+                        this.mixin(target[key], copy);
+                        return;
+                    }
 
-                            if (this.mixin.deep && (Object(copy) === copy)) {
+                    if (target[key] !== copy) {
 
-                                if (!target[key]) {
+                        if (!this.mixin.supplement || !target.hasOwnProperty(key)) {
 
-                                    target[key] = _.isArray(copy) ? [] : {};
+                            target[key] = copy;
+                        }
+
+                    }
+
+                }, this);
+            }
+
+            return target;
+        },
+
+        /**
+         * * Copy all properties to the first argument from the following \
+         * arguments only in case if they don't exists in the first argument.
+         * * All the function propererties in the first argument will get \
+         *  additional property base pointing to the extenders same named property function's call method.
+         * @returns {*}
+         */
+        supplement: function() {
+            this.mixin.supplement = true;
+            var ret = this.mixin.apply(this, arguments);
+            this.mixin.supplement = false;
+            return ret;
+        },
+
+        // Same as `mixin()` but deep version.
+        deepMixin: function() {
+
+            this.mixin.deep = true;
+            var ret = this.mixin.apply(this, arguments);
+            this.mixin.deep = false;
+            return ret;
+        },
+
+        /** Same as `supplement()` but deep version.
+         * @method deepSupplement
+         * @returns {*}
+         */
+        deepSupplement: function() {
+
+            this.mixin.deep = this.mixin.supplement = true;
+            var ret = this.mixin.apply(this, arguments);
+            this.mixin.deep = this.mixin.supplement = false;
+            return ret;
+        },
+
+        /**
+         * get orginal event
+         * @method normalizeEvent
+         * @param {JQueryEvent|*} evt
+         * @example
+         * 
+         * var evt = dedu.util.normalizeEvent(evt);
+         * 
+         * @returns {*}
+         */
+        normalizeEvent: function(evt) {
+
+            var touchEvt = evt.originalEvent && evt.originalEvent.changedTouches && evt.originalEvent.changedTouches[0];
+            if (touchEvt) {
+                for (var property in evt) {
+                    // copy all the properties from the input event that are not
+                    // defined on the touch event (functions included).
+                    if (touchEvt[property] === undefined) {
+                        touchEvt[property] = evt[property];
+                    }
+                }
+                return touchEvt;
+            }
+
+            return evt;
+        },
+
+        nextFrame: (function() {
+
+            var raf;
+
+            if (typeof window !== 'undefined') {
+
+                raf = window.requestAnimationFrame ||
+                    window.webkitRequestAnimationFrame ||
+                    window.mozRequestAnimationFrame ||
+                    window.oRequestAnimationFrame ||
+                    window.msRequestAnimationFrame;
+            }
+
+            if (!raf) {
+
+                var lastTime = 0;
+
+                raf = function(callback) {
+
+                    var currTime = new Date().getTime();
+                    var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+                    var id = setTimeout(function() {
+                        callback(currTime + timeToCall);
+                    }, timeToCall);
+
+                    lastTime = currTime + timeToCall;
+
+                    return id;
+                };
+            }
+
+            return function(callback, context) {
+                return context ? raf(_.bind(callback, context)) : raf(callback);
+            };
+
+        })(),
+
+        cancelFrame: (function() {
+
+            var caf;
+            var client = typeof window != 'undefined';
+
+            if (client) {
+
+                caf = window.cancelAnimationFrame ||
+                    window.webkitCancelAnimationFrame ||
+                    window.webkitCancelRequestAnimationFrame ||
+                    window.msCancelAnimationFrame ||
+                    window.msCancelRequestAnimationFrame ||
+                    window.oCancelAnimationFrame ||
+                    window.oCancelRequestAnimationFrame ||
+                    window.mozCancelAnimationFrame ||
+                    window.mozCancelRequestAnimationFrame;
+            }
+
+            caf = caf || clearTimeout;
+
+            return client ? _.bind(caf, window) : caf;
+
+        })(),
+
+        shapePerimeterConnectionPoint: function(linkView, view, magnet, reference) {
+
+            var bbox;
+            var spot;
+
+            if (!magnet) {
+
+                // There is no magnet, try to make the best guess what is the
+                // wrapping SVG element. This is because we want this "smart"
+                // connection points to work out of the box without the
+                // programmer to put magnet marks to any of the subelements.
+                // For example, we want the functoin to work on basic.Path elements
+                // without any special treatment of such elements.
+                // The code below guesses the wrapping element based on
+                // one simple assumption. The wrapping elemnet is the
+                // first child of the scalable group if such a group exists
+                // or the first child of the rotatable group if not.
+                // This makese sense because usually the wrapping element
+                // is below any other sub element in the shapes.
+                var scalable = view.$('.scalable')[0];
+                var rotatable = view.$('.rotatable')[0];
+
+                if (scalable && scalable.firstChild) {
+
+                    magnet = scalable.firstChild;
+
+                } else if (rotatable && rotatable.firstChild) {
+
+                    magnet = rotatable.firstChild;
+                }
+            }
+
+            if (magnet) {
+
+                spot = V(magnet).findIntersection(reference, linkView.paper.viewport);
+                if (!spot) {
+                    bbox = g.rect(V(magnet).bbox(false, linkView.paper.viewport));
+                }
+
+            } else {
+
+                bbox = view.model.getBBox();
+                spot = bbox.intersectionWithLineFromCenterToPoint(reference);
+            }
+            return spot || bbox.center();
+        },
+
+        breakText: function(text, size, styles, opt) {
+
+            opt = opt || {};
+
+            var width = size.width;
+            var height = size.height;
+
+            var svgDocument = opt.svgDocument || V('svg').node;
+            var textElement = V('<text><tspan></tspan></text>').attr(styles || {}).node;
+            var textSpan = textElement.firstChild;
+            var textNode = document.createTextNode('');
+
+            textSpan.appendChild(textNode);
+
+            svgDocument.appendChild(textElement);
+
+            if (!opt.svgDocument) {
+
+                document.body.appendChild(svgDocument);
+            }
+
+            var words = text.split(' ');
+            var full = [];
+            var lines = [];
+            var p;
+
+            for (var i = 0, l = 0, len = words.length; i < len; i++) {
+
+                var word = words[i];
+
+                textNode.data = lines[l] ? lines[l] + ' ' + word : word;
+
+                if (textSpan.getComputedTextLength() <= width) {
+
+                    // the current line fits
+                    lines[l] = textNode.data;
+
+                    if (p) {
+                        // We were partitioning. Put rest of the word onto next line
+                        full[l++] = true;
+
+                        // cancel partitioning
+                        p = 0;
+                    }
+
+                } else {
+
+                    if (!lines[l] || p) {
+
+                        var partition = !!p;
+
+                        p = word.length - 1;
+
+                        if (partition || !p) {
+
+                            // word has only one character.
+                            if (!p) {
+
+                                if (!lines[l]) {
+
+                                    // we won't fit this text within our rect
+                                    lines = [];
+
+                                    break;
                                 }
 
-                                this.mixin(target[key], copy);
-                                return;
-                            }
+                                // partitioning didn't help on the non-empty line
+                                // try again, but this time start with a new line
 
-                            if (target[key] !== copy) {
+                                // cancel partitions created
+                                words.splice(i, 2, word + words[i + 1]);
 
-                                if (!this.mixin.supplement || !target.hasOwnProperty(key)) {
+                                // adjust word length
+                                len--;
 
-                                    target[key] = copy;
-                                }
-
-                            }
-
-                        }, this);
-                    }
-
-                    return target;
-                },
-
-                /**
-                 * * Copy all properties to the first argument from the following \
-                 * arguments only in case if they don't exists in the first argument.
-                 * * All the function propererties in the first argument will get \
-                 *  additional property base pointing to the extenders same named property function's call method.
-                 * @returns {*}
-                 */
-                supplement: function() {
-                    this.mixin.supplement = true;
-                    var ret = this.mixin.apply(this, arguments);
-                    this.mixin.supplement = false;
-                    return ret;
-                },
-
-                // Same as `mixin()` but deep version.
-                deepMixin: function() {
-
-                    this.mixin.deep = true;
-                    var ret = this.mixin.apply(this, arguments);
-                    this.mixin.deep = false;
-                    return ret;
-                },
-
-                /** Same as `supplement()` but deep version.
-                 * @method deepSupplement
-                 * @returns {*}
-                 */
-                deepSupplement: function() {
-
-                    this.mixin.deep = this.mixin.supplement = true;
-                    var ret = this.mixin.apply(this, arguments);
-                    this.mixin.deep = this.mixin.supplement = false;
-                    return ret;
-                },
-
-                /**
-                 * get orginal event
-                 * @method normalizeEvent
-                 * @param {JQueryEvent|*} evt
-                 * @example
-                 * 
-                 * var evt = org.dedu.draw.util.normalizeEvent(evt);
-                 * 
-                 * @returns {*}
-                 */
-                normalizeEvent: function(evt) {
-
-                    var touchEvt = evt.originalEvent && evt.originalEvent.changedTouches && evt.originalEvent.changedTouches[0];
-                    if (touchEvt) {
-                        for (var property in evt) {
-                            // copy all the properties from the input event that are not
-                            // defined on the touch event (functions included).
-                            if (touchEvt[property] === undefined) {
-                                touchEvt[property] = evt[property];
-                            }
-                        }
-                        return touchEvt;
-                    }
-
-                    return evt;
-                },
-
-                nextFrame: (function() {
-
-                    var raf;
-
-                    if (typeof window !== 'undefined') {
-
-                        raf = window.requestAnimationFrame ||
-                            window.webkitRequestAnimationFrame ||
-                            window.mozRequestAnimationFrame ||
-                            window.oRequestAnimationFrame ||
-                            window.msRequestAnimationFrame;
-                    }
-
-                    if (!raf) {
-
-                        var lastTime = 0;
-
-                        raf = function(callback) {
-
-                            var currTime = new Date().getTime();
-                            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-                            var id = setTimeout(function() {
-                                callback(currTime + timeToCall);
-                            }, timeToCall);
-
-                            lastTime = currTime + timeToCall;
-
-                            return id;
-                        };
-                    }
-
-                    return function(callback, context) {
-                        return context ? raf(_.bind(callback, context)) : raf(callback);
-                    };
-
-                })(),
-
-                cancelFrame: (function() {
-
-                    var caf;
-                    var client = typeof window != 'undefined';
-
-                    if (client) {
-
-                        caf = window.cancelAnimationFrame ||
-                            window.webkitCancelAnimationFrame ||
-                            window.webkitCancelRequestAnimationFrame ||
-                            window.msCancelAnimationFrame ||
-                            window.msCancelRequestAnimationFrame ||
-                            window.oCancelAnimationFrame ||
-                            window.oCancelRequestAnimationFrame ||
-                            window.mozCancelAnimationFrame ||
-                            window.mozCancelRequestAnimationFrame;
-                    }
-
-                    caf = caf || clearTimeout;
-
-                    return client ? _.bind(caf, window) : caf;
-
-                })(),
-
-                shapePerimeterConnectionPoint: function(linkView, view, magnet, reference) {
-
-                    var bbox;
-                    var spot;
-
-                    if (!magnet) {
-
-                        // There is no magnet, try to make the best guess what is the
-                        // wrapping SVG element. This is because we want this "smart"
-                        // connection points to work out of the box without the
-                        // programmer to put magnet marks to any of the subelements.
-                        // For example, we want the functoin to work on basic.Path elements
-                        // without any special treatment of such elements.
-                        // The code below guesses the wrapping element based on
-                        // one simple assumption. The wrapping elemnet is the
-                        // first child of the scalable group if such a group exists
-                        // or the first child of the rotatable group if not.
-                        // This makese sense because usually the wrapping element
-                        // is below any other sub element in the shapes.
-                        var scalable = view.$('.scalable')[0];
-                        var rotatable = view.$('.rotatable')[0];
-
-                        if (scalable && scalable.firstChild) {
-
-                            magnet = scalable.firstChild;
-
-                        } else if (rotatable && rotatable.firstChild) {
-
-                            magnet = rotatable.firstChild;
-                        }
-                    }
-
-                    if (magnet) {
-
-                        spot = V(magnet).findIntersection(reference, linkView.paper.viewport);
-                        if (!spot) {
-                            bbox = g.rect(V(magnet).bbox(false, linkView.paper.viewport));
-                        }
-
-                    } else {
-
-                        bbox = view.model.getBBox();
-                        spot = bbox.intersectionWithLineFromCenterToPoint(reference);
-                    }
-                    return spot || bbox.center();
-                },
-
-                breakText: function(text, size, styles, opt) {
-
-                    opt = opt || {};
-
-                    var width = size.width;
-                    var height = size.height;
-
-                    var svgDocument = opt.svgDocument || V('svg').node;
-                    var textElement = V('<text><tspan></tspan></text>').attr(styles || {}).node;
-                    var textSpan = textElement.firstChild;
-                    var textNode = document.createTextNode('');
-
-                    textSpan.appendChild(textNode);
-
-                    svgDocument.appendChild(textElement);
-
-                    if (!opt.svgDocument) {
-
-                        document.body.appendChild(svgDocument);
-                    }
-
-                    var words = text.split(' ');
-                    var full = [];
-                    var lines = [];
-                    var p;
-
-                    for (var i = 0, l = 0, len = words.length; i < len; i++) {
-
-                        var word = words[i];
-
-                        textNode.data = lines[l] ? lines[l] + ' ' + word : word;
-
-                        if (textSpan.getComputedTextLength() <= width) {
-
-                            // the current line fits
-                            lines[l] = textNode.data;
-
-                            if (p) {
-                                // We were partitioning. Put rest of the word onto next line
                                 full[l++] = true;
-
-                                // cancel partitioning
-                                p = 0;
-                            }
-
-                        } else {
-
-                            if (!lines[l] || p) {
-
-                                var partition = !!p;
-
-                                p = word.length - 1;
-
-                                if (partition || !p) {
-
-                                    // word has only one character.
-                                    if (!p) {
-
-                                        if (!lines[l]) {
-
-                                            // we won't fit this text within our rect
-                                            lines = [];
-
-                                            break;
-                                        }
-
-                                        // partitioning didn't help on the non-empty line
-                                        // try again, but this time start with a new line
-
-                                        // cancel partitions created
-                                        words.splice(i, 2, word + words[i + 1]);
-
-                                        // adjust word length
-                                        len--;
-
-                                        full[l++] = true;
-                                        i--;
-
-                                        continue;
-                                    }
-
-                                    // move last letter to the beginning of the next word
-                                    words[i] = word.substring(0, p);
-                                    words[i + 1] = word.substring(p) + words[i + 1];
-
-                                } else {
-
-                                    // We initiate partitioning
-                                    // split the long word into two words
-                                    words.splice(i, 1, word.substring(0, p), word.substring(p));
-
-                                    // adjust words length
-                                    len++;
-
-                                    if (l && !full[l - 1]) {
-                                        // if the previous line is not full, try to fit max part of
-                                        // the current word there
-                                        l--;
-                                    }
-                                }
-
                                 i--;
 
                                 continue;
                             }
 
-                            l++;
-                            i--;
-                        }
+                            // move last letter to the beginning of the next word
+                            words[i] = word.substring(0, p);
+                            words[i + 1] = word.substring(p) + words[i + 1];
 
-                        // if size.height is defined we have to check whether the height of the entire
-                        // text exceeds the rect height
-                        if (typeof height !== 'undefined') {
-
-                            // get line height as text height / 0.8 (as text height is approx. 0.8em
-                            // and line height is 1em. See vectorizer.text())
-                            var lh = lh || textElement.getBBox().height * 1.25;
-
-                            if (lh * lines.length > height) {
-
-                                // remove overflowing lines
-                                lines.splice(Math.floor(height / lh));
-
-                                break;
-                            }
-                        }
-                    }
-
-                    if (opt.svgDocument) {
-
-                        // svg document was provided, remove the text element only
-                        svgDocument.removeChild(textElement);
-
-                    } else {
-
-                        // clean svg document
-                        document.body.removeChild(svgDocument);
-                    }
-
-                    return lines.join('\n');
-                },
-
-                imageToDataUri: function(url, callback) {
-
-                    if (!url || url.substr(0, 'data:'.length) === 'data:') {
-                        // No need to convert to data uri if it is already in data uri.
-
-                        // This not only convenient but desired. For example,
-                        // IE throws a security error if data:image/svg+xml is used to render
-                        // an image to the canvas and an attempt is made to read out data uri.
-                        // Now if our image is already in data uri, there is no need to render it to the canvas
-                        // and so we can bypass this error.
-
-                        // Keep the async nature of the function.
-                        return setTimeout(function() {
-                            callback(null, url);
-                        }, 0);
-                    }
-
-                    var canvas = document.createElement('canvas');
-                    var img = document.createElement('img');
-
-                    img.onload = function() {
-
-                        var ctx = canvas.getContext('2d');
-
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-
-                        ctx.drawImage(img, 0, 0);
-
-                        try {
-
-                            // Guess the type of the image from the url suffix.
-                            var suffix = (url.split('.').pop()) || 'png';
-                            // A little correction for JPEGs. There is no image/jpg mime type but image/jpeg.
-                            var type = 'image/' + (suffix === 'jpg') ? 'jpeg' : suffix;
-                            var dataUri = canvas.toDataURL(type);
-
-                        } catch (e) {
-
-                            if (/\.svg$/.test(url)) {
-                                // IE throws a security error if we try to render an SVG into the canvas.
-                                // Luckily for us, we don't need canvas at all to convert
-                                // SVG to data uri. We can just use AJAX to load the SVG string
-                                // and construct the data uri ourselves.
-                                var xhr = window.XMLHttpRequest ? new XMLHttpRequest : new ActiveXObject('Microsoft.XMLHTTP');
-                                xhr.open('GET', url, false);
-                                xhr.send(null);
-                                var svg = xhr.responseText;
-
-                                return callback(null, 'data:image/svg+xml,' + encodeURIComponent(svg));
-                            }
-
-                            console.error(img.src, 'fails to convert', e);
-                        }
-
-                        callback(null, dataUri);
-                    };
-
-                    img.ononerror = function() {
-
-                        callback(new Error('Failed to load image.'));
-                    };
-
-                    img.src = url;
-                },
-
-                /**
-                 * Return a bounding box of the element el and can handle both HTML and SVG elements
-                 * The resulting object is of the form:`{ x: Number, y: Number, width: Number, height: Number }`
-                 * @param {DOMObject|SVGObject} el
-                 * @returns {*}
-                 */
-                getElementBBox: function(el) {
-
-                    var $el = $(el);
-                    var offset = $el.offset();
-                    var bbox;
-
-                    if (el.ownerSVGElement) {
-
-                        // Use Vectorizer to get the dimensions of the element if it is an SVG element.
-                        bbox = V(el).bbox();
-
-                        // getBoundingClientRect() used in jQuery.fn.offset() takes into account `stroke-width`
-                        // in Firefox only. So clientRect width/height and getBBox width/height in FF don't match.
-                        // To unify this across all browsers we add the `stroke-width` (left & top) back to
-                        // the calculated offset.
-                        var crect = el.getBoundingClientRect();
-                        var strokeWidthX = (crect.width - bbox.width) / 2;
-                        var strokeWidthY = (crect.height - bbox.height) / 2;
-
-                        // The `bbox()` returns coordinates relative to the SVG viewport, therefore, use the
-                        // ones returned from the `offset()` method that are relative to the document.
-                        bbox.x = offset.left + strokeWidthX;
-                        bbox.y = offset.top + strokeWidthY;
-
-                    } else {
-
-                        bbox = {
-                            x: offset.left,
-                            y: offset.top,
-                            width: $el.outerWidth(),
-                            height: $el.outerHeight()
-                        };
-                    }
-
-                    return bbox;
-                },
-
-
-                // Highly inspired by the jquery.sortElements plugin by Padolsey.
-                // See http://james.padolsey.com/javascript/sorting-elements-with-jquery/.
-                sortElements: function(elements, comparator) {
-
-                    var $elements = $(elements);
-                    var placements = $elements.map(function() {
-
-                        var sortElement = this;
-                        var parentNode = sortElement.parentNode;
-                        // Since the element itself will change position, we have
-                        // to have some way of storing it's original position in
-                        // the DOM. The easiest way is to have a 'flag' node:
-                        var nextSibling = parentNode.insertBefore(document.createTextNode(''), sortElement.nextSibling);
-
-                        return function() {
-
-                            if (parentNode === this) {
-                                throw new Error('You can\'t sort elements if any one is a descendant of another.');
-                            }
-
-                            // Insert before flag:
-                            parentNode.insertBefore(this, nextSibling);
-                            // Remove flag:
-                            parentNode.removeChild(nextSibling);
-                        };
-                    });
-
-                    return Array.prototype.sort.call($elements, comparator).each(function(i) {
-                        placements[i].call(this);
-                    });
-                },
-
-                /** Sets attributes on the given element and its descendants based on the selector.
-                *`attrs` object: { [SELECTOR1]: { attrs1 }, [SELECTOR2]: { attrs2}, ... } e.g. { 'input': { color : 'red' }}
-                 * @method setAttributesBySelector
-                 * @param {DOMObject|SVGObject} element
-                 * @param {Object} attrs
-                 * @example
-                 * 
-                 * var myEl = document.querySelector('.mydiv');
-                 * org.dedu.draw.util.setAttributesBySelector(myEl,{
-                 *  '.mydiv': { 'data-foo': 'bar' },    // Note the reference to the myEl element itself.
-                 *  'input': { 'value': 'my value' }   // descendant input
-                 * });
-                 * 
-                */
-                setAttributesBySelector: function(element, attrs) {
-
-                    var $element = $(element);
-
-                    _.each(attrs, function(attrs, selector) {
-                        var $elements = $element.find(selector).addBack().filter(selector);
-                        // Make a special case for setting classes.
-                        // We do not want to overwrite any existing class.
-                        if (_.has(attrs, 'class')) {
-                            $elements.addClass(attrs['class']);
-                            attrs = _.omit(attrs, 'class');
-                        }
-                        $elements.attr(attrs);
-                    });
-                },
-
-                // Return a new object with all for sides (top, bottom, left and right) in it.
-                // Value of each side is taken from the given argument (either number or object).
-                // Default value for a side is 0.
-                // Examples:
-                // joint.util.normalizeSides(5) --> { top: 5, left: 5, right: 5, bottom: 5 }
-                // joint.util.normalizeSides({ left: 5 }) --> { top: 0, left: 5, right: 0, bottom: 0 }
-                normalizeSides: function(box) {
-
-                    if (Object(box) !== box) {
-                        box = box || 0;
-                        return {
-                            top: box,
-                            bottom: box,
-                            left: box,
-                            right: box
-                        };
-                    }
-
-                    return {
-                        top: box.top || 0,
-                        bottom: box.bottom || 0,
-                        left: box.left || 0,
-                        right: box.right || 0
-                    };
-                },
-
-                timing: {
-
-                    linear: function(t) {
-                        return t;
-                    },
-
-                    quad: function(t) {
-                        return t * t;
-                    },
-
-                    cubic: function(t) {
-                        return t * t * t;
-                    },
-
-                    inout: function(t) {
-                        if (t <= 0) return 0;
-                        if (t >= 1) return 1;
-                        var t2 = t * t;
-                        var t3 = t2 * t;
-                        return 4 * (t < .5 ? t3 : 3 * (t - t2) + t3 - .75);
-                    },
-
-                    exponential: function(t) {
-                        return Math.pow(2, 10 * (t - 1));
-                    },
-
-                    bounce: function(t) {
-                        for (var a = 0, b = 1; 1; a += b, b /= 2) {
-                            if (t >= (7 - 4 * a) / 11) {
-                                var q = (11 - 6 * a - 11 * t) / 4;
-                                return -q * q + b * b;
-                            }
-                        }
-                    },
-
-                    reverse: function(f) {
-                        return function(t) {
-                            return 1 - f(1 - t);
-                        };
-                    },
-
-                    reflect: function(f) {
-                        return function(t) {
-                            return .5 * (t < .5 ? f(2 * t) : (2 - f(2 - 2 * t)));
-                        };
-                    },
-
-                    clamp: function(f, n, x) {
-                        n = n || 0;
-                        x = x || 1;
-                        return function(t) {
-                            var r = f(t);
-                            return r < n ? n : r > x ? x : r;
-                        };
-                    },
-
-                    back: function(s) {
-                        if (!s) s = 1.70158;
-                        return function(t) {
-                            return t * t * ((s + 1) * t - s);
-                        };
-                    },
-
-                    elastic: function(x) {
-                        if (!x) x = 1.5;
-                        return function(t) {
-                            return Math.pow(2, 10 * (t - 1)) * Math.cos(20 * Math.PI * x / 3 * t);
-                        };
-                    }
-                },
-
-                interpolate: {
-
-                    number: function(a, b) {
-                        var d = b - a;
-                        return function(t) {
-                            return a + d * t;
-                        };
-                    },
-
-                    object: function(a, b) {
-                        var s = _.keys(a);
-                        return function(t) {
-                            var i, p;
-                            var r = {};
-                            for (i = s.length - 1; i != -1; i--) {
-                                p = s[i];
-                                r[p] = a[p] + (b[p] - a[p]) * t;
-                            }
-                            return r;
-                        };
-                    },
-
-                    hexColor: function(a, b) {
-
-                        var ca = parseInt(a.slice(1), 16);
-                        var cb = parseInt(b.slice(1), 16);
-                        var ra = ca & 0x0000ff;
-                        var rd = (cb & 0x0000ff) - ra;
-                        var ga = ca & 0x00ff00;
-                        var gd = (cb & 0x00ff00) - ga;
-                        var ba = ca & 0xff0000;
-                        var bd = (cb & 0xff0000) - ba;
-
-                        return function(t) {
-
-                            var r = (ra + rd * t) & 0x000000ff;
-                            var g = (ga + gd * t) & 0x0000ff00;
-                            var b = (ba + bd * t) & 0x00ff0000;
-
-                            return '#' + (1 << 24 | r | g | b).toString(16).slice(1);
-                        };
-                    },
-
-                    unit: function(a, b) {
-
-                        var r = /(-?[0-9]*.[0-9]*)(px|em|cm|mm|in|pt|pc|%)/;
-                        var ma = r.exec(a);
-                        var mb = r.exec(b);
-                        var p = mb[1].indexOf('.');
-                        var f = p > 0 ? mb[1].length - p - 1 : 0;
-                        a = +ma[1];
-                        var d = +mb[1] - a;
-                        var u = ma[2];
-
-                        return function(t) {
-                            return (a + d * t).toFixed(f) + u;
-                        };
-                    }
-                },
-
-                // SVG filters.
-                filter: {
-
-                    // `color` ... outline color
-                    // `width`... outline width
-                    // `opacity` ... outline opacity
-                    // `margin` ... gap between outline and the element
-                    outline: function(args) {
-
-                        var tpl = '<filter><feFlood flood-color="${color}" flood-opacity="${opacity}" result="colored"/><feMorphology in="SourceAlpha" result="morphedOuter" operator="dilate" radius="${outerRadius}" /><feMorphology in="SourceAlpha" result="morphedInner" operator="dilate" radius="${innerRadius}" /><feComposite result="morphedOuterColored" in="colored" in2="morphedOuter" operator="in"/><feComposite operator="xor" in="morphedOuterColored" in2="morphedInner" result="outline"/><feMerge><feMergeNode in="outline"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
-
-                        var margin = _.isFinite(args.margin) ? args.margin : 2;
-                        var width = _.isFinite(args.width) ? args.width : 1;
-
-                        return _.template(tpl)({
-                            color: args.color || 'blue',
-                            opacity: _.isFinite(args.opacity) ? args.opacity : 1,
-                            outerRadius: margin + width,
-                            innerRadius: margin
-                        });
-                    },
-
-                    // `color` ... color
-                    // `width`... width
-                    // `blur` ... blur
-                    // `opacity` ... opacity
-                    highlight: function(args) {
-
-                        var tpl = '<filter><feFlood flood-color="${color}" flood-opacity="${opacity}" result="colored"/><feMorphology result="morphed" in="SourceGraphic" operator="dilate" radius="${width}"/><feComposite result="composed" in="colored" in2="morphed" operator="in"/><feGaussianBlur result="blured" in="composed" stdDeviation="${blur}"/><feBlend in="SourceGraphic" in2="blured" mode="normal"/></filter>';
-
-                        return _.template(tpl)({
-                            color: args.color || 'red',
-                            width: _.isFinite(args.width) ? args.width : 1,
-                            blur: _.isFinite(args.blur) ? args.blur : 0,
-                            opacity: _.isFinite(args.opacity) ? args.opacity : 1
-                        });
-                    },
-
-                    // `x` ... horizontal blur
-                    // `y` ... vertical blur (optional)
-                    blur: function(args) {
-
-                        var x = _.isFinite(args.x) ? args.x : 2;
-
-                        return _.template('<filter><feGaussianBlur stdDeviation="${stdDeviation}"/></filter>')({
-                            stdDeviation: _.isFinite(args.y) ? [x, args.y] : x
-                        });
-                    },
-
-                    // `dx` ... horizontal shift
-                    // `dy` ... vertical shift
-                    // `blur` ... blur
-                    // `color` ... color
-                    // `opacity` ... opacity
-                    dropShadow: function(args) {
-
-                        var tpl = 'SVGFEDropShadowElement' in window ? '<filter><feDropShadow stdDeviation="${blur}" dx="${dx}" dy="${dy}" flood-color="${color}" flood-opacity="${opacity}"/></filter>' : '<filter><feGaussianBlur in="SourceAlpha" stdDeviation="${blur}"/><feOffset dx="${dx}" dy="${dy}" result="offsetblur"/><feFlood flood-color="${color}"/><feComposite in2="offsetblur" operator="in"/><feComponentTransfer><feFuncA type="linear" slope="${opacity}"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
-
-                        return _.template(tpl)({
-                            dx: args.dx || 0,
-                            dy: args.dy || 0,
-                            opacity: _.isFinite(args.opacity) ? args.opacity : 1,
-                            color: args.color || 'black',
-                            blur: _.isFinite(args.blur) ? args.blur : 4
-                        });
-                    },
-
-                    // `amount` ... the proportion of the conversion. A value of 1 is completely grayscale. A value of 0 leaves the input unchanged.
-                    grayscale: function(args) {
-
-                        var amount = _.isFinite(args.amount) ? args.amount : 1;
-
-                        return _.template('<filter><feColorMatrix type="matrix" values="${a} ${b} ${c} 0 0 ${d} ${e} ${f} 0 0 ${g} ${b} ${h} 0 0 0 0 0 1 0"/></filter>')({
-                            a: 0.2126 + 0.7874 * (1 - amount),
-                            b: 0.7152 - 0.7152 * (1 - amount),
-                            c: 0.0722 - 0.0722 * (1 - amount),
-                            d: 0.2126 - 0.2126 * (1 - amount),
-                            e: 0.7152 + 0.2848 * (1 - amount),
-                            f: 0.0722 - 0.0722 * (1 - amount),
-                            g: 0.2126 - 0.2126 * (1 - amount),
-                            h: 0.0722 + 0.9278 * (1 - amount)
-                        });
-                    },
-
-                    // `amount` ... the proportion of the conversion. A value of 1 is completely sepia. A value of 0 leaves the input unchanged.
-                    sepia: function(args) {
-
-                        var amount = _.isFinite(args.amount) ? args.amount : 1;
-
-                        return _.template('<filter><feColorMatrix type="matrix" values="${a} ${b} ${c} 0 0 ${d} ${e} ${f} 0 0 ${g} ${h} ${i} 0 0 0 0 0 1 0"/></filter>')({
-                            a: 0.393 + 0.607 * (1 - amount),
-                            b: 0.769 - 0.769 * (1 - amount),
-                            c: 0.189 - 0.189 * (1 - amount),
-                            d: 0.349 - 0.349 * (1 - amount),
-                            e: 0.686 + 0.314 * (1 - amount),
-                            f: 0.168 - 0.168 * (1 - amount),
-                            g: 0.272 - 0.272 * (1 - amount),
-                            h: 0.534 - 0.534 * (1 - amount),
-                            i: 0.131 + 0.869 * (1 - amount)
-                        });
-                    },
-
-                    // `amount` ... the proportion of the conversion. A value of 0 is completely un-saturated. A value of 1 leaves the input unchanged.
-                    saturate: function(args) {
-
-                        var amount = _.isFinite(args.amount) ? args.amount : 1;
-
-                        return _.template('<filter><feColorMatrix type="saturate" values="${amount}"/></filter>')({
-                            amount: 1 - amount
-                        });
-                    },
-
-                    // `angle` ...  the number of degrees around the color circle the input samples will be adjusted.
-                    hueRotate: function(args) {
-
-                        return _.template('<filter><feColorMatrix type="hueRotate" values="${angle}"/></filter>')({
-                            angle: args.angle || 0
-                        });
-                    },
-
-                    // `amount` ... the proportion of the conversion. A value of 1 is completely inverted. A value of 0 leaves the input unchanged.
-                    invert: function(args) {
-
-                        var amount = _.isFinite(args.amount) ? args.amount : 1;
-
-                        return _.template('<filter><feComponentTransfer><feFuncR type="table" tableValues="${amount} ${amount2}"/><feFuncG type="table" tableValues="${amount} ${amount2}"/><feFuncB type="table" tableValues="${amount} ${amount2}"/></feComponentTransfer></filter>')({
-                            amount: amount,
-                            amount2: 1 - amount
-                        });
-                    },
-
-                    // `amount` ... proportion of the conversion. A value of 0 will create an image that is completely black. A value of 1 leaves the input unchanged.
-                    brightness: function(args) {
-
-                        return _.template('<filter><feComponentTransfer><feFuncR type="linear" slope="${amount}"/><feFuncG type="linear" slope="${amount}"/><feFuncB type="linear" slope="${amount}"/></feComponentTransfer></filter>')({
-                            amount: _.isFinite(args.amount) ? args.amount : 1
-                        });
-                    },
-
-                    // `amount` ... proportion of the conversion. A value of 0 will create an image that is completely black. A value of 1 leaves the input unchanged.
-                    contrast: function(args) {
-
-                        var amount = _.isFinite(args.amount) ? args.amount : 1;
-
-                        return _.template('<filter><feComponentTransfer><feFuncR type="linear" slope="${amount}" intercept="${amount2}"/><feFuncG type="linear" slope="${amount}" intercept="${amount2}"/><feFuncB type="linear" slope="${amount}" intercept="${amount2}"/></feComponentTransfer></filter>')({
-                            amount: amount,
-                            amount2: .5 - amount / 2
-                        });
-                    }
-                },
-
-                /**
-                 * @namespace org.dedu.draw.util.format
-                 */
-                format: {
-
-                    /** Formatting numbers via the Python Format Specification Mini-language.
-                     * See http://docs.python.org/release/3.1.3/library/string.html#format-specification-mini-language.
-                     * Heavilly inspired by the D3.js library implementation.
-                     * @method number
-                     * @example
-                     * 
-                     * joint.util.format.number('.2f', 5)    // 5.00
-                     * joint.util.format.number('03d', 5)    // 005
-                     * joint.util.format.number('.1%', .205)    // 20.5%
-                     * joint.util.format.number('*^9', 5)    // ****5****
-                     * 
-                     */
-                    number: function(specifier, value, locale) {
-
-                        locale = locale || {
-
-                            currency: ['$', ''],
-                            decimal: '.',
-                            thousands: ',',
-                            grouping: [3]
-                        };
-
-                        // See Python format specification mini-language: http://docs.python.org/release/3.1.3/library/string.html#format-specification-mini-language.
-                        // [[fill]align][sign][symbol][0][width][,][.precision][type]
-                        var re = /(?:([^{])?([<>=^]))?([+\- ])?([$#])?(0)?(\d+)?(,)?(\.-?\d+)?([a-z%])?/i;
-
-                        var match = re.exec(specifier);
-                        var fill = match[1] || ' ';
-                        var align = match[2] || '>';
-                        var sign = match[3] || '';
-                        var symbol = match[4] || '';
-                        var zfill = match[5];
-                        var width = +match[6];
-                        var comma = match[7];
-                        var precision = match[8];
-                        var type = match[9];
-                        var scale = 1;
-                        var prefix = '';
-                        var suffix = '';
-                        var integer = false;
-
-                        if (precision) precision = +precision.substring(1);
-
-                        if (zfill || fill === '0' && align === '=') {
-                            zfill = fill = '0';
-                            align = '=';
-                            if (comma) width -= Math.floor((width - 1) / 4);
-                        }
-
-                        switch (type) {
-                            case 'n':
-                                comma = true;
-                                type = 'g';
-                                break;
-                            case '%':
-                                scale = 100;
-                                suffix = '%';
-                                type = 'f';
-                                break;
-                            case 'p':
-                                scale = 100;
-                                suffix = '%';
-                                type = 'r';
-                                break;
-                            case 'b':
-                            case 'o':
-                            case 'x':
-                            case 'X':
-                                if (symbol === '#') prefix = '0' + type.toLowerCase();
-                            case 'c':
-                            case 'd':
-                                integer = true;
-                                precision = 0;
-                                break;
-                            case 's':
-                                scale = -1;
-                                type = 'r';
-                                break;
-                        }
-
-                        if (symbol === '$') {
-                            prefix = locale.currency[0];
-                            suffix = locale.currency[1];
-                        }
-
-                        // If no precision is specified for `'r'`, fallback to general notation.
-                        if (type == 'r' && !precision) type = 'g';
-
-                        // Ensure that the requested precision is in the supported range.
-                        if (precision != null) {
-                            if (type == 'g') precision = Math.max(1, Math.min(21, precision));
-                            else if (type == 'e' || type == 'f') precision = Math.max(0, Math.min(20, precision));
-                        }
-
-                        var zcomma = zfill && comma;
-
-                        // Return the empty string for floats formatted as ints.
-                        if (integer && (value % 1)) return '';
-
-                        // Convert negative to positive, and record the sign prefix.
-                        var negative = value < 0 || value === 0 && 1 / value < 0 ? (value = -value, '-') : sign;
-
-                        var fullSuffix = suffix;
-
-                        // Apply the scale, computing it from the value's exponent for si format.
-                        // Preserve the existing suffix, if any, such as the currency symbol.
-                        if (scale < 0) {
-                            var unit = this.prefix(value, precision);
-                            value = unit.scale(value);
-                            fullSuffix = unit.symbol + suffix;
                         } else {
-                            value *= scale;
-                        }
 
-                        // Convert to the desired precision.
-                        value = this.convert(type, value, precision);
+                            // We initiate partitioning
+                            // split the long word into two words
+                            words.splice(i, 1, word.substring(0, p), word.substring(p));
 
-                        // Break the value into the integer part (before) and decimal part (after).
-                        var i = value.lastIndexOf('.');
-                        var before = i < 0 ? value : value.substring(0, i);
-                        var after = i < 0 ? '' : locale.decimal + value.substring(i + 1);
+                            // adjust words length
+                            len++;
 
-                        function formatGroup(value) {
-
-                            var i = value.length;
-                            var t = [];
-                            var j = 0;
-                            var g = locale.grouping[0];
-                            while (i > 0 && g > 0) {
-                                t.push(value.substring(i -= g, i + g));
-                                g = locale.grouping[j = (j + 1) % locale.grouping.length];
+                            if (l && !full[l - 1]) {
+                                // if the previous line is not full, try to fit max part of
+                                // the current word there
+                                l--;
                             }
-                            return t.reverse().join(locale.thousands);
                         }
 
-                        // If the fill character is not `'0'`, grouping is applied before padding.
-                        if (!zfill && comma && locale.grouping) {
+                        i--;
 
-                            before = formatGroup(before);
-                        }
+                        continue;
+                    }
 
-                        var length = prefix.length + before.length + after.length + (zcomma ? 0 : negative.length);
-                        var padding = length < width ? new Array(length = width - length + 1).join(fill) : '';
+                    l++;
+                    i--;
+                }
 
-                        // If the fill character is `'0'`, grouping is applied after padding.
-                        if (zcomma) before = formatGroup(padding + before);
+                // if size.height is defined we have to check whether the height of the entire
+                // text exceeds the rect height
+                if (typeof height !== 'undefined') {
 
-                        // Apply prefix.
-                        negative += prefix;
+                    // get line height as text height / 0.8 (as text height is approx. 0.8em
+                    // and line height is 1em. See vectorizer.text())
+                    var lh = lh || textElement.getBBox().height * 1.25;
 
-                        // Rejoin integer and decimal parts.
-                        value = before + after;
+                    if (lh * lines.length > height) {
 
-                        return (align === '<' ? negative + value + padding : align === '>' ? padding + negative + value : align === '^' ? padding.substring(0, length >>= 1) + negative + value + padding.substring(length) : negative + (zcomma ? value : padding + value)) + fullSuffix;
-                    },
+                        // remove overflowing lines
+                        lines.splice(Math.floor(height / lh));
 
-                    // Formatting string via the Python Format string.
-                    // See https://docs.python.org/2/library/string.html#format-string-syntax)
-                    string: function(formatString, value) {
-
-                        var fieldDelimiterIndex;
-                        var fieldDelimiter = '{';
-                        var endPlaceholder = false;
-                        var formattedStringArray = [];
-
-                        while ((fieldDelimiterIndex = formatString.indexOf(fieldDelimiter)) !== -1) {
-
-                            var pieceFormatedString, formatSpec, fieldName;
-
-                            pieceFormatedString = formatString.slice(0, fieldDelimiterIndex);
-
-                            if (endPlaceholder) {
-                                formatSpec = pieceFormatedString.split(':');
-                                fieldName = formatSpec.shift().split('.');
-                                pieceFormatedString = value;
-
-                                for (var i = 0; i < fieldName.length; i++)
-                                    pieceFormatedString = pieceFormatedString[fieldName[i]];
-
-                                if (formatSpec.length)
-                                    pieceFormatedString = this.number(formatSpec, pieceFormatedString);
-                            }
-
-                            formattedStringArray.push(pieceFormatedString);
-
-                            formatString = formatString.slice(fieldDelimiterIndex + 1);
-                            fieldDelimiter = (endPlaceholder = !endPlaceholder) ? '}' : '{';
-                        }
-                        formattedStringArray.push(formatString);
-
-                        return formattedStringArray.join('');
-                    },
-
-                    convert: function(type, value, precision) {
-
-                        switch (type) {
-                            case 'b':
-                                return value.toString(2);
-                            case 'c':
-                                return String.fromCharCode(value);
-                            case 'o':
-                                return value.toString(8);
-                            case 'x':
-                                return value.toString(16);
-                            case 'X':
-                                return value.toString(16).toUpperCase();
-                            case 'g':
-                                return value.toPrecision(precision);
-                            case 'e':
-                                return value.toExponential(precision);
-                            case 'f':
-                                return value.toFixed(precision);
-                            case 'r':
-                                return (value = this.round(value, this.precision(value, precision))).toFixed(Math.max(0, Math.min(20, this.precision(value * (1 + 1e-15), precision))));
-                            default:
-                                return value + '';
-                        }
-                    },
-
-                    round: function(value, precision) {
-
-                        return precision ? Math.round(value * (precision = Math.pow(10, precision))) / precision : Math.round(value);
-                    },
-
-                    precision: function(value, precision) {
-
-                        return precision - (value ? Math.ceil(Math.log(value) / Math.LN10) : 1);
-                    },
-
-                    prefix: function(value, precision) {
-
-                        var prefixes = _.map(['y', 'z', 'a', 'f', 'p', 'n', 'µ', 'm', '', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'], function(d, i) {
-                            var k = Math.pow(10, Math.abs(8 - i) * 3);
-                            return {
-                                scale: i > 8 ? function(d) {
-                                    return d / k;
-                                } : function(d) {
-                                    return d * k;
-                                },
-                                symbol: d
-                            };
-                        });
-
-                        var i = 0;
-                        if (value) {
-                            if (value < 0) value *= -1;
-                            if (precision) value = this.round(value, this.precision(value, precision));
-                            i = 1 + Math.floor(1e-12 + Math.log(value) / Math.LN10);
-                            i = Math.max(-24, Math.min(24, Math.floor((i <= 0 ? i + 1 : i - 1) / 3) * 3));
-                        }
-                        return prefixes[8 + i / 3];
+                        break;
                     }
                 }
+            }
+
+            if (opt.svgDocument) {
+
+                // svg document was provided, remove the text element only
+                svgDocument.removeChild(textElement);
+
+            } else {
+
+                // clean svg document
+                document.body.removeChild(svgDocument);
+            }
+
+            return lines.join('\n');
+        },
+
+        imageToDataUri: function(url, callback) {
+
+            if (!url || url.substr(0, 'data:'.length) === 'data:') {
+                // No need to convert to data uri if it is already in data uri.
+
+                // This not only convenient but desired. For example,
+                // IE throws a security error if data:image/svg+xml is used to render
+                // an image to the canvas and an attempt is made to read out data uri.
+                // Now if our image is already in data uri, there is no need to render it to the canvas
+                // and so we can bypass this error.
+
+                // Keep the async nature of the function.
+                return setTimeout(function() {
+                    callback(null, url);
+                }, 0);
+            }
+
+            var canvas = document.createElement('canvas');
+            var img = document.createElement('img');
+
+            img.onload = function() {
+
+                var ctx = canvas.getContext('2d');
+
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                ctx.drawImage(img, 0, 0);
+
+                try {
+
+                    // Guess the type of the image from the url suffix.
+                    var suffix = (url.split('.').pop()) || 'png';
+                    // A little correction for JPEGs. There is no image/jpg mime type but image/jpeg.
+                    var type = 'image/' + (suffix === 'jpg') ? 'jpeg' : suffix;
+                    var dataUri = canvas.toDataURL(type);
+
+                } catch (e) {
+
+                    if (/\.svg$/.test(url)) {
+                        // IE throws a security error if we try to render an SVG into the canvas.
+                        // Luckily for us, we don't need canvas at all to convert
+                        // SVG to data uri. We can just use AJAX to load the SVG string
+                        // and construct the data uri ourselves.
+                        var xhr = window.XMLHttpRequest ? new XMLHttpRequest : new ActiveXObject('Microsoft.XMLHTTP');
+                        xhr.open('GET', url, false);
+                        xhr.send(null);
+                        var svg = xhr.responseText;
+
+                        return callback(null, 'data:image/svg+xml,' + encodeURIComponent(svg));
+                    }
+
+                    console.error(img.src, 'fails to convert', e);
+                }
+
+                callback(null, dataUri);
+            };
+
+            img.ononerror = function() {
+
+                callback(new Error('Failed to load image.'));
+            };
+
+            img.src = url;
+        },
+
+        /**
+         * Return a bounding box of the element el and can handle both HTML and SVG elements
+         * The resulting object is of the form:`{ x: Number, y: Number, width: Number, height: Number }`
+         * @param {DOMObject|SVGObject} el
+         * @returns {*}
+         */
+        getElementBBox: function(el) {
+
+            var $el = $(el);
+            var offset = $el.offset();
+            var bbox;
+
+            if (el.ownerSVGElement) {
+
+                // Use Vectorizer to get the dimensions of the element if it is an SVG element.
+                bbox = V(el).bbox();
+
+                // getBoundingClientRect() used in jQuery.fn.offset() takes into account `stroke-width`
+                // in Firefox only. So clientRect width/height and getBBox width/height in FF don't match.
+                // To unify this across all browsers we add the `stroke-width` (left & top) back to
+                // the calculated offset.
+                var crect = el.getBoundingClientRect();
+                var strokeWidthX = (crect.width - bbox.width) / 2;
+                var strokeWidthY = (crect.height - bbox.height) / 2;
+
+                // The `bbox()` returns coordinates relative to the SVG viewport, therefore, use the
+                // ones returned from the `offset()` method that are relative to the document.
+                bbox.x = offset.left + strokeWidthX;
+                bbox.y = offset.top + strokeWidthY;
+
+            } else {
+
+                bbox = {
+                    x: offset.left,
+                    y: offset.top,
+                    width: $el.outerWidth(),
+                    height: $el.outerHeight()
+                };
+            }
+
+            return bbox;
+        },
+
+
+        // Highly inspired by the jquery.sortElements plugin by Padolsey.
+        // See http://james.padolsey.com/javascript/sorting-elements-with-jquery/.
+        sortElements: function(elements, comparator) {
+
+            var $elements = $(elements);
+            var placements = $elements.map(function() {
+
+                var sortElement = this;
+                var parentNode = sortElement.parentNode;
+                // Since the element itself will change position, we have
+                // to have some way of storing it's original position in
+                // the DOM. The easiest way is to have a 'flag' node:
+                var nextSibling = parentNode.insertBefore(document.createTextNode(''), sortElement.nextSibling);
+
+                return function() {
+
+                    if (parentNode === this) {
+                        throw new Error('You can\'t sort elements if any one is a descendant of another.');
+                    }
+
+                    // Insert before flag:
+                    parentNode.insertBefore(this, nextSibling);
+                    // Remove flag:
+                    parentNode.removeChild(nextSibling);
+                };
+            });
+
+            return Array.prototype.sort.call($elements, comparator).each(function(i) {
+                placements[i].call(this);
+            });
+        },
+
+        /** Sets attributes on the given element and its descendants based on the selector.
+         *`attrs` object: { [SELECTOR1]: { attrs1 }, [SELECTOR2]: { attrs2}, ... } e.g. { 'input': { color : 'red' }}
+         * @method setAttributesBySelector
+         * @param {DOMObject|SVGObject} element
+         * @param {Object} attrs
+         * @example
+         * 
+         * var myEl = document.querySelector('.mydiv');
+         * dedu.util.setAttributesBySelector(myEl,{
+         *  '.mydiv': { 'data-foo': 'bar' },    // Note the reference to the myEl element itself.
+         *  'input': { 'value': 'my value' }   // descendant input
+         * });
+         * 
+         */
+        setAttributesBySelector: function(element, attrs) {
+
+            var $element = $(element);
+
+            _.each(attrs, function(attrs, selector) {
+                var $elements = $element.find(selector).addBack().filter(selector);
+                // Make a special case for setting classes.
+                // We do not want to overwrite any existing class.
+                if (_.has(attrs, 'class')) {
+                    $elements.addClass(attrs['class']);
+                    attrs = _.omit(attrs, 'class');
+                }
+                $elements.attr(attrs);
+            });
+        },
+
+        // Return a new object with all for sides (top, bottom, left and right) in it.
+        // Value of each side is taken from the given argument (either number or object).
+        // Default value for a side is 0.
+        // Examples:
+        // joint.util.normalizeSides(5) --> { top: 5, left: 5, right: 5, bottom: 5 }
+        // joint.util.normalizeSides({ left: 5 }) --> { top: 0, left: 5, right: 0, bottom: 0 }
+        normalizeSides: function(box) {
+
+            if (Object(box) !== box) {
+                box = box || 0;
+                return {
+                    top: box,
+                    bottom: box,
+                    left: box,
+                    right: box
+                };
+            }
+
+            return {
+                top: box.top || 0,
+                bottom: box.bottom || 0,
+                left: box.left || 0,
+                right: box.right || 0
+            };
+        },
+
+        timing: {
+
+            linear: function(t) {
+                return t;
+            },
+
+            quad: function(t) {
+                return t * t;
+            },
+
+            cubic: function(t) {
+                return t * t * t;
+            },
+
+            inout: function(t) {
+                if (t <= 0) return 0;
+                if (t >= 1) return 1;
+                var t2 = t * t;
+                var t3 = t2 * t;
+                return 4 * (t < .5 ? t3 : 3 * (t - t2) + t3 - .75);
+            },
+
+            exponential: function(t) {
+                return Math.pow(2, 10 * (t - 1));
+            },
+
+            bounce: function(t) {
+                for (var a = 0, b = 1; 1; a += b, b /= 2) {
+                    if (t >= (7 - 4 * a) / 11) {
+                        var q = (11 - 6 * a - 11 * t) / 4;
+                        return -q * q + b * b;
+                    }
+                }
+            },
+
+            reverse: function(f) {
+                return function(t) {
+                    return 1 - f(1 - t);
+                };
+            },
+
+            reflect: function(f) {
+                return function(t) {
+                    return .5 * (t < .5 ? f(2 * t) : (2 - f(2 - 2 * t)));
+                };
+            },
+
+            clamp: function(f, n, x) {
+                n = n || 0;
+                x = x || 1;
+                return function(t) {
+                    var r = f(t);
+                    return r < n ? n : r > x ? x : r;
+                };
+            },
+
+            back: function(s) {
+                if (!s) s = 1.70158;
+                return function(t) {
+                    return t * t * ((s + 1) * t - s);
+                };
+            },
+
+            elastic: function(x) {
+                if (!x) x = 1.5;
+                return function(t) {
+                    return Math.pow(2, 10 * (t - 1)) * Math.cos(20 * Math.PI * x / 3 * t);
+                };
+            }
+        },
+
+        interpolate: {
+
+            number: function(a, b) {
+                var d = b - a;
+                return function(t) {
+                    return a + d * t;
+                };
+            },
+
+            object: function(a, b) {
+                var s = _.keys(a);
+                return function(t) {
+                    var i, p;
+                    var r = {};
+                    for (i = s.length - 1; i != -1; i--) {
+                        p = s[i];
+                        r[p] = a[p] + (b[p] - a[p]) * t;
+                    }
+                    return r;
+                };
+            },
+
+            hexColor: function(a, b) {
+
+                var ca = parseInt(a.slice(1), 16);
+                var cb = parseInt(b.slice(1), 16);
+                var ra = ca & 0x0000ff;
+                var rd = (cb & 0x0000ff) - ra;
+                var ga = ca & 0x00ff00;
+                var gd = (cb & 0x00ff00) - ga;
+                var ba = ca & 0xff0000;
+                var bd = (cb & 0xff0000) - ba;
+
+                return function(t) {
+
+                    var r = (ra + rd * t) & 0x000000ff;
+                    var g = (ga + gd * t) & 0x0000ff00;
+                    var b = (ba + bd * t) & 0x00ff0000;
+
+                    return '#' + (1 << 24 | r | g | b).toString(16).slice(1);
+                };
+            },
+
+            unit: function(a, b) {
+
+                var r = /(-?[0-9]*.[0-9]*)(px|em|cm|mm|in|pt|pc|%)/;
+                var ma = r.exec(a);
+                var mb = r.exec(b);
+                var p = mb[1].indexOf('.');
+                var f = p > 0 ? mb[1].length - p - 1 : 0;
+                a = +ma[1];
+                var d = +mb[1] - a;
+                var u = ma[2];
+
+                return function(t) {
+                    return (a + d * t).toFixed(f) + u;
+                };
+            }
+        },
+
+        // SVG filters.
+        filter: {
+
+            // `color` ... outline color
+            // `width`... outline width
+            // `opacity` ... outline opacity
+            // `margin` ... gap between outline and the element
+            outline: function(args) {
+
+                var tpl = '<filter><feFlood flood-color="${color}" flood-opacity="${opacity}" result="colored"/><feMorphology in="SourceAlpha" result="morphedOuter" operator="dilate" radius="${outerRadius}" /><feMorphology in="SourceAlpha" result="morphedInner" operator="dilate" radius="${innerRadius}" /><feComposite result="morphedOuterColored" in="colored" in2="morphedOuter" operator="in"/><feComposite operator="xor" in="morphedOuterColored" in2="morphedInner" result="outline"/><feMerge><feMergeNode in="outline"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+
+                var margin = _.isFinite(args.margin) ? args.margin : 2;
+                var width = _.isFinite(args.width) ? args.width : 1;
+
+                return _.template(tpl)({
+                    color: args.color || 'blue',
+                    opacity: _.isFinite(args.opacity) ? args.opacity : 1,
+                    outerRadius: margin + width,
+                    innerRadius: margin
+                });
+            },
+
+            // `color` ... color
+            // `width`... width
+            // `blur` ... blur
+            // `opacity` ... opacity
+            highlight: function(args) {
+
+                var tpl = '<filter><feFlood flood-color="${color}" flood-opacity="${opacity}" result="colored"/><feMorphology result="morphed" in="SourceGraphic" operator="dilate" radius="${width}"/><feComposite result="composed" in="colored" in2="morphed" operator="in"/><feGaussianBlur result="blured" in="composed" stdDeviation="${blur}"/><feBlend in="SourceGraphic" in2="blured" mode="normal"/></filter>';
+
+                return _.template(tpl)({
+                    color: args.color || 'red',
+                    width: _.isFinite(args.width) ? args.width : 1,
+                    blur: _.isFinite(args.blur) ? args.blur : 0,
+                    opacity: _.isFinite(args.opacity) ? args.opacity : 1
+                });
+            },
+
+            // `x` ... horizontal blur
+            // `y` ... vertical blur (optional)
+            blur: function(args) {
+
+                var x = _.isFinite(args.x) ? args.x : 2;
+
+                return _.template('<filter><feGaussianBlur stdDeviation="${stdDeviation}"/></filter>')({
+                    stdDeviation: _.isFinite(args.y) ? [x, args.y] : x
+                });
+            },
+
+            // `dx` ... horizontal shift
+            // `dy` ... vertical shift
+            // `blur` ... blur
+            // `color` ... color
+            // `opacity` ... opacity
+            dropShadow: function(args) {
+
+                var tpl = 'SVGFEDropShadowElement' in window ? '<filter><feDropShadow stdDeviation="${blur}" dx="${dx}" dy="${dy}" flood-color="${color}" flood-opacity="${opacity}"/></filter>' : '<filter><feGaussianBlur in="SourceAlpha" stdDeviation="${blur}"/><feOffset dx="${dx}" dy="${dy}" result="offsetblur"/><feFlood flood-color="${color}"/><feComposite in2="offsetblur" operator="in"/><feComponentTransfer><feFuncA type="linear" slope="${opacity}"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+
+                return _.template(tpl)({
+                    dx: args.dx || 0,
+                    dy: args.dy || 0,
+                    opacity: _.isFinite(args.opacity) ? args.opacity : 1,
+                    color: args.color || 'black',
+                    blur: _.isFinite(args.blur) ? args.blur : 4
+                });
+            },
+
+            // `amount` ... the proportion of the conversion. A value of 1 is completely grayscale. A value of 0 leaves the input unchanged.
+            grayscale: function(args) {
+
+                var amount = _.isFinite(args.amount) ? args.amount : 1;
+
+                return _.template('<filter><feColorMatrix type="matrix" values="${a} ${b} ${c} 0 0 ${d} ${e} ${f} 0 0 ${g} ${b} ${h} 0 0 0 0 0 1 0"/></filter>')({
+                    a: 0.2126 + 0.7874 * (1 - amount),
+                    b: 0.7152 - 0.7152 * (1 - amount),
+                    c: 0.0722 - 0.0722 * (1 - amount),
+                    d: 0.2126 - 0.2126 * (1 - amount),
+                    e: 0.7152 + 0.2848 * (1 - amount),
+                    f: 0.0722 - 0.0722 * (1 - amount),
+                    g: 0.2126 - 0.2126 * (1 - amount),
+                    h: 0.0722 + 0.9278 * (1 - amount)
+                });
+            },
+
+            // `amount` ... the proportion of the conversion. A value of 1 is completely sepia. A value of 0 leaves the input unchanged.
+            sepia: function(args) {
+
+                var amount = _.isFinite(args.amount) ? args.amount : 1;
+
+                return _.template('<filter><feColorMatrix type="matrix" values="${a} ${b} ${c} 0 0 ${d} ${e} ${f} 0 0 ${g} ${h} ${i} 0 0 0 0 0 1 0"/></filter>')({
+                    a: 0.393 + 0.607 * (1 - amount),
+                    b: 0.769 - 0.769 * (1 - amount),
+                    c: 0.189 - 0.189 * (1 - amount),
+                    d: 0.349 - 0.349 * (1 - amount),
+                    e: 0.686 + 0.314 * (1 - amount),
+                    f: 0.168 - 0.168 * (1 - amount),
+                    g: 0.272 - 0.272 * (1 - amount),
+                    h: 0.534 - 0.534 * (1 - amount),
+                    i: 0.131 + 0.869 * (1 - amount)
+                });
+            },
+
+            // `amount` ... the proportion of the conversion. A value of 0 is completely un-saturated. A value of 1 leaves the input unchanged.
+            saturate: function(args) {
+
+                var amount = _.isFinite(args.amount) ? args.amount : 1;
+
+                return _.template('<filter><feColorMatrix type="saturate" values="${amount}"/></filter>')({
+                    amount: 1 - amount
+                });
+            },
+
+            // `angle` ...  the number of degrees around the color circle the input samples will be adjusted.
+            hueRotate: function(args) {
+
+                return _.template('<filter><feColorMatrix type="hueRotate" values="${angle}"/></filter>')({
+                    angle: args.angle || 0
+                });
+            },
+
+            // `amount` ... the proportion of the conversion. A value of 1 is completely inverted. A value of 0 leaves the input unchanged.
+            invert: function(args) {
+
+                var amount = _.isFinite(args.amount) ? args.amount : 1;
+
+                return _.template('<filter><feComponentTransfer><feFuncR type="table" tableValues="${amount} ${amount2}"/><feFuncG type="table" tableValues="${amount} ${amount2}"/><feFuncB type="table" tableValues="${amount} ${amount2}"/></feComponentTransfer></filter>')({
+                    amount: amount,
+                    amount2: 1 - amount
+                });
+            },
+
+            // `amount` ... proportion of the conversion. A value of 0 will create an image that is completely black. A value of 1 leaves the input unchanged.
+            brightness: function(args) {
+
+                return _.template('<filter><feComponentTransfer><feFuncR type="linear" slope="${amount}"/><feFuncG type="linear" slope="${amount}"/><feFuncB type="linear" slope="${amount}"/></feComponentTransfer></filter>')({
+                    amount: _.isFinite(args.amount) ? args.amount : 1
+                });
+            },
+
+            // `amount` ... proportion of the conversion. A value of 0 will create an image that is completely black. A value of 1 leaves the input unchanged.
+            contrast: function(args) {
+
+                var amount = _.isFinite(args.amount) ? args.amount : 1;
+
+                return _.template('<filter><feComponentTransfer><feFuncR type="linear" slope="${amount}" intercept="${amount2}"/><feFuncG type="linear" slope="${amount}" intercept="${amount2}"/><feFuncB type="linear" slope="${amount}" intercept="${amount2}"/></feComponentTransfer></filter>')({
+                    amount: amount,
+                    amount2: .5 - amount / 2
+                });
+            }
+        },
+
+        /**
+         * @namespace dedu.util.format
+         */
+        format: {
+
+            /** Formatting numbers via the Python Format Specification Mini-language.
+             * See http://docs.python.org/release/3.1.3/library/string.html#format-specification-mini-language.
+             * Heavilly inspired by the D3.js library implementation.
+             * @method number
+             * @example
+             * 
+             * joint.util.format.number('.2f', 5)    // 5.00
+             * joint.util.format.number('03d', 5)    // 005
+             * joint.util.format.number('.1%', .205)    // 20.5%
+             * joint.util.format.number('*^9', 5)    // ****5****
+             * 
+             */
+            number: function(specifier, value, locale) {
+
+                locale = locale || {
+
+                    currency: ['$', ''],
+                    decimal: '.',
+                    thousands: ',',
+                    grouping: [3]
+                };
+
+                // See Python format specification mini-language: http://docs.python.org/release/3.1.3/library/string.html#format-specification-mini-language.
+                // [[fill]align][sign][symbol][0][width][,][.precision][type]
+                var re = /(?:([^{])?([<>=^]))?([+\- ])?([$#])?(0)?(\d+)?(,)?(\.-?\d+)?([a-z%])?/i;
+
+                var match = re.exec(specifier);
+                var fill = match[1] || ' ';
+                var align = match[2] || '>';
+                var sign = match[3] || '';
+                var symbol = match[4] || '';
+                var zfill = match[5];
+                var width = +match[6];
+                var comma = match[7];
+                var precision = match[8];
+                var type = match[9];
+                var scale = 1;
+                var prefix = '';
+                var suffix = '';
+                var integer = false;
+
+                if (precision) precision = +precision.substring(1);
+
+                if (zfill || fill === '0' && align === '=') {
+                    zfill = fill = '0';
+                    align = '=';
+                    if (comma) width -= Math.floor((width - 1) / 4);
+                }
+
+                switch (type) {
+                    case 'n':
+                        comma = true;
+                        type = 'g';
+                        break;
+                    case '%':
+                        scale = 100;
+                        suffix = '%';
+                        type = 'f';
+                        break;
+                    case 'p':
+                        scale = 100;
+                        suffix = '%';
+                        type = 'r';
+                        break;
+                    case 'b':
+                    case 'o':
+                    case 'x':
+                    case 'X':
+                        if (symbol === '#') prefix = '0' + type.toLowerCase();
+                    case 'c':
+                    case 'd':
+                        integer = true;
+                        precision = 0;
+                        break;
+                    case 's':
+                        scale = -1;
+                        type = 'r';
+                        break;
+                }
+
+                if (symbol === '$') {
+                    prefix = locale.currency[0];
+                    suffix = locale.currency[1];
+                }
+
+                // If no precision is specified for `'r'`, fallback to general notation.
+                if (type == 'r' && !precision) type = 'g';
+
+                // Ensure that the requested precision is in the supported range.
+                if (precision != null) {
+                    if (type == 'g') precision = Math.max(1, Math.min(21, precision));
+                    else if (type == 'e' || type == 'f') precision = Math.max(0, Math.min(20, precision));
+                }
+
+                var zcomma = zfill && comma;
+
+                // Return the empty string for floats formatted as ints.
+                if (integer && (value % 1)) return '';
+
+                // Convert negative to positive, and record the sign prefix.
+                var negative = value < 0 || value === 0 && 1 / value < 0 ? (value = -value, '-') : sign;
+
+                var fullSuffix = suffix;
+
+                // Apply the scale, computing it from the value's exponent for si format.
+                // Preserve the existing suffix, if any, such as the currency symbol.
+                if (scale < 0) {
+                    var unit = this.prefix(value, precision);
+                    value = unit.scale(value);
+                    fullSuffix = unit.symbol + suffix;
+                } else {
+                    value *= scale;
+                }
+
+                // Convert to the desired precision.
+                value = this.convert(type, value, precision);
+
+                // Break the value into the integer part (before) and decimal part (after).
+                var i = value.lastIndexOf('.');
+                var before = i < 0 ? value : value.substring(0, i);
+                var after = i < 0 ? '' : locale.decimal + value.substring(i + 1);
+
+                function formatGroup(value) {
+
+                    var i = value.length;
+                    var t = [];
+                    var j = 0;
+                    var g = locale.grouping[0];
+                    while (i > 0 && g > 0) {
+                        t.push(value.substring(i -= g, i + g));
+                        g = locale.grouping[j = (j + 1) % locale.grouping.length];
+                    }
+                    return t.reverse().join(locale.thousands);
+                }
+
+                // If the fill character is not `'0'`, grouping is applied before padding.
+                if (!zfill && comma && locale.grouping) {
+
+                    before = formatGroup(before);
+                }
+
+                var length = prefix.length + before.length + after.length + (zcomma ? 0 : negative.length);
+                var padding = length < width ? new Array(length = width - length + 1).join(fill) : '';
+
+                // If the fill character is `'0'`, grouping is applied after padding.
+                if (zcomma) before = formatGroup(padding + before);
+
+                // Apply prefix.
+                negative += prefix;
+
+                // Rejoin integer and decimal parts.
+                value = before + after;
+
+                return (align === '<' ? negative + value + padding : align === '>' ? padding + negative + value : align === '^' ? padding.substring(0, length >>= 1) + negative + value + padding.substring(length) : negative + (zcomma ? value : padding + value)) + fullSuffix;
+            },
+
+            // Formatting string via the Python Format string.
+            // See https://docs.python.org/2/library/string.html#format-string-syntax)
+            string: function(formatString, value) {
+
+                var fieldDelimiterIndex;
+                var fieldDelimiter = '{';
+                var endPlaceholder = false;
+                var formattedStringArray = [];
+
+                while ((fieldDelimiterIndex = formatString.indexOf(fieldDelimiter)) !== -1) {
+
+                    var pieceFormatedString, formatSpec, fieldName;
+
+                    pieceFormatedString = formatString.slice(0, fieldDelimiterIndex);
+
+                    if (endPlaceholder) {
+                        formatSpec = pieceFormatedString.split(':');
+                        fieldName = formatSpec.shift().split('.');
+                        pieceFormatedString = value;
+
+                        for (var i = 0; i < fieldName.length; i++)
+                            pieceFormatedString = pieceFormatedString[fieldName[i]];
+
+                        if (formatSpec.length)
+                            pieceFormatedString = this.number(formatSpec, pieceFormatedString);
+                    }
+
+                    formattedStringArray.push(pieceFormatedString);
+
+                    formatString = formatString.slice(fieldDelimiterIndex + 1);
+                    fieldDelimiter = (endPlaceholder = !endPlaceholder) ? '}' : '{';
+                }
+                formattedStringArray.push(formatString);
+
+                return formattedStringArray.join('');
+            },
+
+            convert: function(type, value, precision) {
+
+                switch (type) {
+                    case 'b':
+                        return value.toString(2);
+                    case 'c':
+                        return String.fromCharCode(value);
+                    case 'o':
+                        return value.toString(8);
+                    case 'x':
+                        return value.toString(16);
+                    case 'X':
+                        return value.toString(16).toUpperCase();
+                    case 'g':
+                        return value.toPrecision(precision);
+                    case 'e':
+                        return value.toExponential(precision);
+                    case 'f':
+                        return value.toFixed(precision);
+                    case 'r':
+                        return (value = this.round(value, this.precision(value, precision))).toFixed(Math.max(0, Math.min(20, this.precision(value * (1 + 1e-15), precision))));
+                    default:
+                        return value + '';
+                }
+            },
+
+            round: function(value, precision) {
+
+                return precision ? Math.round(value * (precision = Math.pow(10, precision))) / precision : Math.round(value);
+            },
+
+            precision: function(value, precision) {
+
+                return precision - (value ? Math.ceil(Math.log(value) / Math.LN10) : 1);
+            },
+
+            prefix: function(value, precision) {
+
+                var prefixes = _.map(['y', 'z', 'a', 'f', 'p', 'n', 'µ', 'm', '', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'], function(d, i) {
+                    var k = Math.pow(10, Math.abs(8 - i) * 3);
+                    return {
+                        scale: i > 8 ? function(d) {
+                            return d / k;
+                        } : function(d) {
+                            return d * k;
+                        },
+                        symbol: d
+                    };
+                });
+
+                var i = 0;
+                if (value) {
+                    if (value < 0) value *= -1;
+                    if (precision) value = this.round(value, this.precision(value, precision));
+                    i = 1 + Math.floor(1e-12 + Math.log(value) / Math.LN10);
+                    i = Math.max(-24, Math.min(24, Math.floor((i <= 0 ? i + 1 : i - 1) / 3) * 3));
+                }
+                return prefixes[8 + i / 3];
             }
         }
     }
 }
 
 /**
- * `org.dedu.draw.Cell` 是`joint_chart`所有图形的父类
+ * `dedu.Cell` 是`joint_chart`所有图形的父类
  * @class
  * @augments Backbone.Model
  */
-org.dedu.draw.Cell = Backbone.Model.extend({
+dedu.Cell = Backbone.Model.extend({
 
     constructor: function (attributes, options) {
         var defaults;
@@ -3500,15 +3480,15 @@ org.dedu.draw.Cell = Backbone.Model.extend({
     /**
      * initialize:
      * * set id
-     * * process all attrs of port {@link org.dedu.draw.Cell#processPorts|processPorts}
+     * * process all attrs of port {@link dedu.Cell#processPorts|processPorts}
      * @method
      * @instance
      * @param {Object} options
-     * @memberof org.dedu.draw.Cell
+     * @memberof dedu.Cell
      */
     initialize: function (options) {
         if (!options || !options.id) {
-            this.set('id', org.dedu.draw.util.uuid(), {silent: true});
+            this.set('id', dedu.util.uuid(), {silent: true});
         }
         // Collect ports defined in `attrs` and keep collecting whenever `attrs` object changes.
         this.processPorts();
@@ -3519,7 +3499,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
      * @method isLink
      * @instance
      * @returns {boolean}
-     * @memberof org.dedu.draw.Cell
+     * @memberof dedu.Cell
      */
     isLink: function () {
         return false;
@@ -3529,8 +3509,8 @@ org.dedu.draw.Cell = Backbone.Model.extend({
      * @method toFront
      * @instance
      * @param opt
-     * @returns {org.dedu.draw.Cell}
-     * @memberof org.dedu.draw.Cell
+     * @returns {dedu.Cell}
+     * @memberof dedu.Cell
      */
     toFront: function (opt) {
         if (this.collection) {
@@ -3554,10 +3534,10 @@ org.dedu.draw.Cell = Backbone.Model.extend({
     },
 
     /**
-     * process all attrs of port and called by {@link org.dedu.draw.Cell#initialize|initialize}
+     * process all attrs of port and called by {@link dedu.Cell#initialize|initialize}
      * @method processPorts
      * @instance
-     * @memberof org.dedu.draw.Cell
+     * @memberof dedu.Cell
      *
      */
     processPorts: function () {
@@ -3610,7 +3590,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
      * @param {*} value
      * @param {Object} opt
      * @returns {*}
-     * @memberof org.dedu.draw.Cell
+     * @memberof dedu.Cell
      * @example
      * cell.prop('name/first', 'John')
      * cell.prop({ name: { first: 'John' } })
@@ -3651,19 +3631,19 @@ org.dedu.draw.Cell = Backbone.Model.extend({
                     prevProperty = key;
                 });
                 // Fill update with the `value` on `path`.
-                update = org.dedu.draw.util.setByPath(update, path, value, '/');
+                update = dedu.util.setByPath(update, path, value, '/');
 
                 var baseAttributes = _.merge({}, this.attributes);
                 // if rewrite mode enabled, we replace value referenced by path with
                 // the new one (we don't merge).
-                opt.rewrite && org.dedu.draw.util.unsetByPath(baseAttributes, path, '/');
+                opt.rewrite && dedu.util.unsetByPath(baseAttributes, path, '/');
 
                 // Merge update with the model attributes.
                 var attributes = _.merge(baseAttributes, update);
                 // Finally, set the property to the updated attributes.
                 return this.set(property, attributes[property], opt);
             } else {
-                return org.dedu.draw.util.getByPath(this.attributes, props, delim);
+                return dedu.util.getByPath(this.attributes, props, delim);
             }
 
         }
@@ -3797,7 +3777,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
 
             var clone = Backbone.Model.prototype.clone.apply(this, arguments);
             // We don't want the clone to have the same ID as the original.
-            clone.set('id', org.dedu.draw.util.uuid());
+            clone.set('id', dedu.util.uuid());
             // A shallow cloned element does not carry over the original embeds.
             clone.set('embeds', '');
             return clone;
@@ -3806,7 +3786,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
             // Deep cloning.
 
             // For a deep clone, simply call `graph.cloneCells()` with the cell and all its embedded cells.
-            return _.values(org.dedu.draw.Graph.prototype.cloneCells.call(null, [this].concat(this.getEmbeddedCells({deep: true}))));
+            return _.values(dedu.Graph.prototype.cloneCells.call(null, [this].concat(this.getEmbeddedCells({deep: true}))));
         }
     },
 
@@ -3814,17 +3794,17 @@ org.dedu.draw.Cell = Backbone.Model.extend({
 });
 
 /**
- * `org.dedu.draw.CellView` 是{@link org.dedu.draw.Cell}的view
+ * `dedu.CellView` 是{@link dedu.Cell}的view
  * @class
  * @augments  Backbone.View
  */
-org.dedu.draw.CellView = Backbone.View.extend({
+dedu.CellView = Backbone.View.extend({
     /**
      * @member {String}
      * @default
      * @const
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     tagName: 'g',
 
@@ -3832,7 +3812,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
      * set the attribute of dom node Dom节点的attribute
      * @returns {{model-id: *}}
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     attributes: function () {
         return {'model-id': this.model.id}
@@ -3851,7 +3831,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
         // The global unique id makes sure that the same view can be rendered on e.g. different machines and
         // still be associated to the same object among all those clients. This is necessary for real-time
         // collaboration mechanism.
-        this.options.id = this.options.id || org.dedu.draw.util.guid(this);
+        this.options.id = this.options.id || dedu.util.guid(this);
 
     },
 
@@ -3892,7 +3872,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
      * @param [prevSelector] - 使用该方法时,不需要传递实参,它仅被用作递归
      * @returns {*}
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     getSelector: function (el, prevSelector) {
 
@@ -3954,7 +3934,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
      * @method
      * @returns {*}
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     getBBox: function () {
         return g.rect(this.vel.bbox());
@@ -3986,7 +3966,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
      * @param {DOMObject} el
      * @returns {*}
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     findMagnet: function (el) {
         var $el = this.$(el);
@@ -4015,7 +3995,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
      * @param {JQueryObject} selector
      * @returns {Backbone.$|*}
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     findBySelector: function (selector) {
         // These are either descendants of `this.$el` of `this.$el` itself.
@@ -4065,11 +4045,11 @@ org.dedu.draw.CellView = Backbone.View.extend({
 });
 
 /**
- * `org.dedu.draw.Element`是所有节点的父类
+ * `dedu.Element`是所有节点的父类
  * @class
- * @augments org.dedu.draw.Cell
+ * @augments dedu.Cell
  */
-org.dedu.draw.Element = org.dedu.draw.Cell.extend({
+dedu.Element = dedu.Cell.extend({
     /**
      * @member {Object} defaults - 默认属性
      * @property {Object} defaults.position
@@ -4080,7 +4060,7 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
      * @property {number} defaults.size.height=0
      * @property {number} defaults.angle=0
      * @property {number} defaults.selected=false
-     * @memberof org.dedu.draw.Element
+     * @memberof dedu.Element
      */
     defaults: {
         position: {
@@ -4103,8 +4083,8 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
      * @param {Number} tx - x轴偏移量
      * @param {Number} ty - y轴偏移量
      * @param {Object} opt
-     * @returns {org.dedu.draw.Element}
-     * @memberof org.dedu.draw.Element
+     * @returns {dedu.Element}
+     * @memberof dedu.Element
      */
     translate:function(tx,ty,opt){
         tx = tx || 0;
@@ -4144,8 +4124,8 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
      * @param {Number} width - 宽度
      * @param {Number} height - 高度
      * @param {Object} opt
-     * @returns {org.dedu.draw.Element}
-     * @memberof org.dedu.draw.Element
+     * @returns {dedu.Element}
+     * @memberof dedu.Element
      */
     resize: function (width, height, opt) {
         this.set('size', { width: width, height: height }, opt);
@@ -4155,11 +4135,11 @@ org.dedu.draw.Element = org.dedu.draw.Cell.extend({
 });
 
 /**
- * `org.dedu.draw.ElementView`是`org.dedu.draw.Element`的view
+ * `dedu.ElementView`是`dedu.Element`的view
  * @class
- * @augments  org.dedu.draw.CellView
+ * @augments  dedu.CellView
  */
-org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
+dedu.ElementView = dedu.CellView.extend({
     /**
      * 用于attrs的特殊属性
      * * style : An object containing CSS styles for a subelement
@@ -4176,7 +4156,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
      * * y-alignment' : 垂直居中
      * * port : An object containing at least an id property. This property uniquely identifies the port. If a link gets connected to a magnet that has also a port object defined, the id property of the port object will be copied to the port property of the source/target of the link.
      * @member {Array}
-     * @memberof org.dedu.draw.ElementView
+     * @memberof dedu.ElementView
      *
      */
     SPECIAL_ATTRIBUTES:[
@@ -4199,7 +4179,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
      * set the attribute of dom node Dom节点的attribute
      * @returns {String}
      * @instance
-     * @memberof org.dedu.draw.ElementView
+     * @memberof dedu.ElementView
      */
     className:function(){
         return 'element node '+this.model.get('type').replace('.',' ','g')
@@ -4210,7 +4190,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
         if(options.skip_render){
             return;
         }
-        org.dedu.draw.CellView.prototype.initialize.apply(this, arguments);
+        dedu.CellView.prototype.initialize.apply(this, arguments);
 
         _.bindAll(this, 'translate', 'resize', 'rotate');
 
@@ -4726,7 +4706,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
 
 
             this.restrictedArea = paper.getRestrictedArea(this);
-            org.dedu.draw.CellView.prototype.pointerdown.apply(this, arguments);
+            dedu.CellView.prototype.pointerdown.apply(this, arguments);
             this.notify('element:pointerdown', evt, x, y);
         }
         this._closestView = null;
@@ -4762,7 +4742,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
 
             //this._dx = g.snapToGrid(x, grid);
             //this._dy = g.snapToGrid(y, grid);
-            org.dedu.draw.CellView.prototype.pointermove.apply(this, arguments);
+            dedu.CellView.prototype.pointermove.apply(this, arguments);
             this.notify('element:pointermove', evt, tx, ty);
         }
     },
@@ -4792,7 +4772,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
 
         }else{
             this.notify('element:pointerup', evt, x, y);
-            org.dedu.draw.CellView.prototype.pointerup.apply(this, arguments);
+            dedu.CellView.prototype.pointerup.apply(this, arguments);
         }
     }
 
@@ -4800,7 +4780,7 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
 
 /**
  * source or target
- * @typeof {Object} org.dedu.draw.Link~Vertex
+ * @typeof {Object} dedu.Link~Vertex
  * @property {String} id - vertex'id
  * @property {String} redID - vertex'redID
  * @property {Selector} selector - css
@@ -4808,8 +4788,8 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
  */
 
 /**
- * `org.dedu.draw.Link` 是所有link的父类
- * Properties source and target determine to which elements the link is connected to. Both objects are of the form<org.dedu.draw.Link~Vertex>:
+ * `dedu.Link` 是所有link的父类
+ * Properties source and target determine to which elements the link is connected to. Both objects are of the form<dedu.Link~Vertex>:
  *
  * {
  *   id: <id of an element>,
@@ -4818,13 +4798,13 @@ org.dedu.draw.ElementView = org.dedu.draw.CellView.extend({
  * }
  *
  * @class
- * @augments org.dedu.draw.Cell
+ * @augments dedu.Cell
  */
-org.dedu.draw.Link = org.dedu.draw.Cell.extend({
+dedu.Link = dedu.Cell.extend({
     /**
      * The default markup for links.
      * @member {Array}
-     * @memberof org.dedu.draw.Link
+     * @memberof dedu.Link
      */
     markup: [
         '<path class="connection_background"/>',
@@ -4842,7 +4822,7 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
     /**
      * The default labelMarkup for links.
      * @member {Array}
-     * @memberof org.dedu.draw.Link
+     * @memberof dedu.Link
      */
     labelMarkup: [
         '<g class="label">',
@@ -4854,7 +4834,7 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
     /**
      * The default arrowHeadMarkup for links.箭头
      * @member {Array}
-     * @memberof org.dedu.draw.Link
+     * @memberof dedu.Link
      */
     arrowheadMarkup: [
         '<g class="marker-arrowhead-group marker-arrowhead-group-<%= end %>">',
@@ -4865,12 +4845,12 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
     /**
      * @member {Object} defaults - 默认属性
      * @property {String} defaults.type='link'
-     * @property {org.dedu.draw.Link~Vertex} source
-     * @property {org.dedu.draw.Link~Vertex} target
+     * @property {dedu.Link~Vertex} source
+     * @property {dedu.Link~Vertex} target
      * @property {Object} labels
      * @property {Object} attrs
      * @override
-     * @memberof org.dedu.draw.Link
+     * @memberof dedu.Link
      */
     defaults: {
         type: 'link',
@@ -4929,7 +4909,7 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
 
     /**
      * Return the source element of the link or null if there is none.
-     * @returns {*|org.dedu.draw.Cell|null}
+     * @returns {*|dedu.Cell|null}
      */
     getSourceElement: function() {
 
@@ -4940,7 +4920,7 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
 
     /**
      * Return the target element of the link or null if there is none.
-     * @returns {*|org.dedu.draw.Cell|null}
+     * @returns {*|dedu.Cell|null}
      */
     getTargetElement: function() {
 
@@ -4952,7 +4932,7 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
      * 返回true
      * @override
      * @returns {boolean}
-     * @memberof org.dedu.draw.Link
+     * @memberof dedu.Link
      */
     isLink: function() {
         return true;
@@ -4960,11 +4940,11 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
 });
 
 /**
- * `org.dedu.draw.LinkView`是{@link org.dedu.draw.link}的view and is responsible for rendering a link with properties defined in its model
+ * `dedu.LinkView`是{@link dedu.link}的view and is responsible for rendering a link with properties defined in its model
  * @class
- * @augments org.dedu.draw.CellView
+ * @augments dedu.CellView
  */
-org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
+dedu.LinkView = dedu.CellView.extend({
 
     /**
      * @override
@@ -4977,7 +4957,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     initialize: function (opts) {
         this.options = _.extend({}, _.result(this, "options"), opts || {});
 
-        org.dedu.draw.CellView.prototype.initialize.apply(this, arguments);
+        dedu.CellView.prototype.initialize.apply(this, arguments);
 
         // create methods in prototype, so they can be accessed from any instance and
         // don't need to be create over and over
@@ -5230,7 +5210,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
             var $rect = $(labelNode).find('rect');
 
             // Text attributes with the default `text-anchor` and font-size set.
-            var textAttributes = _.extend({ 'text-anchor': 'middle', 'font-size': 14 }, org.dedu.draw.util.getByPath(label, 'attrs/text', '/'));
+            var textAttributes = _.extend({ 'text-anchor': 'middle', 'font-size': 14 }, dedu.util.getByPath(label, 'attrs/text', '/'));
 
             $text.attr(_.omit(textAttributes, 'text'));
             if (!_.isUndefined(textAttributes.text)) {
@@ -5252,7 +5232,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
                 rx: 3,
                 ry: 3
 
-            }, org.dedu.draw.util.getByPath(label, 'attrs/rect', '/'));
+            }, dedu.util.getByPath(label, 'attrs/rect', '/'));
 
             $rect.attr(_.extend(rectAttributes, {
                 x: textBbox.x,
@@ -5456,7 +5436,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     },
 
     findRoute: function (oldVertices) {
-        var namespace = org.dedu.draw.routers;
+        var namespace = dedu.routers;
         var router = this.model.get('router');
 
         var defaultRouter = this.paper.options.defaultRouter;
@@ -5478,7 +5458,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     // between `source` and `target`.
     getPathData: function (vertices) {
 
-        var namespace = org.dedu.draw.connectors;
+        var namespace = dedu.connectors;
         var connector = this.model.get('connector');
         var defaultConnector = this.paper.options.defaultConnector;
 
@@ -5809,12 +5789,12 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     },
 
     focus: function () {
-        //org.dedu.draw.CellView.prototype.focus.apply(this);
+        //dedu.CellView.prototype.focus.apply(this);
         this.highlight('connection_line');
     },
 
     unfocus: function () {
-        //org.dedu.draw.CellView.prototype.unfocus.apply(this);
+        //dedu.CellView.prototype.unfocus.apply(this);
         this.unhighlight('connection_line');
     },
 
@@ -5824,7 +5804,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     },
 
     pointerdown: function (evt,x,y) {
-        org.dedu.draw.CellView.prototype.pointerdown.apply(this, arguments);
+        dedu.CellView.prototype.pointerdown.apply(this, arguments);
 
 
         this._dx = x;
@@ -5879,7 +5859,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
         var m = g.line(g.point(this.sourcePoint.x,this.sourcePoint.y), g.point(this.targetPoint.x,this.targetPoint.y)).midpoint();
         x = m.x-8;
         y = m.y-8;
-        org.dedu.draw.CellView.prototype.pointerdblclick.apply(this, arguments);
+        dedu.CellView.prototype.pointerdblclick.apply(this, arguments);
 
     },
 
@@ -6002,7 +5982,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
         this._dx = x;
         this._dy = y;
 
-        org.dedu.draw.CellView.prototype.pointermove.apply(this, arguments);
+        dedu.CellView.prototype.pointermove.apply(this, arguments);
         this.notify('link:pointermove', evt, x, y);
     },
 
@@ -6047,7 +6027,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     
         delete this._action;
         this.notify('link:pointerup', evt, x, y);
-        org.dedu.draw.CellView.prototype.pointerup.apply(this, arguments);
+        dedu.CellView.prototype.pointerup.apply(this, arguments);
     },
 
     
@@ -6055,7 +6035,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 },{
     /**
      * get port of vertex
-     * @param {org.dedu.draw.Link~Vertex} end
+     * @param {dedu.Link~Vertex} end
      * @returns {string}
      */
     makeSelector: function (end) {
@@ -6073,17 +6053,17 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
 });
 
 /**
- * `org.dedu.draw.GraphCells` stores all the cell models
+ * `dedu.GraphCells` stores all the cell models
  * @class
  * @augments  Backbone.Collection
  */
-org.dedu.draw.GraphCells = Backbone.Collection.extend({
+dedu.GraphCells = Backbone.Collection.extend({
     /**
      * graph处理cell的namespace
      * @member {Object}
-     * @memberof org.dedu.draw.GraphCells`
+     * @memberof dedu.GraphCells`
      */
-    cellNamespace: org.dedu.draw.shape,
+    cellNamespace: dedu.shape,
     initialize:function(models,opt){
         if(opt.cellNamespace){
             this.cellNamespace = opt.cellNamespace;
@@ -6095,24 +6075,25 @@ org.dedu.draw.GraphCells = Backbone.Collection.extend({
      * @param options
      */
     model:function(attrs,options){
+        console.log(options);
         var namespace = options.collection.cellNamespace;
 
         // Find the model class in the namespace or use the default one.
         var ModelClass = (attrs.type === 'link')
-            ? org.dedu.draw.Link
-            : org.dedu.draw.util.getByPath(namespace, attrs.type, '.') || org.dedu.draw.Element;
+            ? dedu.Link
+            : dedu.util.getByPath(namespace, attrs.type, '.') || dedu.Element;
 
         return new ModelClass(attrs, options);
     }
 });
 
 /**
- * `org.dedu.draw.Graph` A model holding all the cells (elements and links) of the diagram
+ * `dedu.Graph` A model holding all the cells (elements and links) of the diagram
  * * property `cells` stores all the cells
  * @class
  * @augments Backbone.Model
  */
-org.dedu.draw.Graph = Backbone.Model.extend({
+dedu.Graph = Backbone.Model.extend({
 
     initialize:function(attrs,opt){
 
@@ -6121,7 +6102,7 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         // Passing `cellModel` function in the options object to graph allows for
         // setting models based on attribute objects. This is especially handy
         // when processing JSON graphs that are in a different than JointJS format.
-        var cells = new org.dedu.draw.GraphCells([], {
+        var cells = new dedu.GraphCells([], {
             model: opt.cellModel,
             cellNamespace: opt.cellNamespace,
             graph: this
@@ -6207,7 +6188,7 @@ org.dedu.draw.Graph = Backbone.Model.extend({
     /**
      * get cell by redID
      * @param {String} redID
-     * @returns {org.dedu.draw.Cell}
+     * @returns {dedu.Cell}
      */
     getCellByRedID:function(redID) {
         var models = this.get('cells').models;
@@ -6220,15 +6201,15 @@ org.dedu.draw.Graph = Backbone.Model.extend({
     /**
      * get a cell from the graph by its `id`
      * @param {String} id
-     * @returns {org.dedu.draw.Cell}
+     * @returns {dedu.Cell}
      */
     getCell: function(id) {
         return this.get('cells').get(id);
     },
 
     /**
-     * like {@link org.dedu.draw.Graph~getCell},Get all the elemnet and links in the graph.
-     * @returns {Array<org.dedu.draw.Cell>}
+     * like {@link dedu.Graph~getCell},Get all the elemnet and links in the graph.
+     * @returns {Array<dedu.Cell>}
      */
     getCells: function() {
         return this.get('cells').toArray();
@@ -6236,19 +6217,19 @@ org.dedu.draw.Graph = Backbone.Model.extend({
 
     /**
      * Get all the elements in the graph (i.e. omit links).
-     * @returns {Array<org.dedu.draw.Element>}
+     * @returns {Array<dedu.Element>}
      */
     getElements: function() {
 
         return this.get('cells').filter(function(cell) {
 
-            return cell instanceof org.dedu.draw.Element;
+            return cell instanceof dedu.Element;
         });
     },
 
     /**
      * Get all the links in the graph (i.e. omit elements).
-     * @returns {Array<org.dedu.draw.Link>}
+     * @returns {Array<dedu.Link>}
      */
     getLinks: function() {
         return this.get('cells').filter(function(cell) {
@@ -6268,9 +6249,9 @@ org.dedu.draw.Graph = Backbone.Model.extend({
     getAllPosition: function () {
         var nodes = {};
         this.get('cells').models.forEach(function(model){
-            if(model instanceof org.dedu.draw.Element){
+            if(model instanceof dedu.Element){
 
-                if(model instanceof org.dedu.draw.shape.node_red.subflowportModel){
+                if(model instanceof dedu.shape.node_red.subflowportModel){
                     nodes[model.get('index')-1] = {position:model.get('position'),type:'subflowport'};
                 }else{
                     nodes[model.get('redID')] = {position:model.get('position')};
@@ -6306,18 +6287,18 @@ org.dedu.draw.Graph = Backbone.Model.extend({
 
     /**
      * Add a new cell to the graph. If cell is an array, all the cells in the array will be added to the graph.
-     * @param {org.dedu.draw.Cell} cell
+     * @param {dedu.Cell} cell
      * @param options
-     * @returns {org.dedu.draw.Graph}
+     * @returns {dedu.Graph}
      * @example
      *
-     *  var rect = new org.dedu.draw.shape.basic.Rect({
+     *  var rect = new dedu.shape.basic.Rect({
      *   position: { x: 100, y: 100 },
      *   size: { width: 70, height: 30 },
      *   attrs: { text: { text: 'my rectangle' } }
      *   });
      *   var rect2 = rect.clone();
-     *   var graph = new org.dedu.draw.Graph();
+     *   var graph = new dedu.Graph();
      *   graph.addCell(rect).addCell(rect2);
      *
      */
@@ -6325,7 +6306,7 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         this.get('cells').add(this._prepareCell(cell), options || {});
         var args ;
         var self = this;
-        if(cell instanceof org.dedu.draw.Link){
+        if(cell instanceof dedu.Link){
             cell.on('link:complete',function(){
                 args = {
                     source: this.get('source'),
@@ -6335,7 +6316,7 @@ org.dedu.draw.Graph = Backbone.Model.extend({
                 };
                 self.notify.apply(this,['node-red:node-link-added'].concat(args));
             },cell);
-        }else if(cell instanceof org.dedu.draw.Element){
+        }else if(cell instanceof dedu.Element){
             args = {
                 redID: cell.get('redID'),
                 type:'node'
@@ -6348,9 +6329,9 @@ org.dedu.draw.Graph = Backbone.Model.extend({
 
     /**
      * Add new cells to the graph. This is just a syntactic sugar to the addCell method. Calling addCell with an array of cells is an equivalent to calling addCells.
-     * @param {Array<org.dedu.draw.Cell>} cells
+     * @param {Array<dedu.Cell>} cells
      * @param options
-     * @returns {org.dedu.draw.Graph}
+     * @returns {dedu.Graph}
      */
     addCells: function(cells, options) {
 
@@ -6366,10 +6347,10 @@ org.dedu.draw.Graph = Backbone.Model.extend({
     },
 
     /**
-     * like {@link org.dedu.draw.Graph~addCells},用于加载很多cell时
+     * like {@link dedu.Graph~addCells},用于加载很多cell时
      * @param cells
      * @param opt
-     * @returns {org.dedu.draw.Graph}
+     * @returns {dedu.Graph}
      */
     resetCells: function(cells, opt) {
 
@@ -6431,7 +6412,7 @@ org.dedu.draw.Graph = Backbone.Model.extend({
         this.get('cells').remove(this.selectionSet);
         var selectionIDs = {};
         for(var i=0;i<this.selectionSet.length;i++){
-            selectionIDs[this.selectionSet[i].get('redID')] = this.selectionSet[i] instanceof org.dedu.draw.Link?'link':'node';
+            selectionIDs[this.selectionSet[i].get('redID')] = this.selectionSet[i] instanceof dedu.Link?'link':'node';
         }
         this.notify.apply(this,['node-red:node-link-removed'].concat(selectionIDs));
         this.selectionSet = [];
@@ -6444,18 +6425,18 @@ org.dedu.draw.Graph = Backbone.Model.extend({
 });
 
 
-org.dedu.draw.shape = {basic:{}};
+dedu.shape = {basic:{}};
 
 /**
  * 不能连线的图元
  * @class
- * @augments org.dedu.draw.Element.
+ * @augments dedu.Element.
  */
-org.dedu.draw.shape.basic.Generic = org.dedu.draw.Element.extend({
+dedu.shape.basic.Generic = dedu.Element.extend({
     /**
      * @override
      */
-    defaults:org.dedu.draw.util.deepSupplement({
+    defaults:dedu.util.deepSupplement({
         type:'basic.Generic',
         attrs:{
             '.':{fill:'#fff',stroke:'none',magnet:false},
@@ -6464,12 +6445,12 @@ org.dedu.draw.shape.basic.Generic = org.dedu.draw.Element.extend({
                 'stroke':'none'
             },
         }
-    },org.dedu.draw.Element.prototype.defaults)
+    },dedu.Element.prototype.defaults)
 });
 
-org.dedu.draw.shape.basic.Rect  = org.dedu.draw.shape.basic.Generic.extend({
+dedu.shape.basic.Rect  = dedu.shape.basic.Generic.extend({
     markup: '<g class="rotatable"><g class="scalable"><rect/></g><text/></g>',
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
         size: {
             width: 60,
             height: 40
@@ -6494,25 +6475,25 @@ org.dedu.draw.shape.basic.Rect  = org.dedu.draw.shape.basic.Generic.extend({
             }
         }
 
-    }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
+    }, dedu.shape.basic.Generic.prototype.defaults)
 });
 
-org.dedu.draw.shape.basic.CRect = org.dedu.draw.shape.basic.Rect.extend({
-    defaults:org.dedu.draw.util.deepSupplement({
+dedu.shape.basic.CRect = dedu.shape.basic.Rect.extend({
+    defaults:dedu.util.deepSupplement({
         attrs:{
             'rect':{
                 rx:7,
                 ry:7
             }
         }
-    },org.dedu.draw.shape.basic.Rect.prototype.defaults)
+    },dedu.shape.basic.Rect.prototype.defaults)
 });
 
-org.dedu.draw.shape.basic.Circle = org.dedu.draw.shape.basic.Generic.extend({
+dedu.shape.basic.Circle = dedu.shape.basic.Generic.extend({
 
     markup: '<g class="rotatable"><g class="scalable"><circle/></g><text/></g>',
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
 
         type: 'basic.Circle',
         size: { width: 60, height: 60 },
@@ -6535,15 +6516,15 @@ org.dedu.draw.shape.basic.Circle = org.dedu.draw.shape.basic.Generic.extend({
                 'font-family': 'Arial, helvetica, sans-serif'
             }
         }
-    }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
+    }, dedu.shape.basic.Generic.prototype.defaults)
 });
 
 
-org.dedu.draw.shape.basic.Ellipse = org.dedu.draw.shape.basic.Generic.extend({
+dedu.shape.basic.Ellipse = dedu.shape.basic.Generic.extend({
 
     markup: '<g class="rotatable"><g class="scalable"><ellipse/></g><text/></g>',
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
 
         type: 'basic.Ellipse',
         size: { width: 60, height: 40 },
@@ -6565,14 +6546,14 @@ org.dedu.draw.shape.basic.Ellipse = org.dedu.draw.shape.basic.Generic.extend({
                 'font-family': 'Arial, helvetica, sans-serif'
             }
         }
-    }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
+    }, dedu.shape.basic.Generic.prototype.defaults)
 });
 
-org.dedu.draw.shape.basic.Polygon = org.dedu.draw.shape.basic.Generic.extend({
+dedu.shape.basic.Polygon = dedu.shape.basic.Generic.extend({
 
     markup: '<g class="rotatable"><g class="scalable"><polygon/></g><text/></g>',
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
 
         type: 'basic.Polygon',
         size: { width: 60, height: 40 },
@@ -6592,14 +6573,14 @@ org.dedu.draw.shape.basic.Polygon = org.dedu.draw.shape.basic.Generic.extend({
                 'font-family': 'Arial, helvetica, sans-serif'
             }
         }
-    }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
+    }, dedu.shape.basic.Generic.prototype.defaults)
 });
 
-org.dedu.draw.shape.basic.Polyline = org.dedu.draw.shape.basic.Generic.extend({
+dedu.shape.basic.Polyline = dedu.shape.basic.Generic.extend({
 
     markup: '<g class="rotatable"><g class="scalable"><polyline/></g><text/></g>',
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
 
         type: 'basic.Polyline',
         size: { width: 60, height: 40 },
@@ -6619,18 +6600,18 @@ org.dedu.draw.shape.basic.Polyline = org.dedu.draw.shape.basic.Generic.extend({
                 'font-family': 'Arial, helvetica, sans-serif'
             }
         }
-    }, org.dedu.draw.shape.basic.Generic.prototype.defaults)
+    }, dedu.shape.basic.Generic.prototype.defaults)
 });
 
 /**
- * `org.dedu.draw.shape.basic.PortsModelInterface` 增加inPort和outPort,用于link
+ * `dedu.shape.basic.PortsModelInterface` 增加inPort和outPort,用于link
  * @class
  */
-org.dedu.draw.shape.basic.PortsModelInterface = {
+dedu.shape.basic.PortsModelInterface = {
     /**
      * initialize
      * *增加对port的update
-     * @ memberof org.dedu.draw.shape.basic.PortsModelInterface
+     * @ memberof dedu.shape.basic.PortsModelInterface
      */
     initialize:function(){
         this.updatePortsAttrs();
@@ -6641,7 +6622,7 @@ org.dedu.draw.shape.basic.PortsModelInterface = {
     },
     /**
      * update port css
-     * @memberof org.dedu.draw.shape.basic.PortsModelInterface
+     * @memberof dedu.shape.basic.PortsModelInterface
      */
     updatePortsAttrs: function () {
         // Delete previously set attributes for ports.
@@ -6696,21 +6677,21 @@ org.dedu.draw.shape.basic.PortsModelInterface = {
 };
 
 /**
- * `org.dedu.draw.shape.basic.PortsViewInterface` 是 `org.dedu.draw.shape.basic.PortsModelInterface`的view
+ * `dedu.shape.basic.PortsViewInterface` 是 `dedu.shape.basic.PortsModelInterface`的view
  * @class
  */
-org.dedu.draw.shape.basic.PortsViewInterface = {
+dedu.shape.basic.PortsViewInterface = {
 
     /**
      * initialize
      * @param options
-     * @memberof org.dedu.draw.shape.basic.PortsViewInterface
+     * @memberof dedu.shape.basic.PortsViewInterface
      */
     initialize: function (options) {
         if(options.skip_render){
             return;
         }
-        org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
+        dedu.ElementView.prototype.initialize.apply(this, arguments);
         // `Model` emits the `process:ports` whenever it's done configuring the `attrs` object for ports.
         this.listenTo(this.model, 'process:ports', this.update);
         this.model.on('change:selected',function(){
@@ -6724,17 +6705,17 @@ org.dedu.draw.shape.basic.PortsViewInterface = {
 
     /**
      * `update` in order to override
-     * @memberof org.dedu.draw.shape.basic.PortsViewInterface
+     * @memberof dedu.shape.basic.PortsViewInterface
      */
     update: function () {
         // First render ports so that `attrs` can be applied to those newly created DOM elements
         // in `ElementView.prototype.update()`.
         this.renderPorts();
-        org.dedu.draw.ElementView.prototype.update.apply(this, arguments);
+        dedu.ElementView.prototype.update.apply(this, arguments);
     },
     /**
      * render port
-     * @memberof org.dedu.draw.shape.basic.PortsViewInterface
+     * @memberof dedu.shape.basic.PortsViewInterface
      */
     renderPorts: function () {
         var $inPorts = this.$('.inPorts').empty();
@@ -6758,7 +6739,7 @@ org.dedu.draw.shape.basic.PortsViewInterface = {
  */
 
 
-org.dedu.draw.connectors.normal = function (sourcePoint, targetPoint, vertices) {
+dedu.connectors.normal = function (sourcePoint, targetPoint, vertices) {
     // Construct the `d` attribute of the `<path>` element.
 
     var d = ['M',sourcePoint.x,sourcePoint.y,"C"];
@@ -6780,22 +6761,22 @@ org.dedu.draw.connectors.normal = function (sourcePoint, targetPoint, vertices) 
     return d.join(' ');
 };
 
-org.dedu.draw.shape.devs = {};
+dedu.shape.devs = {};
 
 /**
- * `org.dedu.draw.shape.devs.Model` extends `org.dedu.draw.shape.basic.Generic` and `org.dedu.draw.shape.basic.PortsModelInterface`
+ * `dedu.shape.devs.Model` extends `dedu.shape.basic.Generic` and `dedu.shape.basic.PortsModelInterface`
  * @class
- * @augments org.dedu.draw.shape.basic.Generic
+ * @augments dedu.shape.basic.Generic
  */
-org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
+dedu.shape.devs.Model = dedu.shape.basic.Generic.extend(
     _.extend(
         {},
-        org.dedu.draw.shape.basic.PortsModelInterface,
+        dedu.shape.basic.PortsModelInterface,
         {
             markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><text class="label"/><g class="inPorts"/><g class="outPorts"/></g>',
             portMarkup: '<g class="port port<%= id %>"><rect class="port-body"/><text class="port-label"/></g>',
 
-            defaults: org.dedu.draw.util.deepSupplement({
+            defaults: dedu.util.deepSupplement({
 
                 type: 'devs.Model',
                 size: { width: 1, height: 1 },
@@ -6825,10 +6806,10 @@ org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
                     '.outPorts .port-label':{ x: 15, dy: 4, fill: '#000000' }
                 }
 
-            }, org.dedu.draw.shape.basic.Generic.prototype.defaults),
+            }, dedu.shape.basic.Generic.prototype.defaults),
 
             /**
-             * get port css,it is called by {@link org.dedu.draw.shape.basic.PortsModelInterface~updatePortsAttrs}
+             * get port css,it is called by {@link dedu.shape.basic.PortsModelInterface~updatePortsAttrs}
              * @param {String} portName - port name
              * @param {Number} index
              * @param {Number} total
@@ -6860,14 +6841,14 @@ org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
 );
 
 /**
- * `org.dedu.draw.shape.devs.ModelView` 是 `org.dedu.draw.shape.devs.Model`的view
+ * `dedu.shape.devs.ModelView` 是 `dedu.shape.devs.Model`的view
  * @class
- * @augments org.dedu.draw.ElementView
+ * @augments dedu.ElementView
  */
-org.dedu.draw.shape.devs.ModelView = org.dedu.draw.ElementView.extend(
+dedu.shape.devs.ModelView = dedu.ElementView.extend(
     _.extend(
         {},
-        org.dedu.draw.shape.basic.PortsViewInterface,
+        dedu.shape.basic.PortsViewInterface,
         {
             focus: function () {
                 this.vel.findOne('.body').addClass('selected');
@@ -6877,13 +6858,13 @@ org.dedu.draw.shape.devs.ModelView = org.dedu.draw.ElementView.extend(
             }
         })
 );
-org.dedu.draw.shape.node = {};
+dedu.shape.node = {};
 /**
  * @class
- * @augments org.dedu.draw.shape.devs.Model
+ * @augments dedu.shape.devs.Model
  */
-org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
-    defaults:org.dedu.draw.util.deepSupplement({
+dedu.shape.node.Model = dedu.shape.devs.Model.extend({
+    defaults:dedu.util.deepSupplement({
         markup: '<g class="rotatable"><g class="scalable"><g class="body nodegroup"/></g><text class="label"/><g class="inPorts"/><g class="outPorts"/></g>',
         type:'node.Model',
         size:{
@@ -6902,7 +6883,7 @@ org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
             '.label': {'ref-x':.5, 'ref-y':.3, ref: '.node', 'text-anchor': 'middle', fill: '#000',style:{'font-weight':'normal'}},
         }
 
-    },org.dedu.draw.shape.devs.Model.prototype.defaults),
+    },dedu.shape.devs.Model.prototype.defaults),
     initialize: function () {
         this.data = this.get('data');
         var outputs = [];
@@ -6916,15 +6897,15 @@ org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
         this.set("outPorts", outputs);
         this.set("inPorts", inputs);
         this.attr(".label/text", this.data.type);
-        org.dedu.draw.shape.devs.Model.prototype.initialize.apply(this,arguments);
+        dedu.shape.devs.Model.prototype.initialize.apply(this,arguments);
     }
 });
 
 /**
  * @class
- * @augments org.dedu.draw.shape.devs.ModelView
+ * @augments dedu.shape.devs.ModelView
  */
-org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
+dedu.shape.node.ModelView = dedu.shape.devs.ModelView.extend({
 
     options:{},
 
@@ -7062,12 +7043,12 @@ org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
     }
 });
 
-org.dedu.draw.shape.simple = {};
+dedu.shape.simple = {};
 /**
  * SuspendPort model interface
  * @class
  */
-org.dedu.draw.shape.simple.SuspendPortModelInterface = {
+dedu.shape.simple.SuspendPortModelInterface = {
     initialize:function(){
 
     }
@@ -7077,12 +7058,12 @@ org.dedu.draw.shape.simple.SuspendPortModelInterface = {
  * SuspendPort view interface
  * @class
  */
-org.dedu.draw.shape.simple.SuspendPortViewInterface = {
+dedu.shape.simple.SuspendPortViewInterface = {
     initialize:function(options){
         if(options.skip_render){
             return;
         }
-        org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
+        dedu.ElementView.prototype.initialize.apply(this, arguments);
         //this.listenTo(this, 'add:ports', this.update);
         //this.listenTo(this,'remove:ports',this.update);
         _.bindAll(this,"showSuspendPort","hideSuspendPort");
@@ -7103,14 +7084,14 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
         },this);
     },
     renderView:function(){
-        //org.dedu.draw.ElementView.prototype.render.apply(this, arguments);
+        //dedu.ElementView.prototype.render.apply(this, arguments);
         this.renderSuspendPort();
         //this.update();
     },
     /**
      * 渲染suspend port
      * @method renderSuspendPort
-     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     * @memberof dedu.shape.simple.SuspendPortViewInterface
      */
     renderSuspendPort: function () {
 
@@ -7150,7 +7131,7 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
     /**
      * show suspend port
      * method showSuspendPort
-     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     * @memberof dedu.shape.simple.SuspendPortViewInterface
      */
     showSuspendPort: function () {
         this.up.attr('display','block');
@@ -7161,7 +7142,7 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
     /**
      * hide suspend port
      * method hideSuspendPort
-     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     * @memberof dedu.shape.simple.SuspendPortViewInterface
      */
     hideSuspendPort: function () {
         this.up.attr('display','none');
@@ -7174,16 +7155,16 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
 /**
  * A model class implements suspend port
  * @class
- * @augments org.dedu.draw.shape.basic.Generic
+ * @augments dedu.shape.basic.Generic
  */
-org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
+dedu.shape.simple.Generic = dedu.shape.basic.Generic.extend(
     _.extend(
         {},
-        org.dedu.draw.shape.basic.PortsModelInterface,
+        dedu.shape.basic.PortsModelInterface,
         {
             markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><text class="label"/></g>',
             suspendPortMarkup:'<circle class="suspend port<%= dir %>"/>',
-            defaults: org.dedu.draw.util.deepSupplement({
+            defaults: dedu.util.deepSupplement({
                 type: 'simple.Generic',
                 size: {width: 1, height: 1},
 
@@ -7197,7 +7178,7 @@ org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
                     },
 
                 }
-            }, org.dedu.draw.shape.basic.Generic.prototype.defaults),
+            }, dedu.shape.basic.Generic.prototype.defaults),
             /**
              * get relative position for port
              * @param portName
@@ -7206,7 +7187,7 @@ org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
              * @param selector
              * @param type
              * @returns {{}}
-             * @memberof org.dedu.draw.shape.simple.Generic
+             * @memberof dedu.shape.simple.Generic
              */
             getPortAttrs: function (portName,index,total,selector,type) {
                 var attrs = {};
@@ -7228,10 +7209,10 @@ org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
 /**
  * A view class implements suspend port
  * @class
- * @augments org.dedu.draw.ElementView
+ * @augments dedu.ElementView
  */
-org.dedu.draw.shape.simple.GenericView = org.dedu.draw.ElementView.extend(
-    _.extend({},org.dedu.draw.shape.simple.SuspendPortViewInterface,{
+dedu.shape.simple.GenericView = dedu.ElementView.extend(
+    _.extend({},dedu.shape.simple.SuspendPortViewInterface,{
         /**
          * 显示连接到port的提示
          * @param {DOMObject} el - port对应的domObject
@@ -7271,15 +7252,15 @@ org.dedu.draw.shape.simple.GenericView = org.dedu.draw.ElementView.extend(
  * Created by lmz on 16/3/20.
  */
 
-org.dedu.draw.shape.uml = {
+dedu.shape.uml = {
 };
 
 /**
  * `StartState`
  * @class
- * @augments org.dedu.draw.shape.simple.Generic
+ * @augments dedu.shape.simple.Generic
  */
-org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
+dedu.shape.uml.StartState = dedu.shape.simple.Generic.extend({
     markup:[
         '<g class="rotatable">',
         '<g class="scalable">',
@@ -7288,7 +7269,7 @@ org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
         '</g>'
     ].join(''),
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
        type: 'uml.StartState',
        size: { width: 25, height: 25 },
        port_ref_position:{
@@ -7316,14 +7297,14 @@ org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
                'fill': '#444'
            }
        },
-    }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
+    }, dedu.shape.simple.Generic.prototype.defaults)
 });
 
 /**
  * @class
- * @augments org.dedu.draw.shape.simple.Generic
+ * @augments dedu.shape.simple.Generic
  */
-org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
+dedu.shape.uml.EndState = dedu.shape.simple.Generic.extend({
         markup: [
             '<g class="rotatable">',
             '<g class="scalable">',
@@ -7332,7 +7313,7 @@ org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
             '</g>',
             '</g>'
         ].join(''),
-        defaults: org.dedu.draw.util.deepSupplement({
+        defaults: dedu.util.deepSupplement({
             type: 'uml.EndState',
             size: { width: 25, height: 25 },
             port_ref_position: {
@@ -7364,14 +7345,14 @@ org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
                    'stroke': '#333'
                }
             }
-       }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
+       }, dedu.shape.simple.Generic.prototype.defaults)
 });
 
 /**
  * @class
- * @augments org.dedu.draw.shape.simple.Generic.
+ * @augments dedu.shape.simple.Generic.
  */
-org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
+dedu.shape.uml.State = dedu.shape.simple.Generic.extend({
     markup: [
         '<g class="rotatable">',
         '<g class="scalable">',
@@ -7383,7 +7364,7 @@ org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
         '</g>'
     ].join(''),
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
 
         type: 'uml.State',
         size: { width: 60, height: 40 },
@@ -7410,24 +7391,24 @@ org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
 
         events: [],
         name: 'State'
-    }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
+    }, dedu.shape.simple.Generic.prototype.defaults)
 
 });
 
-org.dedu.draw.shape.uml.StateView = org.dedu.draw.shape.simple.GenericView.extend({
+dedu.shape.uml.StateView = dedu.shape.simple.GenericView.extend({
 
     initialize: function (options) {
         if(options.skip_render){
             return;
         }
-        org.dedu.draw.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
+        dedu.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
         this.model.on('change:name', this.updateName,this);
         this.model.on('change:events', this.updateEvents,this);
         this.model.on('change:size', this.updatePath,this);
     },
 
     render:function(){
-        org.dedu.draw.shape.simple.GenericView.prototype.render.apply(this,arguments);
+        dedu.shape.simple.GenericView.prototype.render.apply(this,arguments);
         this.originSize = this.model.get('size');
         this.updateName();
         this.updatePath();
@@ -7476,7 +7457,7 @@ org.dedu.draw.shape.uml.StateView = org.dedu.draw.shape.simple.GenericView.exten
     }
 });
 
-org.dedu.draw.shape.uml.StartStateView  = org.dedu.draw.shape.simple.GenericView.extend({
+dedu.shape.uml.StartStateView  = dedu.shape.simple.GenericView.extend({
 
     focus: function () {
         this.vel.findOne('.uml-state-body').attr({
@@ -7492,10 +7473,10 @@ org.dedu.draw.shape.uml.StartStateView  = org.dedu.draw.shape.simple.GenericView
 
 });
 
-org.dedu.draw.shape.uml.EndStateView  = org.dedu.draw.shape.simple.GenericView.extend({
+dedu.shape.uml.EndStateView  = dedu.shape.simple.GenericView.extend({
     initialize: function (options) {
         this.circle_index  = 2;
-        org.dedu.draw.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
+        dedu.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
     },
     focus: function () {
         this.vel.findOne('.uml-state-body').attr({
@@ -7513,7 +7494,7 @@ org.dedu.draw.shape.uml.EndStateView  = org.dedu.draw.shape.simple.GenericView.e
  * Created by lmz on 16/5/5.
  */
 
-org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
+dedu.shape.uml.Class = dedu.shape.basic.Generic.extend({
 
     markup: [
         '<g class="rotatable">',
@@ -7524,7 +7505,7 @@ org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
         '</g>'
     ].join(''),
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
 
         type: 'uml.Class',
         size:{
@@ -7556,7 +7537,7 @@ org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
         attributes: [],
         methods: []
 
-    }, org.dedu.draw.shape.basic.Generic.prototype.defaults),
+    }, dedu.shape.basic.Generic.prototype.defaults),
 
     initialize: function() {
 
@@ -7567,7 +7548,7 @@ org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
 
         this.updateRectangles();
 
-        org.dedu.draw.shape.basic.Generic.prototype.initialize.apply(this, arguments);
+        dedu.shape.basic.Generic.prototype.initialize.apply(this, arguments);
     },
 
     getClassName: function() {
@@ -7603,11 +7584,11 @@ org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
 
 });
 
-org.dedu.draw.shape.uml.ClassView = org.dedu.draw.ElementView.extend({
+dedu.shape.uml.ClassView = dedu.ElementView.extend({
 
     initialize: function() {
 
-        org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
+        dedu.ElementView.prototype.initialize.apply(this, arguments);
 
         this.listenTo(this.model, 'uml-update', function() {
             this.update();
@@ -7616,50 +7597,50 @@ org.dedu.draw.shape.uml.ClassView = org.dedu.draw.ElementView.extend({
     }
 });
 
-org.dedu.draw.shape.uml.Abstract = org.dedu.draw.shape.uml.Class.extend({
+dedu.shape.uml.Abstract = dedu.shape.uml.Class.extend({
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
         type: 'uml.Abstract',
         attrs: {
             '.uml-class-name-rect': { fill : '#e74c3c' },
             '.uml-class-attrs-rect': { fill : '#c0392b' },
             '.uml-class-methods-rect': { fill : '#c0392b' }
         }
-    }, org.dedu.draw.shape.uml.Class.prototype.defaults),
+    }, dedu.shape.uml.Class.prototype.defaults),
 
     getClassName: function() {
         return ['<<Abstract>>', this.get('name')];
     }
 
 });
-org.dedu.draw.shape.uml.AbstractView = org.dedu.draw.shape.uml.ClassView;
+dedu.shape.uml.AbstractView = dedu.shape.uml.ClassView;
 
-org.dedu.draw.shape.uml.Interface = org.dedu.draw.shape.uml.Class.extend({
+dedu.shape.uml.Interface = dedu.shape.uml.Class.extend({
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
         type: 'uml.Interface',
         attrs: {
             '.uml-class-name-rect': { fill : '#f1c40f' },
             '.uml-class-attrs-rect': { fill : '#f39c12' },
             '.uml-class-methods-rect': { fill : '#f39c12' }
         }
-    }, org.dedu.draw.shape.uml.Class.prototype.defaults),
+    }, dedu.shape.uml.Class.prototype.defaults),
 
     getClassName: function() {
         return ['<<Interface>>', this.get('name')];
     }
 
 });
-org.dedu.draw.shape.uml.InterfaceView = org.dedu.draw.shape.uml.ClassView;
+dedu.shape.uml.InterfaceView = dedu.shape.uml.ClassView;
 
-org.dedu.draw.shape.uml.Generalization = org.dedu.draw.Link.extend({
+dedu.shape.uml.Generalization = dedu.Link.extend({
     defaults: {
         type: 'uml.Generalization',
         attrs: { '.marker-target': { d: 'M 20 0 L 0 10 L 20 20 z', fill: 'white' }}
     }
 });
 
-org.dedu.draw.shape.uml.Implementation = org.dedu.draw.Link.extend({
+dedu.shape.uml.Implementation = dedu.Link.extend({
     defaults: {
         type: 'uml.Implementation',
         attrs: {
@@ -7669,34 +7650,34 @@ org.dedu.draw.shape.uml.Implementation = org.dedu.draw.Link.extend({
     }
 });
 
-org.dedu.draw.shape.uml.Aggregation = org.dedu.draw.Link.extend({
+dedu.shape.uml.Aggregation = dedu.Link.extend({
     defaults: {
         type: 'uml.Aggregation',
         attrs: { '.marker-target': { d: 'M 40 10 L 20 20 L 0 10 L 20 0 z', fill: 'white' }}
     }
 });
 
-org.dedu.draw.shape.uml.Composition = org.dedu.draw.Link.extend({
+dedu.shape.uml.Composition = dedu.Link.extend({
     defaults: {
         type: 'uml.Composition',
         attrs: { '.marker-target': { d: 'M 40 10 L 20 20 L 0 10 L 20 0 z', fill: 'black' }}
     }
 });
 
-org.dedu.draw.shape.uml.Association = org.dedu.draw.Link.extend({
+dedu.shape.uml.Association = dedu.Link.extend({
     defaults: { type: 'uml.Association' }
 });
 /**
  * Created by lmz on 16/5/8.
  */
-org.dedu.draw.shape.node_red = {};
+dedu.shape.node_red = {};
 /**
  * `subflowportModel` for node-red
  * @class
- * @augments org.dedu.draw.shape.devs.Model.
+ * @augments dedu.shape.devs.Model.
  */
-org.dedu.draw.shape.node_red.subflowportModel = org.dedu.draw.shape.devs.Model.extend({
-    defaults:org.dedu.draw.util.deepSupplement({
+dedu.shape.node_red.subflowportModel = dedu.shape.devs.Model.extend({
+    defaults:dedu.util.deepSupplement({
         markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><g class="inPorts"/><g class="outPorts"/><text class="port_label small_label"/><text class="port_label port_index"/></g>',
         type:'node_red.subflowportModel',
         size:{
@@ -7728,40 +7709,40 @@ org.dedu.draw.shape.node_red.subflowportModel = org.dedu.draw.shape.devs.Model.e
             }
 
         }
-    },org.dedu.draw.shape.devs.Model.prototype.defaults),
+    },dedu.shape.devs.Model.prototype.defaults),
     initialize: function (options) {
         this.set("outPorts", options.outputs);
         this.set("inPorts", options.inputs);
         this.get('attrs')['text.port_index'].text = options.index;
-        org.dedu.draw.shape.devs.Model.prototype.initialize.apply(this,arguments);
+        dedu.shape.devs.Model.prototype.initialize.apply(this,arguments);
     }
 
 });
 
-org.dedu.draw.shape.node_red.subflowportModelView = org.dedu.draw.shape.devs.ModelView.extend({
+dedu.shape.node_red.subflowportModelView = dedu.shape.devs.ModelView.extend({
 
     renderView: function () {
 
     }
 });
 /**
- * `org.dedu.draw.Paper` 是{@link org.dedu.draw.Graph}的view
+ * `dedu.Paper` 是{@link dedu.Graph}的view
  * @class
  * @augments Backbone.View
  */
-org.dedu.draw.Paper = Backbone.View.extend({
+dedu.Paper = Backbone.View.extend({
     /**
      * 渲染元素的class
      * @member {String}
-     * @memberof org.dedu.draw.Paper
+     * @memberof dedu.Paper
      * @default
      */
     className: 'paper',
 
     /**
-     * `org.dedu.draw.Paper`的默认属性
+     * `dedu.Paper`的默认属性
      * @member {Object}
-     * @memberof org.dedu.draw.Paper
+     * @memberof dedu.Paper
      */
     options: {
 
@@ -7784,13 +7765,13 @@ org.dedu.draw.Paper = Backbone.View.extend({
         gridSize:1,
         perpendicularLinks: false,
         /**
-         * @property {org.dedu.draw.ElementView} options.elementView - 默认的elementView
+         * @property {dedu.ElementView} options.elementView - 默认的elementView
          */
-        elementView: org.dedu.draw.ElementView,
+        elementView: dedu.ElementView,
         /**
-         *  @property {org.dedu.draw.LinkView} options.LinkView - 默认的LinkView
+         *  @property {dedu.LinkView} options.LinkView - 默认的LinkView
          */
-        linkView: org.dedu.draw.LinkView,
+        linkView: dedu.LinkView,
 
         /**
          * @property {Object} options.interactive - 哪些元素可以进行交互
@@ -7809,7 +7790,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
         // Defines what link model is added to the graph after an user clicks on an active magnet.
         // Value could be the Backbone.model or a function returning the Backbone.model
         // defaultLink: function(elementView, magnet) { return condition ? new customLink1() : new customLink2() }
-        defaultLink: new org.dedu.draw.Link,
+        defaultLink: new dedu.Link,
 
         // A connector that is used by links with no connector defined on the model.
         // e.g. { name: 'rounded', args: { radius: 5 }} or a function
@@ -7829,7 +7810,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
         // Check whether to allow or disallow the link connection while an arrowhead end (source/target)
         // being changed.
         validateConnection: function(cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
-            return (end === 'target' ? cellViewT : cellViewS) instanceof org.dedu.draw.ElementView;
+            return (end === 'target' ? cellViewT : cellViewS) instanceof dedu.ElementView;
         },
 
         // Restrict the translation of elements by given bounding box.
@@ -7850,9 +7831,9 @@ org.dedu.draw.Paper = Backbone.View.extend({
         linkPinning: false,
 
         /**
-         *  @property {org.dedu.draw.shape} options.cellViewNamespace - 默认的cellViewNamespace
+         *  @property {dedu.shape} options.cellViewNamespace - 默认的cellViewNamespace
          */
-        cellViewNamespace: org.dedu.draw.shape
+        cellViewNamespace: dedu.shape
     },
 
     constructor:function(options){
@@ -7889,9 +7870,6 @@ org.dedu.draw.Paper = Backbone.View.extend({
         this.listenTo(this.model, 'reset', this.resetViews);
         this.listenTo(this.model, 'sort', this.sortViews);
 
-
-
-
         this.setOrigin();
         this.setDimensions();
 
@@ -7916,9 +7894,9 @@ org.dedu.draw.Paper = Backbone.View.extend({
     },
 
     /**
-     * render cell that be added to `org.dedu.draw.Graph`
+     * render cell that be added to `dedu.Graph`
      * @method onCellAdded
-     * @param {org.dedu.draw.Cell} cell
+     * @param {dedu.Cell} cell
      * @param graph
      * @param opt
      */
@@ -7951,8 +7929,8 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
     /**
      * Find a view for a model `cell`. `cell` can also be a string representing a model `id`.
-     * @param {org.dedu.draw.Cell} cell
-     * @returns {org.dedu.draw.CellView}
+     * @param {dedu.Cell} cell
+     * @returns {dedu.CellView}
      */
     findViewByModel: function(cell) {
 
@@ -7978,7 +7956,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
     /**
      * Find a cell, the id of which is equal to `id`
      * @param {String} id
-     * @returns {org.dedu.draw.Cell}
+     * @returns {dedu.Cell}
      */
     getModelById:function(id){
 
@@ -7987,8 +7965,8 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
     /**
      * 渲染`cell`
-     * @param {org.dedu.draw.Cell} cell - the model cell to be rendered
-     * @returns {org.dedu.draw.CellView}
+     * @param {dedu.Cell} cell - the model cell to be rendered
+     * @returns {dedu.CellView}
      */
     renderView:function(cell){
         var view = this._views[cell.id] = this.createViewForModel(cell);
@@ -8061,14 +8039,14 @@ org.dedu.draw.Paper = Backbone.View.extend({
         var namespace = this.options.cellViewNamespace;
         var type = cell.get('type') + "View";
 
-        var namespaceViewClass = org.dedu.draw.util.getByPath(namespace,type,".");
+        var namespaceViewClass = dedu.util.getByPath(namespace,type,".");
 
         if (cell.isLink()) {
             optionalViewClass = this.options.linkView;
-            defaultViewClass = org.dedu.draw.LinkView;
+            defaultViewClass = dedu.LinkView;
         } else {
             optionalViewClass = this.options.elementView;
-            defaultViewClass = org.dedu.draw.ElementView;
+            defaultViewClass = dedu.ElementView;
         }
 
         var ViewClass = (optionalViewClass.prototype instanceof Backbone.View)
@@ -8087,7 +8065,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
      * 更改原点
      * @param {Number} ox - 新原点的x坐标
      * @param {Number} oy - 新原点的y坐标
-     * @memberof org.dedu.draw.Paper
+     * @memberof dedu.Paper
      */
     setOrigin:function(ox,oy) {
         this.options.origin.x = ox || 0;
@@ -8127,7 +8105,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof org.dedu.draw.Paper
+     * @memberof dedu.Paper
      */
     blank_pointDown:function(evt,x,y){
         this.model.cancelSelection();
@@ -8163,7 +8141,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof org.dedu.draw.Paper
+     * @memberof dedu.Paper
      */
     blank_pointMove:function(evt,x,y){
         var mouse_position = [evt.offsetX, evt.offsetY];
@@ -8202,7 +8180,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof org.dedu.draw.Paper
+     * @memberof dedu.Paper
      */
     blank_pointUp:function(evt,x,y){
         var lasso = this.lasso;
@@ -8218,7 +8196,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
             var selection_models = [];
             _.each(this._views, function (cellView) {
-                if(cellView instanceof org.dedu.draw.LinkView){
+                if(cellView instanceof dedu.LinkView){
                     return;
                 }
                 var model = cellView.model;
@@ -8244,17 +8222,17 @@ org.dedu.draw.Paper = Backbone.View.extend({
      *  mouse down
      *  * 判断鼠标点击的位置
      *  1. 图元上,则调用该图元的事件处理函数
-     *  2. 空白处,则调用 {@link org.dedu.draw.Paper~blank_pointDown}
+     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointDown}
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof org.dedu.draw.Paper
+     * @memberof dedu.Paper
      */
     canvasMouseDown:function(evt){
 
         evt.preventDefault();
 
-        var evt = org.dedu.draw.util.normalizeEvent(evt);
+        var evt = dedu.util.normalizeEvent(evt);
         var view = this.findView(evt.target);
 
         if (this.guard(evt, view)) return;
@@ -8279,19 +8257,19 @@ org.dedu.draw.Paper = Backbone.View.extend({
      *  mouse move
      *  * 判断鼠标点击的位置
      *  1. 图元上,则调用该图元的事件处理函数
-     *  2. 空白处,则调用 {@link org.dedu.draw.Paper~blank_pointMove}
+     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointMove}
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof org.dedu.draw.Paper
+     * @memberof dedu.Paper
      */
     canvasMouseMove:function(evt){
 
         evt.preventDefault();
-        evt = org.dedu.draw.util.normalizeEvent(evt);
+        evt = dedu.util.normalizeEvent(evt);
         var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
         if(this.sourceView){
-            if(this.sourceView instanceof org.dedu.draw.LinkView){
+            if(this.sourceView instanceof dedu.LinkView){
                 this.sourceView.pointermove(evt,localPoint.x,localPoint.y);
                 return;
             }
@@ -8318,14 +8296,14 @@ org.dedu.draw.Paper = Backbone.View.extend({
      *  mouse up
      *  * 判断鼠标点击的位置
      *  1. 图元上,则调用该图元的事件处理函数
-     *  2. 空白处,则调用 {@link org.dedu.draw.Paper~blank_pointUp}
+     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointUp}
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof org.dedu.draw.Paper
+     * @memberof dedu.Paper
      */
     canvasMouseUp:function(evt){
-        evt = org.dedu.draw.util.normalizeEvent(evt);
+        evt = dedu.util.normalizeEvent(evt);
 
         var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
 
@@ -8348,7 +8326,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
      */
     mousedblclick: function(evt) {
         evt.preventDefault();
-        evt = org.dedu.draw.util.normalizeEvent(evt);
+        evt = dedu.util.normalizeEvent(evt);
 
         var view = this.findView(evt.target);
         if (this.guard(evt, view)) return;
@@ -8374,7 +8352,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
         // Trigger event when mouse not moved.
         if (this._mousemoved <= this.options.clickThreshold) {
 
-            evt = org.dedu.draw.util.normalizeEvent(evt);
+            evt = dedu.util.normalizeEvent(evt);
 
             var view = this.findView(evt.target);
             if (this.guard(evt, view)) return;
@@ -8396,7 +8374,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
 
     cellMouseover:function(evt){
 
-        evt = org.dedu.draw.util.normalizeEvent(evt);
+        evt = dedu.util.normalizeEvent(evt);
         var view = this.findView(evt.target);
         if(view){
             if(this.guard(evt,view)) return;
@@ -8407,7 +8385,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
     // Guard guards the event received. If the event is not interesting, guard returns `true`.
     // Otherwise, it return `false`.
     guard: function(evt, view) {
-        if(view && view.model && (view.model instanceof org.dedu.draw.Cell)){
+        if(view && view.model && (view.model instanceof dedu.Cell)){
             return false;
         }else if (this.svg === evt.target || this.el === evt.target || $.contains(this.svg, evt.target)) {
             return false;
@@ -8416,7 +8394,7 @@ org.dedu.draw.Paper = Backbone.View.extend({
     },
 
     /**
-     * get default linkview {@link org.dedu.draw.Paper~options.linkView}
+     * get default linkview {@link dedu.Paper~options.linkView}
      * @method getDefaultLink
      * @param cellView
      * @param magnet
@@ -8436,25 +8414,25 @@ org.dedu.draw.Paper = Backbone.View.extend({
 /**
  * 添加svg的属性,主要为了和node-red~editor的兼容
  * @class
- * @augments org.dedu.draw.Paper
+ * @augments dedu.Paper
  */
-org.dedu.draw.Chart = org.dedu.draw.Paper.extend({
-    options: org.dedu.draw.util.supplement({
+dedu.Chart = dedu.Paper.extend({
+    options: dedu.util.supplement({
         tabindex: 1,
         style: {
 
         }
-    }, org.dedu.draw.Paper.prototype.options),
-    initialize: function () {
-        org.dedu.draw.Paper.prototype.initialize.apply(this, arguments);
+    }, dedu.Paper.prototype.options),
+    initialize: function() {
+        dedu.Paper.prototype.initialize.apply(this, arguments);
 
         V(this.svg).attr({ tabindex: this.options.tabindex });
 
         var style = "";
-        _.each(this.options.style,function(value,key) {
-            style+= key+":"+value+";"
+        _.each(this.options.style, function(value, key) {
+            style += key + ":" + value + ";"
         });
-        V(this.svg).attr({style:style});
+        V(this.svg).attr({ style: style });
     }
 });
 
@@ -8463,16 +8441,16 @@ org.dedu.draw.Chart = org.dedu.draw.Paper.extend({
  */
 
 
-org.dedu.draw.plugins = {};
+dedu.plugins = {};
 
-org.dedu.draw.plugins.PlainSvg = (function () {
-    var namespace = org.dedu.draw.shape;
+dedu.plugins.PlainSvg = (function () {
+    var namespace = dedu.shape;
 
-    var defaultViewClass = org.dedu.draw.ElementView;
+    var defaultViewClass = dedu.ElementView;
     var tmp_chart = null;
     // $(function(){
     //     $('body').append($('<div id="tmp_chart"></div>'));
-    //     tmp_chart = new org.dedu.draw.Chart({
+    //     tmp_chart = new dedu.Chart({
     //         el: $('#tmp_chart'),
     //         width: 36,
     //         height: 36,
@@ -8495,8 +8473,8 @@ org.dedu.draw.plugins.PlainSvg = (function () {
     function createViewForModel(node_type, options) {
         var view_type = node_type + "View";
 
-        var namespaceViewClass = org.dedu.draw.util.getByPath(namespace, view_type, ".");
-        var namespaceClass = org.dedu.draw.util.getByPath(namespace, node_type, ".");
+        var namespaceViewClass = dedu.util.getByPath(namespace, view_type, ".");
+        var namespaceClass = dedu.util.getByPath(namespace, node_type, ".");
 
         var ViewClass = namespaceViewClass || defaultViewClass;
 
@@ -8532,7 +8510,3 @@ org.dedu.draw.plugins.PlainSvg = (function () {
     }
 })();
 
-
-return org;
-
-}));

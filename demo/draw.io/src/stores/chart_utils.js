@@ -9,3 +9,7 @@ let mappings = {
 export function getConfigByType(category, node_type){
   return mappings[category][node_type];
 }
+
+export function parseFlow(flow){
+
+}

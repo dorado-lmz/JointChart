@@ -1,9 +1,9 @@
 /**
- * `org.dedu.draw.Cell` 是`joint_chart`所有图形的父类
+ * `dedu.Cell` 是`joint_chart`所有图形的父类
  * @class
  * @augments Backbone.Model
  */
-org.dedu.draw.Cell = Backbone.Model.extend({
+dedu.Cell = Backbone.Model.extend({
 
     constructor: function (attributes, options) {
         var defaults;
@@ -24,15 +24,15 @@ org.dedu.draw.Cell = Backbone.Model.extend({
     /**
      * initialize:
      * * set id
-     * * process all attrs of port {@link org.dedu.draw.Cell#processPorts|processPorts}
+     * * process all attrs of port {@link dedu.Cell#processPorts|processPorts}
      * @method
      * @instance
      * @param {Object} options
-     * @memberof org.dedu.draw.Cell
+     * @memberof dedu.Cell
      */
     initialize: function (options) {
         if (!options || !options.id) {
-            this.set('id', org.dedu.draw.util.uuid(), {silent: true});
+            this.set('id', dedu.util.uuid(), {silent: true});
         }
         // Collect ports defined in `attrs` and keep collecting whenever `attrs` object changes.
         this.processPorts();
@@ -43,7 +43,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
      * @method isLink
      * @instance
      * @returns {boolean}
-     * @memberof org.dedu.draw.Cell
+     * @memberof dedu.Cell
      */
     isLink: function () {
         return false;
@@ -53,8 +53,8 @@ org.dedu.draw.Cell = Backbone.Model.extend({
      * @method toFront
      * @instance
      * @param opt
-     * @returns {org.dedu.draw.Cell}
-     * @memberof org.dedu.draw.Cell
+     * @returns {dedu.Cell}
+     * @memberof dedu.Cell
      */
     toFront: function (opt) {
         if (this.collection) {
@@ -78,10 +78,10 @@ org.dedu.draw.Cell = Backbone.Model.extend({
     },
 
     /**
-     * process all attrs of port and called by {@link org.dedu.draw.Cell#initialize|initialize}
+     * process all attrs of port and called by {@link dedu.Cell#initialize|initialize}
      * @method processPorts
      * @instance
-     * @memberof org.dedu.draw.Cell
+     * @memberof dedu.Cell
      *
      */
     processPorts: function () {
@@ -134,7 +134,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
      * @param {*} value
      * @param {Object} opt
      * @returns {*}
-     * @memberof org.dedu.draw.Cell
+     * @memberof dedu.Cell
      * @example
      * cell.prop('name/first', 'John')
      * cell.prop({ name: { first: 'John' } })
@@ -175,19 +175,19 @@ org.dedu.draw.Cell = Backbone.Model.extend({
                     prevProperty = key;
                 });
                 // Fill update with the `value` on `path`.
-                update = org.dedu.draw.util.setByPath(update, path, value, '/');
+                update = dedu.util.setByPath(update, path, value, '/');
 
                 var baseAttributes = _.merge({}, this.attributes);
                 // if rewrite mode enabled, we replace value referenced by path with
                 // the new one (we don't merge).
-                opt.rewrite && org.dedu.draw.util.unsetByPath(baseAttributes, path, '/');
+                opt.rewrite && dedu.util.unsetByPath(baseAttributes, path, '/');
 
                 // Merge update with the model attributes.
                 var attributes = _.merge(baseAttributes, update);
                 // Finally, set the property to the updated attributes.
                 return this.set(property, attributes[property], opt);
             } else {
-                return org.dedu.draw.util.getByPath(this.attributes, props, delim);
+                return dedu.util.getByPath(this.attributes, props, delim);
             }
 
         }
@@ -321,7 +321,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
 
             var clone = Backbone.Model.prototype.clone.apply(this, arguments);
             // We don't want the clone to have the same ID as the original.
-            clone.set('id', org.dedu.draw.util.uuid());
+            clone.set('id', dedu.util.uuid());
             // A shallow cloned element does not carry over the original embeds.
             clone.set('embeds', '');
             return clone;
@@ -330,7 +330,7 @@ org.dedu.draw.Cell = Backbone.Model.extend({
             // Deep cloning.
 
             // For a deep clone, simply call `graph.cloneCells()` with the cell and all its embedded cells.
-            return _.values(org.dedu.draw.Graph.prototype.cloneCells.call(null, [this].concat(this.getEmbeddedCells({deep: true}))));
+            return _.values(dedu.Graph.prototype.cloneCells.call(null, [this].concat(this.getEmbeddedCells({deep: true}))));
         }
     },
 
@@ -338,17 +338,17 @@ org.dedu.draw.Cell = Backbone.Model.extend({
 });
 
 /**
- * `org.dedu.draw.CellView` 是{@link org.dedu.draw.Cell}的view
+ * `dedu.CellView` 是{@link dedu.Cell}的view
  * @class
  * @augments  Backbone.View
  */
-org.dedu.draw.CellView = Backbone.View.extend({
+dedu.CellView = Backbone.View.extend({
     /**
      * @member {String}
      * @default
      * @const
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     tagName: 'g',
 
@@ -356,7 +356,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
      * set the attribute of dom node Dom节点的attribute
      * @returns {{model-id: *}}
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     attributes: function () {
         return {'model-id': this.model.id}
@@ -375,7 +375,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
         // The global unique id makes sure that the same view can be rendered on e.g. different machines and
         // still be associated to the same object among all those clients. This is necessary for real-time
         // collaboration mechanism.
-        this.options.id = this.options.id || org.dedu.draw.util.guid(this);
+        this.options.id = this.options.id || dedu.util.guid(this);
 
     },
 
@@ -416,7 +416,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
      * @param [prevSelector] - 使用该方法时,不需要传递实参,它仅被用作递归
      * @returns {*}
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     getSelector: function (el, prevSelector) {
 
@@ -478,7 +478,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
      * @method
      * @returns {*}
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     getBBox: function () {
         return g.rect(this.vel.bbox());
@@ -510,7 +510,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
      * @param {DOMObject} el
      * @returns {*}
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     findMagnet: function (el) {
         var $el = this.$(el);
@@ -539,7 +539,7 @@ org.dedu.draw.CellView = Backbone.View.extend({
      * @param {JQueryObject} selector
      * @returns {Backbone.$|*}
      * @instance
-     * @memberof org.dedu.draw.CellView
+     * @memberof dedu.CellView
      */
     findBySelector: function (selector) {
         // These are either descendants of `this.$el` of `this.$el` itself.
@@ -554,7 +554,8 @@ org.dedu.draw.CellView = Backbone.View.extend({
             // Trigger the event on both the element itself and also on the paper.
             this.trigger.apply(this, [evt].concat(args));
             // Paper event handlers receive the view object as the first argument.
-            this.paper.trigger.apply(this.paper, [evt, this].concat(args));
+            // this.paper.trigger.apply(this.paper, [evt, this].concat(args));
+            this.paper.notify(evt, this,args);
         }
     },
 

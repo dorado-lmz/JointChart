@@ -3,8 +3,10 @@ import _ from 'lodash';
 import $ from 'jquery';
 import Backbone from 'backbone';
 //import {org} from 'imports?$=jquery,_=lodash,Backbone=backbone!../joint_chart.min.js';
-import org from 'joint_chart';
+import dedu from 'joint_chart';
 import {getConfigByType} from '../stores/chart_utils.js';
+import TabsComponent from './tabs.js';
+import DeployActionCreators from '../actions/DeployActionCreators';
 
 class WorkspaceComponent extends React.Component {
   dragOver = (e)=>{
@@ -14,9 +16,9 @@ class WorkspaceComponent extends React.Component {
   drop = (e)=>{
     let {node_type,category} = JSON.parse(e.dataTransfer.getData('text/plain')),
         chart = this.chart,
-        graph = this.graph;
+        graph = this.props.graph;
     console.log(node_type);
-    var namespaceClass = org.dedu.draw.util.getByPath(
+    var namespaceClass = dedu.util.getByPath(
       chart.options.cellViewNamespace, getConfigByType(category,node_type), ".")
     let cell = new namespaceClass({
       position:{
@@ -26,26 +28,24 @@ class WorkspaceComponent extends React.Component {
     });
     graph.addCell(cell);
   };
+
+  deploy = (e) => {
+    let graph = this.props.graph;
+    // DeployActionCreators.deploy(graph.exportGraph());
+    DeployActionCreators.deploy(graph.active_cells());
+  };
+
 	render(){
 		return (
 			<div id="workspace">
 	            <div id="designer_header">
 	                <div id="toolbar">
-
+                    <button type="button" className="btn btn-danger btn-xs pull-right" onClick={this.deploy}>Deploy</button>
 	                </div>
 	            </div>
-	            <ul id="workspace-tabs" className="red-ui-tabs">
-	            	<li className="red-ui-tab active">
-	            		<a href="#7d91eb90.45fd04" className="red-ui-tab-label" title="Flow 1">
-	            			<span>Flow 1</span>
-	            		</a>
-	            	</li>
-	            </ul>
-	            <div id="workspace-add-tab">
-	            	<a id="btn-workspace-add-tab" href="#">
-	            		<i className="fa fa-plus"></i>
-	            	</a>
-	            </div>
+
+              <TabsComponent graph={this.props.graph}/>
+
 	            <div id="chart"
                         className="ui-droppable"
                         onDragOver={this.dragOver}
@@ -79,9 +79,9 @@ class WorkspaceComponent extends React.Component {
 		);
 	}
 	componentDidMount(){
-		let graph = this.graph = new org.dedu.draw.Graph;
+    let graph = this.props.graph;
 
-		var chart = this.chart = new org.dedu.draw.Chart({
+		var chart = this.chart = new dedu.Chart({
 		    el: $('#chart'),
 		    width: 5000,
 		    height: 5000,
@@ -96,6 +96,17 @@ class WorkspaceComponent extends React.Component {
       x: bound_box.left,
       y: bound_box.top,
     };
+
+    graph.on('cell:pointerdblclick', (cell) => {
+      if (cell instanceof dedu.Cell) {
+        var config = {};
+        config.title = cell.get('name');
+        config.body = ``;
+
+        var openDialog = this.props.openDialog;
+        openDialog(config);
+      }
+    });
 	}
 
 }

@@ -1,20 +1,20 @@
 
-org.dedu.draw.shape.devs = {};
+dedu.shape.devs = {};
 
 /**
- * `org.dedu.draw.shape.devs.Model` extends `org.dedu.draw.shape.basic.Generic` and `org.dedu.draw.shape.basic.PortsModelInterface`
+ * `dedu.shape.devs.Model` extends `dedu.shape.basic.Generic` and `dedu.shape.basic.PortsModelInterface`
  * @class
- * @augments org.dedu.draw.shape.basic.Generic
+ * @augments dedu.shape.basic.Generic
  */
-org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
+dedu.shape.devs.Model = dedu.shape.basic.Generic.extend(
     _.extend(
         {},
-        org.dedu.draw.shape.basic.PortsModelInterface,
+        dedu.shape.basic.PortsModelInterface,
         {
             markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><text class="label"/><g class="inPorts"/><g class="outPorts"/></g>',
             portMarkup: '<g class="port port<%= id %>"><rect class="port-body"/><text class="port-label"/></g>',
 
-            defaults: org.dedu.draw.util.deepSupplement({
+            defaults: dedu.util.deepSupplement({
 
                 type: 'devs.Model',
                 size: { width: 1, height: 1 },
@@ -44,10 +44,10 @@ org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
                     '.outPorts .port-label':{ x: 15, dy: 4, fill: '#000000' }
                 }
 
-            }, org.dedu.draw.shape.basic.Generic.prototype.defaults),
+            }, dedu.shape.basic.Generic.prototype.defaults),
 
             /**
-             * get port css,it is called by {@link org.dedu.draw.shape.basic.PortsModelInterface~updatePortsAttrs}
+             * get port css,it is called by {@link dedu.shape.basic.PortsModelInterface~updatePortsAttrs}
              * @param {String} portName - port name
              * @param {Number} index
              * @param {Number} total
@@ -79,14 +79,14 @@ org.dedu.draw.shape.devs.Model = org.dedu.draw.shape.basic.Generic.extend(
 );
 
 /**
- * `org.dedu.draw.shape.devs.ModelView` 是 `org.dedu.draw.shape.devs.Model`的view
+ * `dedu.shape.devs.ModelView` 是 `dedu.shape.devs.Model`的view
  * @class
- * @augments org.dedu.draw.ElementView
+ * @augments dedu.ElementView
  */
-org.dedu.draw.shape.devs.ModelView = org.dedu.draw.ElementView.extend(
+dedu.shape.devs.ModelView = dedu.ElementView.extend(
     _.extend(
         {},
-        org.dedu.draw.shape.basic.PortsViewInterface,
+        dedu.shape.basic.PortsViewInterface,
         {
             focus: function () {
                 this.vel.findOne('.body').addClass('selected');

@@ -1,6 +1,6 @@
 /**
  * source or target
- * @typeof {Object} org.dedu.draw.Link~Vertex
+ * @typeof {Object} dedu.Link~Vertex
  * @property {String} id - vertex'id
  * @property {String} redID - vertex'redID
  * @property {Selector} selector - css
@@ -8,8 +8,8 @@
  */
 
 /**
- * `org.dedu.draw.Link` 是所有link的父类
- * Properties source and target determine to which elements the link is connected to. Both objects are of the form<org.dedu.draw.Link~Vertex>:
+ * `dedu.Link` 是所有link的父类
+ * Properties source and target determine to which elements the link is connected to. Both objects are of the form<dedu.Link~Vertex>:
  *
  * {
  *   id: <id of an element>,
@@ -18,13 +18,13 @@
  * }
  *
  * @class
- * @augments org.dedu.draw.Cell
+ * @augments dedu.Cell
  */
-org.dedu.draw.Link = org.dedu.draw.Cell.extend({
+dedu.Link = dedu.Cell.extend({
     /**
      * The default markup for links.
      * @member {Array}
-     * @memberof org.dedu.draw.Link
+     * @memberof dedu.Link
      */
     markup: [
         '<path class="connection_background"/>',
@@ -42,7 +42,7 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
     /**
      * The default labelMarkup for links.
      * @member {Array}
-     * @memberof org.dedu.draw.Link
+     * @memberof dedu.Link
      */
     labelMarkup: [
         '<g class="label">',
@@ -54,7 +54,7 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
     /**
      * The default arrowHeadMarkup for links.箭头
      * @member {Array}
-     * @memberof org.dedu.draw.Link
+     * @memberof dedu.Link
      */
     arrowheadMarkup: [
         '<g class="marker-arrowhead-group marker-arrowhead-group-<%= end %>">',
@@ -65,12 +65,12 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
     /**
      * @member {Object} defaults - 默认属性
      * @property {String} defaults.type='link'
-     * @property {org.dedu.draw.Link~Vertex} source
-     * @property {org.dedu.draw.Link~Vertex} target
+     * @property {dedu.Link~Vertex} source
+     * @property {dedu.Link~Vertex} target
      * @property {Object} labels
      * @property {Object} attrs
      * @override
-     * @memberof org.dedu.draw.Link
+     * @memberof dedu.Link
      */
     defaults: {
         type: 'link',
@@ -129,7 +129,7 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
 
     /**
      * Return the source element of the link or null if there is none.
-     * @returns {*|org.dedu.draw.Cell|null}
+     * @returns {*|dedu.Cell|null}
      */
     getSourceElement: function() {
 
@@ -140,7 +140,7 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
 
     /**
      * Return the target element of the link or null if there is none.
-     * @returns {*|org.dedu.draw.Cell|null}
+     * @returns {*|dedu.Cell|null}
      */
     getTargetElement: function() {
 
@@ -152,7 +152,7 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
      * 返回true
      * @override
      * @returns {boolean}
-     * @memberof org.dedu.draw.Link
+     * @memberof dedu.Link
      */
     isLink: function() {
         return true;
@@ -160,11 +160,11 @@ org.dedu.draw.Link = org.dedu.draw.Cell.extend({
 });
 
 /**
- * `org.dedu.draw.LinkView`是{@link org.dedu.draw.link}的view and is responsible for rendering a link with properties defined in its model
+ * `dedu.LinkView`是{@link dedu.link}的view and is responsible for rendering a link with properties defined in its model
  * @class
- * @augments org.dedu.draw.CellView
+ * @augments dedu.CellView
  */
-org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
+dedu.LinkView = dedu.CellView.extend({
 
     /**
      * @override
@@ -177,7 +177,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     initialize: function (opts) {
         this.options = _.extend({}, _.result(this, "options"), opts || {});
 
-        org.dedu.draw.CellView.prototype.initialize.apply(this, arguments);
+        dedu.CellView.prototype.initialize.apply(this, arguments);
 
         // create methods in prototype, so they can be accessed from any instance and
         // don't need to be create over and over
@@ -430,7 +430,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
             var $rect = $(labelNode).find('rect');
 
             // Text attributes with the default `text-anchor` and font-size set.
-            var textAttributes = _.extend({ 'text-anchor': 'middle', 'font-size': 14 }, org.dedu.draw.util.getByPath(label, 'attrs/text', '/'));
+            var textAttributes = _.extend({ 'text-anchor': 'middle', 'font-size': 14 }, dedu.util.getByPath(label, 'attrs/text', '/'));
 
             $text.attr(_.omit(textAttributes, 'text'));
             if (!_.isUndefined(textAttributes.text)) {
@@ -452,7 +452,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
                 rx: 3,
                 ry: 3
 
-            }, org.dedu.draw.util.getByPath(label, 'attrs/rect', '/'));
+            }, dedu.util.getByPath(label, 'attrs/rect', '/'));
 
             $rect.attr(_.extend(rectAttributes, {
                 x: textBbox.x,
@@ -462,7 +462,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
             }));
         }, this);
 
-        return this;        
+        return this;
     },
 
     renderArrowheadMarkers: function() {
@@ -621,12 +621,12 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
                     } else if (prevSample) {
                         angle = g.point(prevSample).theta(labelCoordinates);
                     }
-                    labelCoordinates = g.point(labelCoordinates).offset(offset).rotate(labelCoordinates, angle - 90);                                        
-                }                
+                    labelCoordinates = g.point(labelCoordinates).offset(offset).rotate(labelCoordinates, angle - 90);
+                }
 
-                this._labelCache[idx].attr('transform', 'translate(' + labelCoordinates.x + ', ' + labelCoordinates.y + ')');                                                
+                this._labelCache[idx].attr('transform', 'translate(' + labelCoordinates.x + ', ' + labelCoordinates.y + ')');
             },this);
-        }                
+        }
 
         return this;
 
@@ -656,7 +656,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     },
 
     findRoute: function (oldVertices) {
-        var namespace = org.dedu.draw.routers;
+        var namespace = dedu.routers;
         var router = this.model.get('router');
 
         var defaultRouter = this.paper.options.defaultRouter;
@@ -678,7 +678,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     // between `source` and `target`.
     getPathData: function (vertices) {
 
-        var namespace = org.dedu.draw.connectors;
+        var namespace = dedu.connectors;
         var connector = this.model.get('connector');
         var defaultConnector = this.paper.options.defaultConnector;
 
@@ -1009,12 +1009,12 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     },
 
     focus: function () {
-        //org.dedu.draw.CellView.prototype.focus.apply(this);
+        //dedu.CellView.prototype.focus.apply(this);
         this.highlight('connection_line');
     },
 
     unfocus: function () {
-        //org.dedu.draw.CellView.prototype.unfocus.apply(this);
+        //dedu.CellView.prototype.unfocus.apply(this);
         this.unhighlight('connection_line');
     },
 
@@ -1024,7 +1024,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
     },
 
     pointerdown: function (evt,x,y) {
-        org.dedu.draw.CellView.prototype.pointerdown.apply(this, arguments);
+        dedu.CellView.prototype.pointerdown.apply(this, arguments);
 
 
         this._dx = x;
@@ -1079,7 +1079,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
         var m = g.line(g.point(this.sourcePoint.x,this.sourcePoint.y), g.point(this.targetPoint.x,this.targetPoint.y)).midpoint();
         x = m.x-8;
         y = m.y-8;
-        org.dedu.draw.CellView.prototype.pointerdblclick.apply(this, arguments);
+        dedu.CellView.prototype.pointerdblclick.apply(this, arguments);
 
     },
 
@@ -1202,7 +1202,7 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
         this._dx = x;
         this._dy = y;
 
-        org.dedu.draw.CellView.prototype.pointermove.apply(this, arguments);
+        dedu.CellView.prototype.pointermove.apply(this, arguments);
         this.notify('link:pointermove', evt, x, y);
     },
 
@@ -1244,18 +1244,18 @@ org.dedu.draw.LinkView = org.dedu.draw.CellView.extend({
             }
             this._afterArrowheadMove();
         }
-    
+
         delete this._action;
         this.notify('link:pointerup', evt, x, y);
-        org.dedu.draw.CellView.prototype.pointerup.apply(this, arguments);
+        dedu.CellView.prototype.pointerup.apply(this, arguments);
     },
 
-    
+
 
 },{
     /**
      * get port of vertex
-     * @param {org.dedu.draw.Link~Vertex} end
+     * @param {dedu.Link~Vertex} end
      * @returns {string}
      */
     makeSelector: function (end) {

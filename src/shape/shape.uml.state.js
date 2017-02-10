@@ -2,15 +2,15 @@
  * Created by lmz on 16/3/20.
  */
 
-org.dedu.draw.shape.uml = {
+dedu.shape.uml = {
 };
 
 /**
  * `StartState`
  * @class
- * @augments org.dedu.draw.shape.simple.Generic
+ * @augments dedu.shape.simple.Generic
  */
-org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
+dedu.shape.uml.StartState = dedu.shape.simple.Generic.extend({
     markup:[
         '<g class="rotatable">',
         '<g class="scalable">',
@@ -19,7 +19,7 @@ org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
         '</g>'
     ].join(''),
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
        type: 'uml.StartState',
        size: { width: 25, height: 25 },
        port_ref_position:{
@@ -38,7 +38,7 @@ org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
             portleft:{
                 'ref-x':-0.5,
                 'ref-y':0
-            }                        
+            }
        },
        attrs: {
            '.uml-start-state-body': {
@@ -47,14 +47,14 @@ org.dedu.draw.shape.uml.StartState = org.dedu.draw.shape.simple.Generic.extend({
                'fill': '#444'
            }
        },
-    }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
+    }, dedu.shape.simple.Generic.prototype.defaults)
 });
 
 /**
  * @class
- * @augments org.dedu.draw.shape.simple.Generic
+ * @augments dedu.shape.simple.Generic
  */
-org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
+dedu.shape.uml.EndState = dedu.shape.simple.Generic.extend({
         markup: [
             '<g class="rotatable">',
             '<g class="scalable">',
@@ -63,7 +63,7 @@ org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
             '</g>',
             '</g>'
         ].join(''),
-        defaults: org.dedu.draw.util.deepSupplement({
+        defaults: dedu.util.deepSupplement({
             type: 'uml.EndState',
             size: { width: 25, height: 25 },
             port_ref_position: {
@@ -95,14 +95,81 @@ org.dedu.draw.shape.uml.EndState = org.dedu.draw.shape.simple.Generic.extend({
                    'stroke': '#333'
                }
             }
-       }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
+       }, dedu.shape.simple.Generic.prototype.defaults)
 });
+
+dedu.shape.uml.Choise = dedu.shape.simple.Generic.extend({
+  markup: [
+        '<g class="rotatable">',
+        '<g class="scalable">',
+        '<polyline points="50,0,0,50,50,100,100,50,50,0"></polyline>',
+        '</g>',
+        '</g>'
+  ].join(''),
+
+  defaults: dedu.util.deepSupplement({
+
+    type: 'uml.Choise',
+    size: {width: 40, height:40},
+    attrs: {
+      'polyline': {
+        'stroke': '#333',
+        'stroke-width': 2
+      }
+    }
+  }, dedu.shape.simple.Generic.prototype.defaults)
+});
+
+dedu.shape.uml.DeepHistory =  dedu.shape.simple.Generic.extend({
+  markup: [
+    '<g class="rotatable">',
+    '<g class="scalable">',
+    '<circle class="uml-deep-history-body uml-history-body"/>',
+    '<path class="h" d="M-10,-15l0,30l0,-15l20,0l0,-15l0,30" stroke="#000000" fill="none"></path>',
+    '</g>',
+    '</g>'
+  ].join(''),
+
+  defaults: dedu.util.deepSupplement({
+    type: 'uml.DeepHistory',
+    size: {width: 40, height: 40},
+    attrs: {
+      ".uml-deep-history-body": {
+          'r': 40,
+          'stroke': '#333'
+      }
+    }
+  }, dedu.shape.simple.Generic.prototype.defaults)
+  });
+
+dedu.shape.uml.ShadowHistory = dedu.shape.simple.Generic.extend({
+  markup: [
+    '<g class="rotatable">',
+    '<g class="scalable">',
+    '<circle class="uml-deep-history-body uml-history-body"/>',
+    '<path class="h" d="M-10,-15l0,30l0,-15l20,0l0,-15l0,30" stroke="#000000" fill="none"></path>',
+    '<text id="star">*</text>',
+    '</g>',
+    '</g>'
+  ].join(''),
+  defaults: dedu.util.deepSupplement({
+    type: 'uml.ShadowHistory',
+    attrs: {
+      "#star": {
+        "x": 13,
+        "y": 25,
+        "fill": '#333',
+        "font-size": '48'
+      }
+    }
+  }, dedu.shape.uml.DeepHistory.prototype.defaults)
+})
 
 /**
  * @class
- * @augments org.dedu.draw.shape.simple.Generic.
+ * @augments dedu.shape.simple.Generic.
  */
-org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
+dedu.shape.uml.State = dedu.shape.simple.Generic.extend({
     markup: [
         '<g class="rotatable">',
         '<g class="scalable">',
@@ -114,7 +181,7 @@ org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
         '</g>'
     ].join(''),
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
 
         type: 'uml.State',
         size: { width: 60, height: 40 },
@@ -141,24 +208,24 @@ org.dedu.draw.shape.uml.State = org.dedu.draw.shape.simple.Generic.extend({
 
         events: [],
         name: 'State'
-    }, org.dedu.draw.shape.simple.Generic.prototype.defaults)
+    }, dedu.shape.simple.Generic.prototype.defaults)
 
 });
 
-org.dedu.draw.shape.uml.StateView = org.dedu.draw.shape.simple.GenericView.extend({
+dedu.shape.uml.StateView = dedu.shape.simple.GenericView.extend({
 
     initialize: function (options) {
         if(options.skip_render){
             return;
         }
-        org.dedu.draw.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
+        dedu.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
         this.model.on('change:name', this.updateName,this);
         this.model.on('change:events', this.updateEvents,this);
         this.model.on('change:size', this.updatePath,this);
     },
 
     render:function(){
-        org.dedu.draw.shape.simple.GenericView.prototype.render.apply(this,arguments);
+        dedu.shape.simple.GenericView.prototype.render.apply(this,arguments);
         this.originSize = this.model.get('size');
         this.updateName();
         this.updatePath();
@@ -207,7 +274,7 @@ org.dedu.draw.shape.uml.StateView = org.dedu.draw.shape.simple.GenericView.exten
     }
 });
 
-org.dedu.draw.shape.uml.StartStateView  = org.dedu.draw.shape.simple.GenericView.extend({
+dedu.shape.uml.StartStateView  = dedu.shape.simple.GenericView.extend({
 
     focus: function () {
         this.vel.findOne('.uml-state-body').attr({
@@ -223,10 +290,10 @@ org.dedu.draw.shape.uml.StartStateView  = org.dedu.draw.shape.simple.GenericView
 
 });
 
-org.dedu.draw.shape.uml.EndStateView  = org.dedu.draw.shape.simple.GenericView.extend({
+dedu.shape.uml.EndStateView  = dedu.shape.simple.GenericView.extend({
     initialize: function (options) {
         this.circle_index  = 2;
-        org.dedu.draw.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
+        dedu.shape.simple.GenericView.prototype.initialize.apply(this,arguments);
     },
     focus: function () {
         this.vel.findOne('.uml-state-body').attr({

@@ -1,24 +1,24 @@
 /**
  * 添加svg的属性,主要为了和node-red~editor的兼容
  * @class
- * @augments org.dedu.draw.Paper
+ * @augments dedu.Paper
  */
-org.dedu.draw.Chart = org.dedu.draw.Paper.extend({
-    options: org.dedu.draw.util.supplement({
+dedu.Chart = dedu.Paper.extend({
+    options: dedu.util.supplement({
         tabindex: 1,
         style: {
 
         }
-    }, org.dedu.draw.Paper.prototype.options),
-    initialize: function () {
-        org.dedu.draw.Paper.prototype.initialize.apply(this, arguments);
+    }, dedu.Paper.prototype.options),
+    initialize: function() {
+        dedu.Paper.prototype.initialize.apply(this, arguments);
 
-        V(this.svg).attr({ tabindex: this.options.tabindex });
+        Snap(this.svg).attr({ tabindex: this.options.tabindex });
 
         var style = "";
-        _.each(this.options.style,function(value,key) {
-            style+= key+":"+value+";"
+        _.each(this.options.style, function(value, key) {
+            style += key + ":" + value + ";"
         });
-        V(this.svg).attr({style:style});
+        Snap(this.svg).attr({ style: style });
     }
 });

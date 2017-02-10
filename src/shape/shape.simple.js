@@ -1,10 +1,10 @@
 
-org.dedu.draw.shape.simple = {};
+dedu.shape.simple = {};
 /**
  * SuspendPort model interface
  * @class
  */
-org.dedu.draw.shape.simple.SuspendPortModelInterface = {
+dedu.shape.simple.SuspendPortModelInterface = {
     initialize:function(){
 
     }
@@ -14,12 +14,12 @@ org.dedu.draw.shape.simple.SuspendPortModelInterface = {
  * SuspendPort view interface
  * @class
  */
-org.dedu.draw.shape.simple.SuspendPortViewInterface = {
+dedu.shape.simple.SuspendPortViewInterface = {
     initialize:function(options){
         if(options.skip_render){
             return;
         }
-        org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
+        dedu.ElementView.prototype.initialize.apply(this, arguments);
         //this.listenTo(this, 'add:ports', this.update);
         //this.listenTo(this,'remove:ports',this.update);
         _.bindAll(this,"showSuspendPort","hideSuspendPort");
@@ -40,14 +40,14 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
         },this);
     },
     renderView:function(){
-        //org.dedu.draw.ElementView.prototype.render.apply(this, arguments);
+        //dedu.ElementView.prototype.render.apply(this, arguments);
         this.renderSuspendPort();
         //this.update();
     },
     /**
      * 渲染suspend port
      * @method renderSuspendPort
-     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     * @memberof dedu.shape.simple.SuspendPortViewInterface
      */
     renderSuspendPort: function () {
 
@@ -71,7 +71,7 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
                 '.portdown':{'ref-x':port_ref_position.portdown['ref-x'],'ref-y':port_ref_position.portdown['ref-y']},
                 '.portleft':{'ref-x':port_ref_position.portleft['ref-x'],'ref-y':port_ref_position.portleft['ref-y']}
             });
-        }else{        
+        }else{
             this.model.attr({
                 '.suspend':{ref:'.body',r:3,display:'none'},
                 '.portup':{'ref-x':.5,'ref-y':0},
@@ -87,7 +87,7 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
     /**
      * show suspend port
      * method showSuspendPort
-     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     * @memberof dedu.shape.simple.SuspendPortViewInterface
      */
     showSuspendPort: function () {
         this.up.attr('display','block');
@@ -98,7 +98,7 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
     /**
      * hide suspend port
      * method hideSuspendPort
-     * @memberof org.dedu.draw.shape.simple.SuspendPortViewInterface
+     * @memberof dedu.shape.simple.SuspendPortViewInterface
      */
     hideSuspendPort: function () {
         this.up.attr('display','none');
@@ -111,16 +111,16 @@ org.dedu.draw.shape.simple.SuspendPortViewInterface = {
 /**
  * A model class implements suspend port
  * @class
- * @augments org.dedu.draw.shape.basic.Generic
+ * @augments dedu.shape.basic.Generic
  */
-org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
+dedu.shape.simple.Generic = dedu.shape.basic.Generic.extend(
     _.extend(
         {},
-        org.dedu.draw.shape.basic.PortsModelInterface,
+        dedu.shape.basic.PortsModelInterface,
         {
             markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><text class="label"/></g>',
             suspendPortMarkup:'<circle class="suspend port<%= dir %>"/>',
-            defaults: org.dedu.draw.util.deepSupplement({
+            defaults: dedu.util.deepSupplement({
                 type: 'simple.Generic',
                 size: {width: 1, height: 1},
 
@@ -134,7 +134,7 @@ org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
                     },
 
                 }
-            }, org.dedu.draw.shape.basic.Generic.prototype.defaults),
+            }, dedu.shape.basic.Generic.prototype.defaults),
             /**
              * get relative position for port
              * @param portName
@@ -143,7 +143,7 @@ org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
              * @param selector
              * @param type
              * @returns {{}}
-             * @memberof org.dedu.draw.shape.simple.Generic
+             * @memberof dedu.shape.simple.Generic
              */
             getPortAttrs: function (portName,index,total,selector,type) {
                 var attrs = {};
@@ -165,10 +165,10 @@ org.dedu.draw.shape.simple.Generic = org.dedu.draw.shape.basic.Generic.extend(
 /**
  * A view class implements suspend port
  * @class
- * @augments org.dedu.draw.ElementView
+ * @augments dedu.ElementView
  */
-org.dedu.draw.shape.simple.GenericView = org.dedu.draw.ElementView.extend(
-    _.extend({},org.dedu.draw.shape.simple.SuspendPortViewInterface,{
+dedu.shape.simple.GenericView = dedu.ElementView.extend(
+    _.extend({},dedu.shape.simple.SuspendPortViewInterface,{
         /**
          * 显示连接到port的提示
          * @param {DOMObject} el - port对应的domObject
@@ -199,7 +199,7 @@ org.dedu.draw.shape.simple.GenericView = org.dedu.draw.ElementView.extend(
         },
         unfocus:function(){
             this.vel.findOne('.body').removeClass('selected');
-            
+
         }
     })
 );

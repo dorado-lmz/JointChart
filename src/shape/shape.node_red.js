@@ -1,14 +1,14 @@
 /**
  * Created by lmz on 16/5/8.
  */
-org.dedu.draw.shape.node_red = {};
+dedu.shape.node_red = {};
 /**
  * `subflowportModel` for node-red
  * @class
- * @augments org.dedu.draw.shape.devs.Model.
+ * @augments dedu.shape.devs.Model.
  */
-org.dedu.draw.shape.node_red.subflowportModel = org.dedu.draw.shape.devs.Model.extend({
-    defaults:org.dedu.draw.util.deepSupplement({
+dedu.shape.node_red.subflowportModel = dedu.shape.devs.Model.extend({
+    defaults:dedu.util.deepSupplement({
         markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><g class="inPorts"/><g class="outPorts"/><text class="port_label small_label"/><text class="port_label port_index"/></g>',
         type:'node_red.subflowportModel',
         size:{
@@ -40,17 +40,17 @@ org.dedu.draw.shape.node_red.subflowportModel = org.dedu.draw.shape.devs.Model.e
             }
 
         }
-    },org.dedu.draw.shape.devs.Model.prototype.defaults),
+    },dedu.shape.devs.Model.prototype.defaults),
     initialize: function (options) {
         this.set("outPorts", options.outputs);
         this.set("inPorts", options.inputs);
         this.get('attrs')['text.port_index'].text = options.index;
-        org.dedu.draw.shape.devs.Model.prototype.initialize.apply(this,arguments);
+        dedu.shape.devs.Model.prototype.initialize.apply(this,arguments);
     }
 
 });
 
-org.dedu.draw.shape.node_red.subflowportModelView = org.dedu.draw.shape.devs.ModelView.extend({
+dedu.shape.node_red.subflowportModelView = dedu.shape.devs.ModelView.extend({
 
     renderView: function () {
 

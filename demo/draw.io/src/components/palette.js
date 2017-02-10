@@ -28,10 +28,10 @@ class PaletteComponent extends React.Component {
 	            </Accordion>
 	            <div id="palette-footer">
 	                <a className="palette-button" id="palette-collapse-all" href="#">
-	                	<i className="fa fa-angle-double-up"></i>
+	                	<i className="glyphicon glyphicon-menu-up"></i>
 	                </a>
 	                <a className="palette-button" id="palette-expand-all" href="#">
-	                	<i className="fa fa-angle-double-down"></i>
+	                	<i className="glyphicon glyphicon-menu-down"></i>
 	                </a>
 	            </div>
 	        </div>

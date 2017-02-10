@@ -8,3 +8,6 @@ dist/
 demo/draw.io/vendor/
 demo/draw.io/index.html
 demo/draw.io/js
+bower_components/
+vendor/
+yarn.lock

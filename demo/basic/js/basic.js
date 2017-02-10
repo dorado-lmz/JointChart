@@ -2,9 +2,9 @@
 
 
 
-var graph = new org.dedu.draw.Graph;
+var graph = new dedu.Graph;
 
-var chart = new org.dedu.draw.Chart({
+var chart = new dedu.Chart({
     el: $('#chart'),
     width: 5000,
     height: 5000,
@@ -21,11 +21,11 @@ var data = JSON.parse(json);
 var halo;
 
 // chart.on('cell:pointerdown',function(cellView){
-//    if (cellView.model instanceof org.dedu.draw.Link) return;
+//    if (cellView.model instanceof dedu.Link) return;
 //    if(cellView.model.get('selected') && cellView.model.previous('selected') === false){
 //        if(!halo){
 
-//            halo = new org.dedu.draw.plugins.Halo({cellView:cellView});
+//            halo = new dedu.plugins.Halo({cellView:cellView});
 //        }
 
 //        halo.render({cellView:cellView});
@@ -34,7 +34,7 @@ var halo;
 // });
 
 
-var rb = new org.dedu.draw.shape.basic.Rect({
+var rb = new dedu.shape.basic.Rect({
     position: { x: 350, y: 50 },
     size: { width: 50, height: 30 },
     attrs: { text: { text: 'basic.Rect' } }
@@ -42,7 +42,7 @@ var rb = new org.dedu.draw.shape.basic.Rect({
 graph.addCell(rb);
 
 
-var m1 = new org.dedu.draw.shape.node.Model({
+var m1 = new dedu.shape.node.Model({
     position: { x: data.x, y: data.y },
     size: { width: 120, height: 30 },
     attrs: {
@@ -54,7 +54,7 @@ var m1 = new org.dedu.draw.shape.node.Model({
 graph.addCell(m1);
 
 
-var m2 = new org.dedu.draw.shape.devs.Model({
+var m2 = new dedu.shape.devs.Model({
     position: { x: 50, y: 50 },
     size: { width: 50, height: 40 },
     inPorts: ['in1','in2'],
@@ -69,7 +69,7 @@ var m2 = new org.dedu.draw.shape.devs.Model({
 graph.addCell(m2);
 
 
-var m3 = new org.dedu.draw.shape.devs.Model({
+var m3 = new dedu.shape.devs.Model({
     position: { x: 35, y: 15 },
     size: { width: 50, height: 40 },
     inPorts: ['in1','in2'],
@@ -83,7 +83,7 @@ var m3 = new org.dedu.draw.shape.devs.Model({
 });
 graph.addCell(m3);
 
-var state1 = new org.dedu.draw.shape.uml.State({
+var state1 = new dedu.shape.uml.State({
     position: { x: 150, y: 150 },
     size: { width: 55, height: 30 },
     events:['enter','exit'],
@@ -91,35 +91,58 @@ var state1 = new org.dedu.draw.shape.uml.State({
 
 graph.addCell(state1);
 
-var start_state = new org.dedu.draw.shape.uml.StartState({
+var start_state = new dedu.shape.uml.StartState({
     position: { x: 250, y: 150 },
-    size: { width: 30, height: 30 },
+    size: { width: 50, height: 50 },
 });
 
 graph.addCell(start_state);
 
-var end_state = new org.dedu.draw.shape.uml.EndState({
+var choise = new dedu.shape.uml.Choise({
+  position: { x: 250, y: 350 },
+  size: { width: 50, height: 50 },
+});
+
+graph.addCell(choise);
+
+
+
+var end_state = new dedu.shape.uml.EndState({
     position: { x: 100, y: 150 },
     size: { width: 30, height: 30 },
 });
 
 graph.addCell(end_state);
 
-var simple = new org.dedu.draw.shape.simple.Generic({
+var history1 = new dedu.shape.uml.DeepHistory({
+  position: {x:300,y:200},
+  size: { width: 30, height: 30 },
+})
+graph.addCell(history1);
+
+var history2 = new dedu.shape.uml.ShadowHistory({
+  position: {x:300,y:230},
+  size: { width: 30, height: 30 },
+})
+graph.addCell(history2);
+
+var simple = new dedu.shape.simple.Generic({
     position: { x: 50, y: 150 },
     size: { width: 40, height: 20 },
 })
 
 graph.addCell(simple);
 
-var simple2 = new org.dedu.draw.shape.simple.Generic({
+var simple2 = new dedu.shape.simple.Generic({
     position: { x: 350, y: 350 },
     size: { width: 30, height: 30 },
-})
+});
+
+
 
 graph.addCell(simple2);
 
-var link6 = new org.dedu.draw.Link({
+var link6 = new dedu.Link({
 
     source: { id: m1.id },
     target: { id: m2.id },
@@ -134,21 +157,21 @@ var link6 = new org.dedu.draw.Link({
         }
     }
 });
-graph.addCell(link6);
+// graph.addCell(link6);
 
-var subflowport = new org.dedu.draw.shape.node_red.subflowportModel({
+var subflowport = new dedu.shape.node_red.subflowportModel({
     position: { x: 120, y: 350 },
     outputs:[1],
     inputs:['i1'],
     index:2
 });
 
-graph.addCell(subflowport);
+// graph.addCell(subflowport);
 
 
+graph.layout();
 
-
-//var link1 = new org.dedu.draw.Link({
+//var link1 = new dedu.Link({
 //    source:{id:m1.id},
 //    target:{id:m2.id}
 //});
@@ -156,6 +179,6 @@ graph.addCell(subflowport);
 
 
 //
-//var l1 = new org.dedu.draw.Link();
+//var l1 = new dedu.Link();
 //graph.addCell(l1);
 //l1.set('vertices',[{x:300,y:60},{x:400,y:60}]);

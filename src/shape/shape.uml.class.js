@@ -2,7 +2,7 @@
  * Created by lmz on 16/5/5.
  */
 
-org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
+dedu.shape.uml.Class = dedu.shape.basic.Generic.extend({
 
     markup: [
         '<g class="rotatable">',
@@ -13,7 +13,7 @@ org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
         '</g>'
     ].join(''),
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
 
         type: 'uml.Class',
         size:{
@@ -45,7 +45,7 @@ org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
         attributes: [],
         methods: []
 
-    }, org.dedu.draw.shape.basic.Generic.prototype.defaults),
+    }, dedu.shape.basic.Generic.prototype.defaults),
 
     initialize: function() {
 
@@ -56,7 +56,7 @@ org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
 
         this.updateRectangles();
 
-        org.dedu.draw.shape.basic.Generic.prototype.initialize.apply(this, arguments);
+        dedu.shape.basic.Generic.prototype.initialize.apply(this, arguments);
     },
 
     getClassName: function() {
@@ -92,11 +92,11 @@ org.dedu.draw.shape.uml.Class = org.dedu.draw.shape.basic.Generic.extend({
 
 });
 
-org.dedu.draw.shape.uml.ClassView = org.dedu.draw.ElementView.extend({
+dedu.shape.uml.ClassView = dedu.ElementView.extend({
 
     initialize: function() {
 
-        org.dedu.draw.ElementView.prototype.initialize.apply(this, arguments);
+        dedu.ElementView.prototype.initialize.apply(this, arguments);
 
         this.listenTo(this.model, 'uml-update', function() {
             this.update();
@@ -105,50 +105,50 @@ org.dedu.draw.shape.uml.ClassView = org.dedu.draw.ElementView.extend({
     }
 });
 
-org.dedu.draw.shape.uml.Abstract = org.dedu.draw.shape.uml.Class.extend({
+dedu.shape.uml.Abstract = dedu.shape.uml.Class.extend({
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
         type: 'uml.Abstract',
         attrs: {
             '.uml-class-name-rect': { fill : '#e74c3c' },
             '.uml-class-attrs-rect': { fill : '#c0392b' },
             '.uml-class-methods-rect': { fill : '#c0392b' }
         }
-    }, org.dedu.draw.shape.uml.Class.prototype.defaults),
+    }, dedu.shape.uml.Class.prototype.defaults),
 
     getClassName: function() {
         return ['<<Abstract>>', this.get('name')];
     }
 
 });
-org.dedu.draw.shape.uml.AbstractView = org.dedu.draw.shape.uml.ClassView;
+dedu.shape.uml.AbstractView = dedu.shape.uml.ClassView;
 
-org.dedu.draw.shape.uml.Interface = org.dedu.draw.shape.uml.Class.extend({
+dedu.shape.uml.Interface = dedu.shape.uml.Class.extend({
 
-    defaults: org.dedu.draw.util.deepSupplement({
+    defaults: dedu.util.deepSupplement({
         type: 'uml.Interface',
         attrs: {
             '.uml-class-name-rect': { fill : '#f1c40f' },
             '.uml-class-attrs-rect': { fill : '#f39c12' },
             '.uml-class-methods-rect': { fill : '#f39c12' }
         }
-    }, org.dedu.draw.shape.uml.Class.prototype.defaults),
+    }, dedu.shape.uml.Class.prototype.defaults),
 
     getClassName: function() {
         return ['<<Interface>>', this.get('name')];
     }
 
 });
-org.dedu.draw.shape.uml.InterfaceView = org.dedu.draw.shape.uml.ClassView;
+dedu.shape.uml.InterfaceView = dedu.shape.uml.ClassView;
 
-org.dedu.draw.shape.uml.Generalization = org.dedu.draw.Link.extend({
+dedu.shape.uml.Generalization = dedu.Link.extend({
     defaults: {
         type: 'uml.Generalization',
         attrs: { '.marker-target': { d: 'M 20 0 L 0 10 L 20 20 z', fill: 'white' }}
     }
 });
 
-org.dedu.draw.shape.uml.Implementation = org.dedu.draw.Link.extend({
+dedu.shape.uml.Implementation = dedu.Link.extend({
     defaults: {
         type: 'uml.Implementation',
         attrs: {
@@ -158,20 +158,20 @@ org.dedu.draw.shape.uml.Implementation = org.dedu.draw.Link.extend({
     }
 });
 
-org.dedu.draw.shape.uml.Aggregation = org.dedu.draw.Link.extend({
+dedu.shape.uml.Aggregation = dedu.Link.extend({
     defaults: {
         type: 'uml.Aggregation',
         attrs: { '.marker-target': { d: 'M 40 10 L 20 20 L 0 10 L 20 0 z', fill: 'white' }}
     }
 });
 
-org.dedu.draw.shape.uml.Composition = org.dedu.draw.Link.extend({
+dedu.shape.uml.Composition = dedu.Link.extend({
     defaults: {
         type: 'uml.Composition',
         attrs: { '.marker-target': { d: 'M 40 10 L 20 20 L 0 10 L 20 0 z', fill: 'black' }}
     }
 });
 
-org.dedu.draw.shape.uml.Association = org.dedu.draw.Link.extend({
+dedu.shape.uml.Association = dedu.Link.extend({
     defaults: { type: 'uml.Association' }
 });

@@ -3,25 +3,24 @@
  */
 
 
-org.dedu.draw.plugins = {};
+dedu.plugins = {};
 
-org.dedu.draw.plugins.PlainSvg = (function () {
-    var namespace = org.dedu.draw.shape;
+dedu.plugins.PlainSvg = (function () {
+    var namespace = dedu.shape;
 
-    var defaultViewClass = org.dedu.draw.ElementView;
+    var defaultViewClass = dedu.ElementView;
     var tmp_chart = null;
-    // $(function(){
-    //     $('body').append($('<div id="tmp_chart"></div>'));
-    //     tmp_chart = new org.dedu.draw.Chart({
-    //         el: $('#tmp_chart'),
-    //         width: 36,
-    //         height: 36,
-    //         tabindex: 1,
-    //         gridSize: 1,
-    //         style: {}
-    //     });
-    // });
-
+    $(function(){
+        $('body').append($('<div id="tmp_chart"></div>'));
+        tmp_chart = new dedu.Chart({
+            el: $('#tmp_chart'),
+            width: 36,
+            height: 36,
+            tabindex: 1,
+            gridSize: 1,
+            style: {}
+        });
+    });
 
     function renderView(node_type, options) {
         var view = createViewForModel(node_type, options);
@@ -35,8 +34,8 @@ org.dedu.draw.plugins.PlainSvg = (function () {
     function createViewForModel(node_type, options) {
         var view_type = node_type + "View";
 
-        var namespaceViewClass = org.dedu.draw.util.getByPath(namespace, view_type, ".");
-        var namespaceClass = org.dedu.draw.util.getByPath(namespace, node_type, ".");
+        var namespaceViewClass = dedu.util.getByPath(namespace, view_type, ".");
+        var namespaceClass = dedu.util.getByPath(namespace, node_type, ".");
 
         var ViewClass = namespaceViewClass || defaultViewClass;
 

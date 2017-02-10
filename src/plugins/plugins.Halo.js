@@ -1,9 +1,9 @@
 /**
  * Created by y50-70 on 2/27/2016.
  */
-org.dedu.draw.plugins = {};
+dedu.plugins = {};
 
-org.dedu.draw.plugins.Halo = Backbone.View.extend({
+dedu.plugins.Halo = Backbone.View.extend({
     id: "shape_controls",
     options:{
         useModelGeometry: !1,
@@ -36,8 +36,8 @@ org.dedu.draw.plugins.Halo = Backbone.View.extend({
     },
     render:function(options){
         var options = this.options = _.extend({}, _.result(this, "options"), options || {});
-        if(org.dedu.draw.plugins.Halo.controls){
-            //this.$el = org.dedu.draw.plugins.Halo.controls;
+        if(dedu.plugins.Halo.controls){
+            //this.$el = dedu.plugins.Halo.controls;
             //this.$canvas = $('.controls_bounding',this.$el);
             //this.$controler_nw = $(".shape_controller.n.w",this.$el);
             //this.$controler_ne = $(".shape_controller.n.e",this.$el);
@@ -51,7 +51,7 @@ org.dedu.draw.plugins.Halo = Backbone.View.extend({
             _.map(this.options.handles,this.renderHandle,this);
 
             this.$el.appendTo(options.paper.el);
-            org.dedu.draw.plugins.Halo.controls = this.$el;
+            dedu.plugins.Halo.controls = this.$el;
             _.each(this.options.handles, this.addHandle, this)
         }
 
@@ -60,7 +60,7 @@ org.dedu.draw.plugins.Halo = Backbone.View.extend({
     },
     update:function(){
         var cellView = this.options.cellView;
-        if (!(cellView.model instanceof org.dedu.draw.Link)) {
+        if (!(cellView.model instanceof dedu.Link)) {
             var bbox = cellView.getBBox({
                 useModelGeometry: this.options.useModelGeometry
             });
@@ -113,7 +113,7 @@ org.dedu.draw.plugins.Halo = Backbone.View.extend({
     },
     onHandlePointerDown: function (evt) {
         this._action = $(evt.target).closest(".shape_controller").attr("data-action");
-        evt = org.dedu.draw.util.normalizeEvent(evt);
+        evt = dedu.util.normalizeEvent(evt);
         this._clientX = evt.clientX, this._clientY = evt.clientY, this._startClientX = this._clientX, this._startClientY = this._clientY;
         this.triggerAction(this._action, "pointerdown", evt);
     },
@@ -145,7 +145,7 @@ org.dedu.draw.plugins.Halo = Backbone.View.extend({
         if(this._action){
             evt.preventDefault();
             evt.stopPropagation();
-            evt = org.dedu.draw.util.normalizeEvent(evt);
+            evt = dedu.util.normalizeEvent(evt);
             var new_position = this.options.paper.snapToGrid({
                 x:evt.clientX,
                 y:evt.clientY

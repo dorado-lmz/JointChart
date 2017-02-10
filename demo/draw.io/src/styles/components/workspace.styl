@@ -9,6 +9,17 @@
     overflow: hidden;
     component-border()
 
+    #designer_header{
+      height: 25px;
+      & #toolbar{
+        padding: 1px 10px;
+      }
+    }
+    .tabs{
+      position: absolute;
+      top:25px;
+      width: 100%;
+    }
     #workspace-tabs
          margin-right: 35px;
 
@@ -23,6 +34,7 @@
         border-bottom: 1px solid primary-border-color;
 
         #btn-workspace-add-tab
+            display: inline-block;
             workspace-button()
             line-height: 32px;
             height: 32px;
@@ -30,6 +42,27 @@
             margin-top: 3px;
             margin-right:3px;
             border: 1px solid primary-border-color;
+            text-align: center
+     #workspace-format-tab
+        position: absolute;
+        box-sizing: border-box;
+        top: 0;
+        right: 40px;
+        height: 35px;
+        width: 35px;
+        background: #fff;
+        border-bottom: 1px solid primary-border-color;
+
+        #btn-workspace-format-tab
+            display: inline-block;
+            workspace-button()
+            line-height: 32px;
+            height: 32px;
+            width: 32px;
+            margin-top: 3px;
+            margin-right:3px;
+            border: 1px solid primary-border-color;
+            text-align: center
 
 
     #chart
@@ -37,7 +70,7 @@
        background: #e3e3e3;
        position: absolute;
        bottom:25px;
-       top: 35px;
+       top: 60px;
        left:0px;
        right:0px;
        box-sizing:border-box;

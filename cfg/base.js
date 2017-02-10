@@ -43,7 +43,7 @@ module.exports = {
     "jquery": "jQuery",
     "lodash": "_",
     "backbone": "Backbone",
-    "joint_chart": "dedu"
+    "joint_chart": "org"
   },
   module: {}
 };

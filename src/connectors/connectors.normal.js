@@ -3,7 +3,7 @@
  */
 
 
-org.dedu.draw.connectors.normal = function (sourcePoint, targetPoint, vertices) {
+dedu.connectors.normal = function (sourcePoint, targetPoint, vertices) {
     // Construct the `d` attribute of the `<path>` element.
 
     var d = ['M',sourcePoint.x,sourcePoint.y,"C"];

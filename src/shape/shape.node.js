@@ -1,10 +1,10 @@
-org.dedu.draw.shape.node = {};
+dedu.shape.node = {};
 /**
  * @class
- * @augments org.dedu.draw.shape.devs.Model
+ * @augments dedu.shape.devs.Model
  */
-org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
-    defaults:org.dedu.draw.util.deepSupplement({
+dedu.shape.node.Model = dedu.shape.devs.Model.extend({
+    defaults:dedu.util.deepSupplement({
         markup: '<g class="rotatable"><g class="scalable"><g class="body nodegroup"/></g><text class="label"/><g class="inPorts"/><g class="outPorts"/></g>',
         type:'node.Model',
         size:{
@@ -23,7 +23,7 @@ org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
             '.label': {'ref-x':.5, 'ref-y':.3, ref: '.node', 'text-anchor': 'middle', fill: '#000',style:{'font-weight':'normal'}},
         }
 
-    },org.dedu.draw.shape.devs.Model.prototype.defaults),
+    },dedu.shape.devs.Model.prototype.defaults),
     initialize: function () {
         this.data = this.get('data');
         var outputs = [];
@@ -37,15 +37,15 @@ org.dedu.draw.shape.node.Model = org.dedu.draw.shape.devs.Model.extend({
         this.set("outPorts", outputs);
         this.set("inPorts", inputs);
         this.attr(".label/text", this.data.type);
-        org.dedu.draw.shape.devs.Model.prototype.initialize.apply(this,arguments);
+        dedu.shape.devs.Model.prototype.initialize.apply(this,arguments);
     }
 });
 
 /**
  * @class
- * @augments org.dedu.draw.shape.devs.ModelView
+ * @augments dedu.shape.devs.ModelView
  */
-org.dedu.draw.shape.node.ModelView = org.dedu.draw.shape.devs.ModelView.extend({
+dedu.shape.node.ModelView = dedu.shape.devs.ModelView.extend({
 
     options:{},
 
