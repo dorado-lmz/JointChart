@@ -47,6 +47,7 @@ dedu.shape.uml.StartState = dedu.shape.simple.Generic.extend({
                'fill': '#444'
            }
        },
+       name: 'Initial'+dedu.util.randomString(6)
     }, dedu.shape.simple.Generic.prototype.defaults)
 });
 
@@ -94,7 +95,8 @@ dedu.shape.uml.EndState = dedu.shape.simple.Generic.extend({
                    'r': 10,
                    'stroke': '#333'
                }
-            }
+            },
+            name: 'End'+dedu.util.randomString(6)
        }, dedu.shape.simple.Generic.prototype.defaults)
 });
 
@@ -207,7 +209,7 @@ dedu.shape.uml.State = dedu.shape.simple.Generic.extend({
         },
 
         events: [],
-        name: 'State'
+        name: 'State'+dedu.util.randomString(6)
     }, dedu.shape.simple.Generic.prototype.defaults)
 
 });

@@ -1,5 +1,6 @@
 import React from 'react';
 import _ from 'lodash';
+import TabStore from '../stores/TabStore.js';
 
 class TabsComponent extends React.Component {
   constructor() {
@@ -65,15 +66,29 @@ class TabsComponent extends React.Component {
   }
   componentWillMount() {
     this.createTab();
-    // var graph = this.props.graph;
+    var graph = this.props.graph;
     // graph.on('cell:pointerdblclick', (cell) => {
     //   if (cell instanceof dedu.Cell) {
-    //    var tab = graph.createSubGraph(cell);
-    //     this.createTab(tab.id);
+    //    // var tab = graph.createSubGraph(cell);
+    //    this.createTab(cell);
 
     //   }
     // });
   }
+
+  onAddTab = (e) => {
+    var config  = TabStore.getConfig();
+    this.createTab(config.cell,config.regionName);
+  }
+
+  componentDidMount() {
+    TabStore.addStateSettingsListener(this.onAddTab);
+  }
+
+  componentWillUnmount() {
+    TabStore.removeStateSettingsListener(this.onAddTab);
+  }
+
   removeTab(id, active_id) {
     if (!id) return;
     var graph = this.props.graph;
@@ -89,11 +104,11 @@ class TabsComponent extends React.Component {
       tabs: tabs
     })
   }
-  createTab(parent) {
+  createTab(parent,regionName) {
     var graph = this.props.graph;
     var tabs = this.state.tabs;
     var activeTab = this.state.activeTab;
-    var graph_ref = graph.createGraph(parent);
+    var graph_ref = graph.createGraph(parent, {region_name:regionName});
 
     var uuid = graph_ref.id;
     tabs[uuid] = {

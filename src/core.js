@@ -27,7 +27,9 @@ var dedu = {
             }
             return hash;
         },
-
+        randomString: function(len){
+          return (1+~~(Math.random()*4294967)).toString(16).substring(0,len);
+        },
         /**
          * Return a value at the path in a nested object. delim is the delimiter used in the path
          * @example

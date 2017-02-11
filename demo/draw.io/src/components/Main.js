@@ -15,13 +15,6 @@ class AppComponent extends React.Component {
     this.graph = new dedu.Graph({},{
       tabs: true
     });
-    this.state = {
-      dialog: {
-        show: false
-      }
-    }
-    this.openDialog = this.openDialog.bind(this);
-    this.closeDialog = this.closeDialog.bind(this);
   }
   render() {
     return (
@@ -30,25 +23,11 @@ class AppComponent extends React.Component {
         <WorkspaceComponent graph={this.graph} openDialog={this.openDialog}/>
         <SeparatorComponent position="sidebar"/>
         <SidebarComponent graph={this.graph}/>
-        <SettingsComponent dialog={this.state.dialog} closeDialog={this.closeDialog}/>
+        <SettingsComponent/>
       </div>
     );
   }
-  closeDialog(){
-    this.setState({
-      dialog: {
-        show: false
-      }
-    })
-  }
-  openDialog(config){
-    this.setState({
-      dialog: {
-        show: true,
-        config: config
-      }
-    })
-  }
+
 }
 
 

@@ -7,6 +7,7 @@ import dedu from 'joint_chart';
 import {getConfigByType} from '../stores/chart_utils.js';
 import TabsComponent from './tabs.js';
 import DeployActionCreators from '../actions/DeployActionCreators';
+import DialogActionCreators from '../actions/DialogActionCreators';
 
 class WorkspaceComponent extends React.Component {
   dragOver = (e)=>{
@@ -24,22 +25,29 @@ class WorkspaceComponent extends React.Component {
       position:{
         x: e.pageX-this.originPosition.x,
         y: e.pageY-this.originPosition.y
-      }
+      },
+      name:'a'+dedu.util.randomString(6)
     });
     graph.addCell(cell);
   };
 
   deploy = (e) => {
     let graph = this.props.graph;
-    // DeployActionCreators.deploy(graph.exportGraph());
-    DeployActionCreators.deploy(graph.active_cells());
+    DeployActionCreators.deploy(graph.exportGraph());
+    // DeployActionCreators.deploy(graph.active_cells());
   };
+
+  save = (e) => {
+    let graph = this.props.graph;
+    graph.save();
+  }
 
 	render(){
 		return (
 			<div id="workspace">
 	            <div id="designer_header">
 	                <div id="toolbar">
+                    <button type="button" className="btn btn-default btn-xs pull-left" onClick={this.save}>Save</button>
                     <button type="button" className="btn btn-danger btn-xs pull-right" onClick={this.deploy}>Deploy</button>
 	                </div>
 	            </div>
@@ -102,9 +110,11 @@ class WorkspaceComponent extends React.Component {
         var config = {};
         config.title = cell.get('name');
         config.body = ``;
+        config.cell = cell;
 
-        var openDialog = this.props.openDialog;
-        openDialog(config);
+        // var openDialog = this.props.openDialog;
+        // openDialog(config);
+        DialogActionCreators.settingState(cell);
       }
     });
 	}

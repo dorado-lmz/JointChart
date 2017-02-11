@@ -1,16 +1,39 @@
 import React from 'react';
 import Modal from 'react-bootstrap/lib/Modal';
 import Button from 'react-bootstrap/lib/Button'
+import ButtonGroup from 'react-bootstrap/lib/ButtonGroup';
+import DialogStore from '../stores/DialogStore.js';
+import TabActionCreators from '../actions/TabActionCreators';
 
 class SettingsComponent extends React.Component{
 
+  constructor() {
+      super();
+      this.state = {
+          dialog: {
+              show: false
+          }
+      }
+      this.onShow = this.onShow.bind(this);
+  }
+
+
+
   render(){
+    let regions= {};
+    console.log(this.state.dialog.config)
+    this.state.dialog.config && (regions = this.state.dialog.config.regions);
     return (
-      <Modal show={this.props.dialog.show}>
+      <Modal show={this.state.dialog.show}>
         <Modal.Header>
-          <Modal.Title className="pull-left">Modal title</Modal.Title>
-          <Button bsStyle="success" className="pull-right">子状态</Button>
+          <div className="btn-group" role="group">
+            {_.keys(regions).map((name)=>
+              <Button key={name} onClick={this.openRegionByName}>{name}</Button>
+            )}
+          </div>
+          <Button bsStyle="success" className="pull-right" onClick={this.newRegion}>new region</Button>
         </Modal.Header>
+
 
         <Modal.Body>
           <form className="form-horizontal">
@@ -43,12 +66,55 @@ class SettingsComponent extends React.Component{
         </Modal.Body>
 
         <Modal.Footer>
-          <Button onClick={this.props.closeDialog}>Close</Button>
+          <Button onClick={this.onHide}>Close</Button>
           <Button bsStyle="primary">Save changes</Button>
         </Modal.Footer>
 
       </Modal>
       );
+  }
+  onShow(){
+    var cell = DialogStore.getCell();
+    this.setState({
+      dialog: {
+        show: true,
+        config: cell
+      }
+    })
+  }
+  onHide= (e) => {
+    this.setState({
+      dialog: {
+        show: false
+      }
+    })
+  }
+
+  openRegionByName = (e) =>{
+    var regionName = e.target.textContent;
+    var config = {
+      cell: this.state.dialog.config,
+      regionName: regionName
+    }
+    TabActionCreators.newTab(config);
+    this.onHide();
+  }
+
+  newRegion= (e) => {
+    var config = {
+      cell: this.state.dialog.config,
+    }
+    TabActionCreators.newTab(config);
+    this.onHide();
+  }
+
+
+  componentDidMount() {
+    DialogStore.addStateSettingsListener(this.onShow);
+  }
+
+  componentWillUnmount() {
+    DialogStore.removeStateSettingsListener(this.onShow);
   }
 }
 export default SettingsComponent;

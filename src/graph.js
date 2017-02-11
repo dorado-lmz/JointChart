@@ -47,7 +47,7 @@ dedu.GraphCollection = Backbone.Collection.extend({
       // Passing `cellModel` function in the options object to graph allows for
       // setting models based on attribute objects. This is especially handy
       // when processing JSON graphs that are in a different than JointJS format.
-      root: new dedu.GraphCells([], {
+      root: new dedu.GraphCells(options.models || [], {
         // model: opt.cellModel,
         // cellNamespace: opt.cellNamespace,
         graph: this
@@ -117,54 +117,89 @@ dedu.Graph = Backbone.Model.extend({
   * opt{
     tabs: true,if you use tabs
   }
+  * createGraph() create a new graph
+  * createGraph(cell, region_name)
+  * - region has shown: switch tab
+  * - region has not exits: create a region graph
   */
-  createGraph: function (parent, opt) {
+  createGraph: function (cell, opt) {
     opt = opt || {};
     var graphs = this.get('graphs');
     var graph, id;
 
 
-    if (parent) {
-      var parent_graph = graphs.get(parent);
-      var root = parent_graph.get('root');
-      if (root.pending_id) {
-        // switch subflow
-        id = parent_graph.child;
-        graph = graphs.get(id);
-      } else {
+    if (cell) {
+      cell.regions || (cell.regions = {});
+      if(opt.region_name){
 
-        if (root.children && root.children.length > 0) {
+        let region = cell.regions[opt.region_name];
+        if(region.pending_id){
+          //switch region
+
+          graph = graphs.get(region.pending_id);
+        }else{
           // restore subflow
-          graph = graphs.add({
-            root: root.children
+          graph = graphs.add({},{
+            models: cell.regions[opt.region_name]
           }, opt);
-        } else {
-          // create subflow
-          graph = graphs.add({}, opt);
+
         }
-        parent_graph.child = graph.id;
-        graph.parent = parent;
-        id = graph.id;
-        root.pending_id = parent;
+      }else{
+        //create region
+        let regionName = 'region'+dedu.util.randomString(6);
+        graph = graphs.add({}, opt);
+        graph.parent = {
+          cell: cell,
+          region: regionName
+        };
+        let region = cell.regions[regionName] = [];
+        region.pending_id = graph.id;
+        region.graph = graph;
       }
     }else {
       graph = graphs.add({}, opt);
-      id = graph.id;
     }
-
+    id = graph.id;
     this.switchGraph(id);
     return graph;
   },
 
-  saveSubGraph(active_graph) {
+  saveSubGraph: function(graph, parent) {
     var active_cells;
     var graphs = this.get('graphs');
-    active_graph && active_graph.parent && (active_cells = active_graph.get('root'));
+    graph && graph.parent && (active_cells = graph.get('root'));
     if (active_cells) {
-      var graph = graphs.get(active_graph.parent);
-      graph.get('root').children = active_cells;
-      graph.get('root').pending_id = undefined;
+      var regionName = parent.region;
+      var region = parent.cell.regions[regionName] = active_cells.models;
+      region.graph = undefined;
+      region.pending_id = undefined;
+
     }
+  },
+
+  save: function(){
+    var cells = this.active_cells(),len = cells.length;
+    for(var i=0;i<len;i++){
+      var cell = cells.at(i);
+      if(!cell.isLink()){
+        this.saveCell(cell);
+      }
+
+    }
+  },
+
+  saveCell: function(cell){
+        if(cell.regions){
+          _.each(cell.regions,(_region,name,regions)=>{
+            if(_region.graph){
+              var cells = _region.graph.get('root').models;
+              cells.graph = _region.graph;
+              cells.pending_id = cells.pending_id;
+              regions[name] = cells;
+            }
+          })
+
+        }
   },
 
   switchGraph: function (id) {
@@ -177,7 +212,7 @@ dedu.Graph = Backbone.Model.extend({
     var graphs = this.get('graphs');
     var graph = graphs.get(id);
     if (graph.parent) {
-      this.saveSubGraph(graph);
+      this.saveSubGraph(graph,graph.parent);
       graphs.remove(graph.parent);
     }
     graphs.remove(graph);
@@ -185,12 +220,29 @@ dedu.Graph = Backbone.Model.extend({
     return graphs.at(0).id;
   },
 
+  createSubGraph: function (root) {
+    if (!(root instanceof Backbone.Model)) return;
+    var graph;
+    // root.models = [];
+    if (root.pending_id) {
+      return this.get('graphs').get(root.pending_id);
+    } else {
+      graph = this.get('graphs').add({
+        type: 'subgraph',
+        root: root
+      });
+
+    }
+    // this.switchGraph(graph.id);
+    return graph;
+  },
+
   exportGraph: function(id){
     var cells = this.active_cells();
     var states={},transitions={},state_machine={},len = cells.length;
     for(var i=0;i<len;i++){
       var cell = cells.at(i);
-      this.parseCell(cell,null,states,transitions);
+      this.parseCell(cell,null,states,transitions,state_machine);
     }
     flow = {
       flat_states: states,
@@ -200,7 +252,7 @@ dedu.Graph = Backbone.Model.extend({
     return flow;
   },
 
-  parseCell: function(cell, parent, states,transitions){
+  parseCell: function(cell, parent, states,transitions,state_machine){
       if(cell.isLink()){
         var link = {};
         link.id = cell.id;
@@ -213,18 +265,25 @@ dedu.Graph = Backbone.Model.extend({
         state.type = cell.get('type');
         state.id = cell.id;
         if(parent){
-          state.qualifiedName = parent.qualifiedName+state.qualifiedName;
+          state.qualifiedName = parent.qualifiedName+"."+state.qualifiedName;
         }
 
         state.onEntry = cell.get('entry');
         state.onExit = cell.get('exit');
 
         states[state.id] = state;
+        state_machine[state.id] = _.clone(state);
 
-        if(cell.children && root.cell.length > 0){
-          cell.children.models.forEach(function(_cell){
-            parseCell(_cell, state, states,transitions);
+        if(cell.regions){
+          var regions = state_machine[state.id].regions = {};
+          _.each(cell.regions,(_region,name)=>{
+            regions[name] = {};
+            _region.forEach((_cell,index)=>{
+
+              this.parseCell(_cell, state, states,transitions,regions[name]);
+            })
           })
+
         }
 
       }

@@ -1,5 +1,8 @@
 import React from 'react';
 import DepolyStore from '../stores/DepolyStore.js';
+import {parseFlow} from '../runtime/runtime.js';
+import Nav from 'react-bootstrap/lib/Nav'
+import NavItem from 'react-bootstrap/lib/NavItem'
 
 class SidebarComponent extends React.Component {
 
@@ -23,7 +26,8 @@ class SidebarComponent extends React.Component {
   }
 
   onDepoly(){
-    console.log(DepolyStore.getFlow())
+    console.log(DepolyStore.getFlow());
+    parseFlow(DepolyStore.getFlow())
   }
 
 }
@@ -32,57 +36,22 @@ class SidebarComponent extends React.Component {
 class SidebarTabsComponent extends React.Component {
   constructor() {
     super();
-    this.state = {
-      tabs: {},
-      activeTab: null
-    };
   }
 
   render() {
-    var tabs = this.state.tabs;
-    return (<ul id="sidebar-tabs" className="red-ui-tabs">
-      {
-        _.map(tabs, (tab, key) =>
-          <li className={tab.active ? "red-ui-tab active" : "red-ui-tab"} key={key} onClick={this.activeTab} style={tab.style}>
-            <a href={"#" + tab.hash} className="red-ui-tab-label" title={tab.label}>
-              <span>{tab.label}</span>
-            </a>
-          </li>
-        )
-      }
-    </ul>);
-  }
-  componentWillMount() {
-    this.createTab("info");
+    return (
+      <Nav bsStyle="tabs" activeKey="1" onSelect={this.handleSelect}>
+        <NavItem eventKey="1" href="/home">Info</NavItem>
+        <NavItem eventKey="2" title="Item">NavItem 2 content</NavItem>
+      </Nav>
+    );
   }
 
-
-  createTab(hash) {
-    var tabs = this.state.tabs;
-    var activeTab = this.state.activeTab;
-    tabs[hash] = {
-      hash: hash,
-      label: 'info',
-      active: true
-    };
-    activeTab && (tabs[activeTab.hash].active = false);
-    this.setState({
-      activeTab: tabs[hash],
-      tabs: tabs
-    })
+  handleSelect = (eventKey, event)=> {
+    console.log(event.target)
+    console.log(eventKey)
   }
-  switchTab(hash) {
-    if (!hash) return;
-    var tabs = this.state.tabs;
-    var activeTab = this.state.activeTab;
-    activeTab && (tabs[activeTab.hash].active = false);
-    tabs[hash] && (tabs[hash].active = true);
 
-    this.setState({
-      activeTab: tabs[hash],
-      tabs: tabs
-    })
-  }
 }
 
 export default SidebarComponent;
