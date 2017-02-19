@@ -1,3 +1,779 @@
+//      Geometry library.
+//      (c) 2011-2013 client IO
+
+var g = (function() {
+
+    // Declare shorthands to the most used math functions.
+    var math = Math;
+    var abs = math.abs;
+    var cos = math.cos;
+    var sin = math.sin;
+    var sqrt = math.sqrt;
+    var mmin = math.min;
+    var mmax = math.max;
+    var atan = math.atan;
+    var atan2 = math.atan2;
+    var acos = math.acos;
+    var round = math.round;
+    var floor = math.floor;
+    var PI = math.PI;
+    var random = math.random;
+    var toDeg = function(rad) { return (180 * rad / PI) % 360; };
+    var toRad = function(deg, over360) {
+        over360 = over360 || false;
+        deg = over360 ? deg : (deg % 360);
+        return deg * PI / 180;
+    };
+    var snapToGrid = function(val, gridSize) { return gridSize * Math.round(val / gridSize); };
+    var normalizeAngle = function(angle) { return (angle % 360) + (angle < 0 ? 360 : 0); };
+
+    // Point
+    // -----
+
+    // Point is the most basic object consisting of x/y coordinate,.
+
+    // Possible instantiations are:
+
+    // * `point(10, 20)`
+    // * `new point(10, 20)`
+    // * `point('10 20')`
+    // * `point(point(10, 20))`
+    function point(x, y) {
+        if (!(this instanceof point))
+            return new point(x, y);
+        var xy;
+        if (y === undefined && Object(x) !== x) {
+            xy = x.split(x.indexOf('@') === -1 ? ' ' : '@');
+            this.x = parseInt(xy[0], 10);
+            this.y = parseInt(xy[1], 10);
+        } else if (Object(x) === x) {
+            this.x = x.x;
+            this.y = x.y;
+        } else {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    point.prototype = {
+        toString: function() {
+            return this.x + '@' + this.y;
+        },
+        // If point lies outside rectangle `r`, return the nearest point on the boundary of rect `r`,
+        // otherwise return point itself.
+        // (see Squeak Smalltalk, Point>>adhereTo:)
+        adhereToRect: function(r) {
+            if (r.containsPoint(this)) {
+                return this;
+            }
+            this.x = mmin(mmax(this.x, r.x), r.x + r.width);
+            this.y = mmin(mmax(this.y, r.y), r.y + r.height);
+            return this;
+        },
+        // Compute the angle between me and `p` and the x axis.
+        // (cartesian-to-polar coordinates conversion)
+        // Return theta angle in degrees.
+        theta: function(p) {
+            p = point(p);
+            // Invert the y-axis.
+            var y = -(p.y - this.y);
+            var x = p.x - this.x;
+            // Makes sure that the comparison with zero takes rounding errors into account.
+            var PRECISION = 10;
+            // Note that `atan2` is not defined for `x`, `y` both equal zero.
+            var rad = (y.toFixed(PRECISION) == 0 && x.toFixed(PRECISION) == 0) ? 0 : atan2(y, x);
+
+            // Correction for III. and IV. quadrant.
+            if (rad < 0) {
+                rad = 2 * PI + rad;
+            }
+            return 180 * rad / PI;
+        },
+        // Returns distance between me and point `p`.
+        distance: function(p) {
+            return line(this, p).length();
+        },
+        // Returns a manhattan (taxi-cab) distance between me and point `p`.
+        manhattanDistance: function(p) {
+            return abs(p.x - this.x) + abs(p.y - this.y);
+        },
+        // Offset me by the specified amount.
+        offset: function(dx, dy) {
+            this.x += dx || 0;
+            this.y += dy || 0;
+            return this;
+        },
+        magnitude: function() {
+            return sqrt((this.x * this.x) + (this.y * this.y)) || 0.01;
+        },
+        update: function(x, y) {
+            this.x = x || 0;
+            this.y = y || 0;
+            return this;
+        },
+        round: function(decimals) {
+            this.x = decimals ? this.x.toFixed(decimals) : round(this.x);
+            this.y = decimals ? this.y.toFixed(decimals) : round(this.y);
+            return this;
+        },
+        // Scale the line segment between (0,0) and me to have a length of len.
+        normalize: function(len) {
+            var s = (len || 1) / this.magnitude();
+            this.x = s * this.x;
+            this.y = s * this.y;
+            return this;
+        },
+        difference: function(p) {
+            return point(this.x - p.x, this.y - p.y);
+        },
+        // Return the bearing between me and point `p`.
+        bearing: function(p) {
+            return line(this, p).bearing();
+        },
+        // Converts rectangular to polar coordinates.
+        // An origin can be specified, otherwise it's 0@0.
+        toPolar: function(o) {
+            o = (o && point(o)) || point(0, 0);
+            var x = this.x;
+            var y = this.y;
+            this.x = sqrt((x - o.x) * (x - o.x) + (y - o.y) * (y - o.y)); // r
+            this.y = toRad(o.theta(point(x, y)));
+            return this;
+        },
+        // Rotate point by angle around origin o.
+        rotate: function(o, angle) {
+            angle = (angle + 360) % 360;
+            this.toPolar(o);
+            this.y += toRad(angle);
+            var p = point.fromPolar(this.x, this.y, o);
+            this.x = p.x;
+            this.y = p.y;
+            return this;
+        },
+        // Move point on line starting from ref ending at me by
+        // distance distance.
+        move: function(ref, distance) {
+            var theta = toRad(point(ref).theta(this));
+            return this.offset(cos(theta) * distance, -sin(theta) * distance);
+        },
+        // Returns change in angle from my previous position (-dx, -dy) to my new position
+        // relative to ref point.
+        changeInAngle: function(dx, dy, ref) {
+            // Revert the translation and measure the change in angle around x-axis.
+            return point(this).offset(-dx, -dy).theta(ref) - this.theta(ref);
+        },
+        equals: function(p) {
+            return this.x === p.x && this.y === p.y;
+        },
+        snapToGrid: function(gx, gy) {
+            this.x = snapToGrid(this.x, gx);
+            this.y = snapToGrid(this.y, gy || gx);
+            return this;
+        },
+        // Returns a point that is the reflection of me with
+        // the center of inversion in ref point.
+        reflection: function(ref) {
+            return point(ref).move(this, this.distance(ref));
+        },
+        clone: function() {
+            return point(this);
+        }
+    };
+    // Alternative constructor, from polar coordinates.
+    // @param {number} r Distance.
+    // @param {number} angle Angle in radians.
+    // @param {point} [optional] o Origin.
+    point.fromPolar = function(r, angle, o) {
+        o = (o && point(o)) || point(0, 0);
+        var x = abs(r * cos(angle));
+        var y = abs(r * sin(angle));
+        var deg = normalizeAngle(toDeg(angle));
+
+        if (deg < 90) {
+            y = -y;
+        } else if (deg < 180) {
+            x = -x;
+            y = -y;
+        } else if (deg < 270) {
+            x = -x;
+        }
+
+        return point(o.x + x, o.y + y);
+    };
+
+    // Create a point with random coordinates that fall into the range `[x1, x2]` and `[y1, y2]`.
+    point.random = function(x1, x2, y1, y2) {
+        return point(floor(random() * (x2 - x1 + 1) + x1), floor(random() * (y2 - y1 + 1) + y1));
+    };
+
+    // Line.
+    // -----
+    function line(p1, p2) {
+        if (!(this instanceof line))
+            return new line(p1, p2);
+        this.start = point(p1);
+        this.end = point(p2);
+    }
+
+    line.prototype = {
+        toString: function() {
+            return this.start.toString() + ' ' + this.end.toString();
+        },
+        // @return {double} length of the line
+        length: function() {
+            return sqrt(this.squaredLength());
+        },
+        // @return {integer} length without sqrt
+        // @note for applications where the exact length is not necessary (e.g. compare only)
+        squaredLength: function() {
+            var x0 = this.start.x;
+            var y0 = this.start.y;
+            var x1 = this.end.x;
+            var y1 = this.end.y;
+            return (x0 -= x1) * x0 + (y0 -= y1) * y0;
+        },
+        // @return {point} my midpoint
+        midpoint: function() {
+            return point((this.start.x + this.end.x) / 2,
+                         (this.start.y + this.end.y) / 2);
+        },
+        // @return {point} Point where I'm intersecting l.
+        // @see Squeak Smalltalk, LineSegment>>intersectionWith:
+        intersection: function(l) {
+            var pt1Dir = point(this.end.x - this.start.x, this.end.y - this.start.y);
+            var pt2Dir = point(l.end.x - l.start.x, l.end.y - l.start.y);
+            var det = (pt1Dir.x * pt2Dir.y) - (pt1Dir.y * pt2Dir.x);
+            var deltaPt = point(l.start.x - this.start.x, l.start.y - this.start.y);
+            var alpha = (deltaPt.x * pt2Dir.y) - (deltaPt.y * pt2Dir.x);
+            var beta = (deltaPt.x * pt1Dir.y) - (deltaPt.y * pt1Dir.x);
+
+            if (det === 0 ||
+                alpha * det < 0 ||
+                beta * det < 0) {
+                // No intersection found.
+                return null;
+            }
+            if (det > 0) {
+                if (alpha > det || beta > det) {
+                    return null;
+                }
+            } else {
+                if (alpha < det || beta < det) {
+                    return null;
+                }
+            }
+            return point(this.start.x + (alpha * pt1Dir.x / det),
+                         this.start.y + (alpha * pt1Dir.y / det));
+        },
+
+        // @return the bearing (cardinal direction) of the line. For example N, W, or SE.
+        // @returns {String} One of the following bearings : NE, E, SE, S, SW, W, NW, N.
+        bearing: function() {
+
+            var lat1 = toRad(this.start.y);
+            var lat2 = toRad(this.end.y);
+            var lon1 = this.start.x;
+            var lon2 = this.end.x;
+            var dLon = toRad(lon2 - lon1);
+            var y = sin(dLon) * cos(lat2);
+            var x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
+            var brng = toDeg(atan2(y, x));
+
+            var bearings = ['NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N'];
+
+            var index = brng - 22.5;
+            if (index < 0)
+                index += 360;
+            index = parseInt(index / 45);
+
+            return bearings[index];
+        },
+
+        // @return {point} my point at 't' <0,1>
+        pointAt: function(t) {
+            var x = (1 - t) * this.start.x + t * this.end.x;
+            var y = (1 - t) * this.start.y + t * this.end.y;
+            return point(x, y);
+        },
+
+        // @return {number} the offset of the point `p` from the line. + if the point `p` is on the right side of the line, - if on the left and 0 if on the line.
+        pointOffset: function(p) {
+            // Find the sign of the determinant of vectors (start,end), where p is the query point.
+            return ((this.end.x - this.start.x) * (p.y - this.start.y) - (this.end.y - this.start.y) * (p.x - this.start.x)) / 2;
+        },
+        clone: function() {
+            return line(this);
+        }
+    };
+
+    // Rectangle.
+    // ----------
+    function rect(x, y, w, h) {
+        if (!(this instanceof rect))
+            return new rect(x, y, w, h);
+        if (y === undefined) {
+            y = x.y;
+            w = x.width;
+            h = x.height;
+            x = x.x;
+        }
+        this.x = x;
+        this.y = y;
+        this.width = w;
+        this.height = h;
+    }
+
+    rect.prototype = {
+        toString: function() {
+            return this.origin().toString() + ' ' + this.corner().toString();
+        },
+        // @return {boolean} true if rectangles are equal.
+        equals: function(r) {
+            var mr = g.rect(this).normalize();
+            var nr = g.rect(r).normalize();
+            return mr.x === nr.x && mr.y === nr.y && mr.width === nr.width && mr.height === nr.height;
+        },
+        origin: function() {
+            return point(this.x, this.y);
+        },
+        corner: function() {
+            return point(this.x + this.width, this.y + this.height);
+        },
+        topRight: function() {
+            return point(this.x + this.width, this.y);
+        },
+        bottomLeft: function() {
+            return point(this.x, this.y + this.height);
+        },
+        center: function() {
+            return point(this.x + this.width / 2, this.y + this.height / 2);
+        },
+        // @return {rect} if rectangles intersect, {null} if not.
+        intersect: function(r) {
+            var myOrigin = this.origin();
+            var myCorner = this.corner();
+            var rOrigin = r.origin();
+            var rCorner = r.corner();
+
+            // No intersection found
+            if (rCorner.x <= myOrigin.x ||
+                rCorner.y <= myOrigin.y ||
+                rOrigin.x >= myCorner.x ||
+                rOrigin.y >= myCorner.y) return null;
+
+            var x = Math.max(myOrigin.x, rOrigin.x);
+            var y = Math.max(myOrigin.y, rOrigin.y);
+
+            return rect(x, y, Math.min(myCorner.x, rCorner.x) - x, Math.min(myCorner.y, rCorner.y) - y);
+        },
+
+        // @return {string} (left|right|top|bottom) side which is nearest to point
+        // @see Squeak Smalltalk, Rectangle>>sideNearestTo:
+        sideNearestToPoint: function(p) {
+            p = point(p);
+            var distToLeft = p.x - this.x;
+            var distToRight = (this.x + this.width) - p.x;
+            var distToTop = p.y - this.y;
+            var distToBottom = (this.y + this.height) - p.y;
+            var closest = distToLeft;
+            var side = 'left';
+
+            if (distToRight < closest) {
+                closest = distToRight;
+                side = 'right';
+            }
+            if (distToTop < closest) {
+                closest = distToTop;
+                side = 'top';
+            }
+            if (distToBottom < closest) {
+                closest = distToBottom;
+                side = 'bottom';
+            }
+            return side;
+        },
+        // @return {bool} true if point p is insight me
+        containsPoint: function(p) {
+            p = point(p);
+            if (p.x >= this.x && p.x <= this.x + this.width &&
+                p.y >= this.y && p.y <= this.y + this.height) {
+                return true;
+            }
+            return false;
+        },
+        // Algorithm ported from java.awt.Rectangle from OpenJDK.
+        // @return {bool} true if rectangle `r` is inside me.
+        containsRect: function(r) {
+            var nr = rect(r).normalize();
+            var W = nr.width;
+            var H = nr.height;
+            var X = nr.x;
+            var Y = nr.y;
+            var w = this.width;
+            var h = this.height;
+            if ((w | h | W | H) < 0) {
+                // At least one of the dimensions is negative...
+                return false;
+            }
+            // Note: if any dimension is zero, tests below must return false...
+            var x = this.x;
+            var y = this.y;
+            if (X < x || Y < y) {
+                return false;
+            }
+            w += x;
+            W += X;
+            if (W <= X) {
+                // X+W overflowed or W was zero, return false if...
+                // either original w or W was zero or
+                // x+w did not overflow or
+                // the overflowed x+w is smaller than the overflowed X+W
+                if (w >= x || W > w) return false;
+            } else {
+                // X+W did not overflow and W was not zero, return false if...
+                // original w was zero or
+                // x+w did not overflow and x+w is smaller than X+W
+                if (w >= x && W > w) return false;
+            }
+            h += y;
+            H += Y;
+            if (H <= Y) {
+                if (h >= y || H > h) return false;
+            } else {
+                if (h >= y && H > h) return false;
+            }
+            return true;
+        },
+        // @return {point} a point on my boundary nearest to p
+        // @see Squeak Smalltalk, Rectangle>>pointNearestTo:
+        pointNearestToPoint: function(p) {
+            p = point(p);
+            if (this.containsPoint(p)) {
+                var side = this.sideNearestToPoint(p);
+                switch (side){
+                    case 'right': return point(this.x + this.width, p.y);
+                    case 'left': return point(this.x, p.y);
+                    case 'bottom': return point(p.x, this.y + this.height);
+                    case 'top': return point(p.x, this.y);
+                }
+            }
+            return p.adhereToRect(this);
+        },
+        // Find point on my boundary where line starting
+        // from my center ending in point p intersects me.
+        // @param {number} angle If angle is specified, intersection with rotated rectangle is computed.
+        intersectionWithLineFromCenterToPoint: function(p, angle) {
+            p = point(p);
+            var center = point(this.x + this.width / 2, this.y + this.height / 2);
+            var result;
+            if (angle) p.rotate(center, angle);
+
+            // (clockwise, starting from the top side)
+            var sides = [
+                line(this.origin(), this.topRight()),
+                line(this.topRight(), this.corner()),
+                line(this.corner(), this.bottomLeft()),
+                line(this.bottomLeft(), this.origin())
+            ];
+            var connector = line(center, p);
+
+            for (var i = sides.length - 1; i >= 0; --i) {
+                var intersection = sides[i].intersection(connector);
+                if (intersection !== null) {
+                    result = intersection;
+                    break;
+                }
+            }
+            if (result && angle) result.rotate(center, -angle);
+            return result;
+        },
+        // Move and expand me.
+        // @param r {rectangle} representing deltas
+        moveAndExpand: function(r) {
+            this.x += r.x || 0;
+            this.y += r.y || 0;
+            this.width += r.width || 0;
+            this.height += r.height || 0;
+            return this;
+        },
+        round: function(decimals) {
+            this.x = decimals ? this.x.toFixed(decimals) : round(this.x);
+            this.y = decimals ? this.y.toFixed(decimals) : round(this.y);
+            this.width = decimals ? this.width.toFixed(decimals) : round(this.width);
+            this.height = decimals ? this.height.toFixed(decimals) : round(this.height);
+            return this;
+        },
+        // Normalize the rectangle; i.e., make it so that it has a non-negative width and height.
+        // If width < 0 the function swaps the left and right corners,
+        // and it swaps the top and bottom corners if height < 0
+        // like in http://qt-project.org/doc/qt-4.8/qrectf.html#normalized
+        normalize: function() {
+            var newx = this.x;
+            var newy = this.y;
+            var newwidth = this.width;
+            var newheight = this.height;
+            if (this.width < 0) {
+                newx = this.x + this.width;
+                newwidth = -this.width;
+            }
+            if (this.height < 0) {
+                newy = this.y + this.height;
+                newheight = -this.height;
+            }
+            this.x = newx;
+            this.y = newy;
+            this.width = newwidth;
+            this.height = newheight;
+            return this;
+        },
+        // Find my bounding box when I'm rotated with the center of rotation in the center of me.
+        // @return r {rectangle} representing a bounding box
+        bbox: function(angle) {
+            var theta = toRad(angle || 0);
+            var st = abs(sin(theta));
+            var ct = abs(cos(theta));
+            var w = this.width * ct + this.height * st;
+            var h = this.width * st + this.height * ct;
+            return rect(this.x + (this.width - w) / 2, this.y + (this.height - h) / 2, w, h);
+        },
+        snapToGrid: function(gx, gy) {
+            var origin = this.origin().snapToGrid(gx, gy);
+            var corner = this.corner().snapToGrid(gx, gy);
+            this.x = origin.x;
+            this.y = origin.y;
+            this.width = corner.x - origin.x;
+            this.height = corner.y - origin.y;
+            return this;
+        },
+        clone: function() {
+            return rect(this);
+        }
+    };
+
+    // Ellipse.
+    // --------
+    function ellipse(c, a, b) {
+        if (!(this instanceof ellipse))
+            return new ellipse(c, a, b);
+        c = point(c);
+        this.x = c.x;
+        this.y = c.y;
+        this.a = a;
+        this.b = b;
+    }
+
+    ellipse.prototype = {
+        toString: function() {
+            return point(this.x, this.y).toString() + ' ' + this.a + ' ' + this.b;
+        },
+        bbox: function() {
+            return rect(this.x - this.a, this.y - this.b, 2 * this.a, 2 * this.b);
+        },
+        // Find point on me where line from my center to
+        // point p intersects my boundary.
+        // @param {number} angle If angle is specified, intersection with rotated ellipse is computed.
+        intersectionWithLineFromCenterToPoint: function(p, angle) {
+            p = point(p);
+            if (angle) p.rotate(point(this.x, this.y), angle);
+            var dx = p.x - this.x;
+            var dy = p.y - this.y;
+            var result;
+            if (dx === 0) {
+                result = this.bbox().pointNearestToPoint(p);
+                if (angle) return result.rotate(point(this.x, this.y), -angle);
+                return result;
+            }
+            var m = dy / dx;
+            var mSquared = m * m;
+            var aSquared = this.a * this.a;
+            var bSquared = this.b * this.b;
+            var x = sqrt(1 / ((1 / aSquared) + (mSquared / bSquared)));
+
+            x = dx < 0 ? -x : x;
+            var y = m * x;
+            result = point(this.x + x, this.y + y);
+            if (angle) return result.rotate(point(this.x, this.y), -angle);
+            return result;
+        },
+        clone: function() {
+            return ellipse(this);
+        }
+    };
+
+    // Bezier curve.
+    // -------------
+    var bezier = {
+        // Cubic Bezier curve path through points.
+        // Ported from C# implementation by Oleg V. Polikarpotchkin and Peter Lee (http://www.codeproject.com/KB/graphics/BezierSpline.aspx).
+        // @param {array} points Array of points through which the smooth line will go.
+        // @return {array} SVG Path commands as an array
+        curveThroughPoints: function(points) {
+            var controlPoints = this.getCurveControlPoints(points);
+            var path = ['M', points[0].x, points[0].y];
+
+            for (var i = 0; i < controlPoints[0].length; i++) {
+                path.push('C', controlPoints[0][i].x, controlPoints[0][i].y, controlPoints[1][i].x, controlPoints[1][i].y, points[i + 1].x, points[i + 1].y);
+            }
+            return path;
+        },
+
+        // Get open-ended Bezier Spline Control Points.
+        // @param knots Input Knot Bezier spline points (At least two points!).
+        // @param firstControlPoints Output First Control points. Array of knots.length - 1 length.
+        //  @param secondControlPoints Output Second Control points. Array of knots.length - 1 length.
+        getCurveControlPoints: function(knots) {
+            var firstControlPoints = [];
+            var secondControlPoints = [];
+            var n = knots.length - 1;
+            var i;
+
+            // Special case: Bezier curve should be a straight line.
+            if (n == 1) {
+                // 3P1 = 2P0 + P3
+                firstControlPoints[0] = point((2 * knots[0].x + knots[1].x) / 3,
+                                              (2 * knots[0].y + knots[1].y) / 3);
+                // P2 = 2P1 – P0
+                secondControlPoints[0] = point(2 * firstControlPoints[0].x - knots[0].x,
+                                               2 * firstControlPoints[0].y - knots[0].y);
+                return [firstControlPoints, secondControlPoints];
+            }
+
+            // Calculate first Bezier control points.
+            // Right hand side vector.
+            var rhs = [];
+
+            // Set right hand side X values.
+            for (i = 1; i < n - 1; i++) {
+                rhs[i] = 4 * knots[i].x + 2 * knots[i + 1].x;
+            }
+            rhs[0] = knots[0].x + 2 * knots[1].x;
+            rhs[n - 1] = (8 * knots[n - 1].x + knots[n].x) / 2.0;
+            // Get first control points X-values.
+            var x = this.getFirstControlPoints(rhs);
+
+            // Set right hand side Y values.
+            for (i = 1; i < n - 1; ++i) {
+                rhs[i] = 4 * knots[i].y + 2 * knots[i + 1].y;
+            }
+            rhs[0] = knots[0].y + 2 * knots[1].y;
+            rhs[n - 1] = (8 * knots[n - 1].y + knots[n].y) / 2.0;
+            // Get first control points Y-values.
+            var y = this.getFirstControlPoints(rhs);
+
+            // Fill output arrays.
+            for (i = 0; i < n; i++) {
+                // First control point.
+                firstControlPoints.push(point(x[i], y[i]));
+                // Second control point.
+                if (i < n - 1) {
+                    secondControlPoints.push(point(2 * knots [i + 1].x - x[i + 1],
+                                                   2 * knots[i + 1].y - y[i + 1]));
+                } else {
+                    secondControlPoints.push(point((knots[n].x + x[n - 1]) / 2,
+                                                   (knots[n].y + y[n - 1]) / 2));
+                }
+            }
+            return [firstControlPoints, secondControlPoints];
+        },
+
+        // Solves a tridiagonal system for one of coordinates (x or y) of first Bezier control points.
+        // @param rhs Right hand side vector.
+        // @return Solution vector.
+        getFirstControlPoints: function(rhs) {
+            var n = rhs.length;
+            // `x` is a solution vector.
+            var x = [];
+            var tmp = [];
+            var b = 2.0;
+
+            x[0] = rhs[0] / b;
+            // Decomposition and forward substitution.
+            for (var i = 1; i < n; i++) {
+                tmp[i] = 1 / b;
+                b = (i < n - 1 ? 4.0 : 3.5) - tmp[i];
+                x[i] = (rhs[i] - x[i - 1]) / b;
+            }
+            for (i = 1; i < n; i++) {
+                // Backsubstitution.
+                x[n - i - 1] -= tmp[n - i] * x[n - i];
+            }
+            return x;
+        },
+
+        // Solves an inversion problem -- Given the (x, y) coordinates of a point which lies on
+        // a parametric curve x = x(t)/w(t), y = y(t)/w(t), ﬁnd the parameter value t
+        // which corresponds to that point.
+        // @param control points (start, control start, control end, end)
+        // @return a function accepts a point and returns t.
+        getInversionSolver: function(p0, p1, p2, p3) {
+            var pts = arguments;
+            function l(i, j) {
+                // calculates a determinant 3x3
+                // [p.x  p.y  1]
+                // [pi.x pi.y 1]
+                // [pj.x pj.y 1]
+                var pi = pts[i];
+                var pj = pts[j];
+                return function(p) {
+                    var w = (i % 3 ? 3 : 1) * (j % 3 ? 3 : 1);
+                    var lij = p.x * (pi.y - pj.y) + p.y * (pj.x - pi.x) + pi.x * pj.y - pi.y * pj.x;
+                    return w * lij;
+                };
+            }
+            return function solveInversion(p) {
+                var ct = 3 * l(2, 3)(p1);
+                var c1 = l(1, 3)(p0) / ct;
+                var c2 = -l(2, 3)(p0) / ct;
+                var la = c1 * l(3, 1)(p) + c2 * (l(3, 0)(p) + l(2, 1)(p)) + l(2, 0)(p);
+                var lb = c1 * l(3, 0)(p) + c2 * l(2, 0)(p) + l(1, 0)(p);
+                return lb / (lb - la);
+            };
+        },
+
+        // Divide a Bezier curve into two at point defined by value 't' <0,1>.
+        // Using deCasteljau algorithm. http://math.stackexchange.com/a/317867
+        // @param control points (start, control start, control end, end)
+        // @return a function accepts t and returns 2 curves each defined by 4 control points.
+        getCurveDivider: function(p0, p1, p2, p3) {
+            return function divideCurve(t) {
+                var l = line(p0, p1).pointAt(t);
+                var m = line(p1, p2).pointAt(t);
+                var n = line(p2, p3).pointAt(t);
+                var p = line(l, m).pointAt(t);
+                var q = line(m, n).pointAt(t);
+                var r = line(p, q).pointAt(t);
+                return [{ p0: p0, p1: l, p2: p, p3: r }, { p0: r, p1: q, p2: n, p3: p3 }];
+            };
+        }
+    };
+
+    // Scale.
+    var scale = {
+
+        // Return the `value` from the `domain` interval scaled to the `range` interval.
+        linear: function(domain, range, value) {
+
+            var domainSpan = domain[1] - domain[0];
+            var rangeSpan = range[1] - range[0];
+            return (((value - domain[0]) / domainSpan) * rangeSpan + range[0]) || 0;
+        }
+    };
+
+    return {
+        toDeg: toDeg,
+        toRad: toRad,
+        snapToGrid: snapToGrid,
+        normalizeAngle: normalizeAngle,
+        point: point,
+        line: line,
+        rect: rect,
+        ellipse: ellipse,
+        bezier: bezier,
+        scale: scale
+    };
+
+})();
+
 // Vectorizer.
 // -----------
 
@@ -1364,782 +2140,6 @@ V = Vectorizer = (function() {
 
 })();
 
-//      Geometry library.
-//      (c) 2011-2013 client IO
-
-var g = (function() {
-
-    // Declare shorthands to the most used math functions.
-    var math = Math;
-    var abs = math.abs;
-    var cos = math.cos;
-    var sin = math.sin;
-    var sqrt = math.sqrt;
-    var mmin = math.min;
-    var mmax = math.max;
-    var atan = math.atan;
-    var atan2 = math.atan2;
-    var acos = math.acos;
-    var round = math.round;
-    var floor = math.floor;
-    var PI = math.PI;
-    var random = math.random;
-    var toDeg = function(rad) { return (180 * rad / PI) % 360; };
-    var toRad = function(deg, over360) {
-        over360 = over360 || false;
-        deg = over360 ? deg : (deg % 360);
-        return deg * PI / 180;
-    };
-    var snapToGrid = function(val, gridSize) { return gridSize * Math.round(val / gridSize); };
-    var normalizeAngle = function(angle) { return (angle % 360) + (angle < 0 ? 360 : 0); };
-
-    // Point
-    // -----
-
-    // Point is the most basic object consisting of x/y coordinate,.
-
-    // Possible instantiations are:
-
-    // * `point(10, 20)`
-    // * `new point(10, 20)`
-    // * `point('10 20')`
-    // * `point(point(10, 20))`
-    function point(x, y) {
-        if (!(this instanceof point))
-            return new point(x, y);
-        var xy;
-        if (y === undefined && Object(x) !== x) {
-            xy = x.split(x.indexOf('@') === -1 ? ' ' : '@');
-            this.x = parseInt(xy[0], 10);
-            this.y = parseInt(xy[1], 10);
-        } else if (Object(x) === x) {
-            this.x = x.x;
-            this.y = x.y;
-        } else {
-            this.x = x;
-            this.y = y;
-        }
-    }
-
-    point.prototype = {
-        toString: function() {
-            return this.x + '@' + this.y;
-        },
-        // If point lies outside rectangle `r`, return the nearest point on the boundary of rect `r`,
-        // otherwise return point itself.
-        // (see Squeak Smalltalk, Point>>adhereTo:)
-        adhereToRect: function(r) {
-            if (r.containsPoint(this)) {
-                return this;
-            }
-            this.x = mmin(mmax(this.x, r.x), r.x + r.width);
-            this.y = mmin(mmax(this.y, r.y), r.y + r.height);
-            return this;
-        },
-        // Compute the angle between me and `p` and the x axis.
-        // (cartesian-to-polar coordinates conversion)
-        // Return theta angle in degrees.
-        theta: function(p) {
-            p = point(p);
-            // Invert the y-axis.
-            var y = -(p.y - this.y);
-            var x = p.x - this.x;
-            // Makes sure that the comparison with zero takes rounding errors into account.
-            var PRECISION = 10;
-            // Note that `atan2` is not defined for `x`, `y` both equal zero.
-            var rad = (y.toFixed(PRECISION) == 0 && x.toFixed(PRECISION) == 0) ? 0 : atan2(y, x);
-
-            // Correction for III. and IV. quadrant.
-            if (rad < 0) {
-                rad = 2 * PI + rad;
-            }
-            return 180 * rad / PI;
-        },
-        // Returns distance between me and point `p`.
-        distance: function(p) {
-            return line(this, p).length();
-        },
-        // Returns a manhattan (taxi-cab) distance between me and point `p`.
-        manhattanDistance: function(p) {
-            return abs(p.x - this.x) + abs(p.y - this.y);
-        },
-        // Offset me by the specified amount.
-        offset: function(dx, dy) {
-            this.x += dx || 0;
-            this.y += dy || 0;
-            return this;
-        },
-        magnitude: function() {
-            return sqrt((this.x * this.x) + (this.y * this.y)) || 0.01;
-        },
-        update: function(x, y) {
-            this.x = x || 0;
-            this.y = y || 0;
-            return this;
-        },
-        round: function(decimals) {
-            this.x = decimals ? this.x.toFixed(decimals) : round(this.x);
-            this.y = decimals ? this.y.toFixed(decimals) : round(this.y);
-            return this;
-        },
-        // Scale the line segment between (0,0) and me to have a length of len.
-        normalize: function(len) {
-            var s = (len || 1) / this.magnitude();
-            this.x = s * this.x;
-            this.y = s * this.y;
-            return this;
-        },
-        difference: function(p) {
-            return point(this.x - p.x, this.y - p.y);
-        },
-        // Return the bearing between me and point `p`.
-        bearing: function(p) {
-            return line(this, p).bearing();
-        },
-        // Converts rectangular to polar coordinates.
-        // An origin can be specified, otherwise it's 0@0.
-        toPolar: function(o) {
-            o = (o && point(o)) || point(0, 0);
-            var x = this.x;
-            var y = this.y;
-            this.x = sqrt((x - o.x) * (x - o.x) + (y - o.y) * (y - o.y)); // r
-            this.y = toRad(o.theta(point(x, y)));
-            return this;
-        },
-        // Rotate point by angle around origin o.
-        rotate: function(o, angle) {
-            angle = (angle + 360) % 360;
-            this.toPolar(o);
-            this.y += toRad(angle);
-            var p = point.fromPolar(this.x, this.y, o);
-            this.x = p.x;
-            this.y = p.y;
-            return this;
-        },
-        // Move point on line starting from ref ending at me by
-        // distance distance.
-        move: function(ref, distance) {
-            var theta = toRad(point(ref).theta(this));
-            return this.offset(cos(theta) * distance, -sin(theta) * distance);
-        },
-        // Returns change in angle from my previous position (-dx, -dy) to my new position
-        // relative to ref point.
-        changeInAngle: function(dx, dy, ref) {
-            // Revert the translation and measure the change in angle around x-axis.
-            return point(this).offset(-dx, -dy).theta(ref) - this.theta(ref);
-        },
-        equals: function(p) {
-            return this.x === p.x && this.y === p.y;
-        },
-        snapToGrid: function(gx, gy) {
-            this.x = snapToGrid(this.x, gx);
-            this.y = snapToGrid(this.y, gy || gx);
-            return this;
-        },
-        // Returns a point that is the reflection of me with
-        // the center of inversion in ref point.
-        reflection: function(ref) {
-            return point(ref).move(this, this.distance(ref));
-        },
-        clone: function() {
-            return point(this);
-        }
-    };
-    // Alternative constructor, from polar coordinates.
-    // @param {number} r Distance.
-    // @param {number} angle Angle in radians.
-    // @param {point} [optional] o Origin.
-    point.fromPolar = function(r, angle, o) {
-        o = (o && point(o)) || point(0, 0);
-        var x = abs(r * cos(angle));
-        var y = abs(r * sin(angle));
-        var deg = normalizeAngle(toDeg(angle));
-
-        if (deg < 90) {
-            y = -y;
-        } else if (deg < 180) {
-            x = -x;
-            y = -y;
-        } else if (deg < 270) {
-            x = -x;
-        }
-
-        return point(o.x + x, o.y + y);
-    };
-
-    // Create a point with random coordinates that fall into the range `[x1, x2]` and `[y1, y2]`.
-    point.random = function(x1, x2, y1, y2) {
-        return point(floor(random() * (x2 - x1 + 1) + x1), floor(random() * (y2 - y1 + 1) + y1));
-    };
-
-    // Line.
-    // -----
-    function line(p1, p2) {
-        if (!(this instanceof line))
-            return new line(p1, p2);
-        this.start = point(p1);
-        this.end = point(p2);
-    }
-
-    line.prototype = {
-        toString: function() {
-            return this.start.toString() + ' ' + this.end.toString();
-        },
-        // @return {double} length of the line
-        length: function() {
-            return sqrt(this.squaredLength());
-        },
-        // @return {integer} length without sqrt
-        // @note for applications where the exact length is not necessary (e.g. compare only)
-        squaredLength: function() {
-            var x0 = this.start.x;
-            var y0 = this.start.y;
-            var x1 = this.end.x;
-            var y1 = this.end.y;
-            return (x0 -= x1) * x0 + (y0 -= y1) * y0;
-        },
-        // @return {point} my midpoint
-        midpoint: function() {
-            return point((this.start.x + this.end.x) / 2,
-                         (this.start.y + this.end.y) / 2);
-        },
-        // @return {point} Point where I'm intersecting l.
-        // @see Squeak Smalltalk, LineSegment>>intersectionWith:
-        intersection: function(l) {
-            var pt1Dir = point(this.end.x - this.start.x, this.end.y - this.start.y);
-            var pt2Dir = point(l.end.x - l.start.x, l.end.y - l.start.y);
-            var det = (pt1Dir.x * pt2Dir.y) - (pt1Dir.y * pt2Dir.x);
-            var deltaPt = point(l.start.x - this.start.x, l.start.y - this.start.y);
-            var alpha = (deltaPt.x * pt2Dir.y) - (deltaPt.y * pt2Dir.x);
-            var beta = (deltaPt.x * pt1Dir.y) - (deltaPt.y * pt1Dir.x);
-
-            if (det === 0 ||
-                alpha * det < 0 ||
-                beta * det < 0) {
-                // No intersection found.
-                return null;
-            }
-            if (det > 0) {
-                if (alpha > det || beta > det) {
-                    return null;
-                }
-            } else {
-                if (alpha < det || beta < det) {
-                    return null;
-                }
-            }
-            return point(this.start.x + (alpha * pt1Dir.x / det),
-                         this.start.y + (alpha * pt1Dir.y / det));
-        },
-
-        // @return the bearing (cardinal direction) of the line. For example N, W, or SE.
-        // @returns {String} One of the following bearings : NE, E, SE, S, SW, W, NW, N.
-        bearing: function() {
-
-            var lat1 = toRad(this.start.y);
-            var lat2 = toRad(this.end.y);
-            var lon1 = this.start.x;
-            var lon2 = this.end.x;
-            var dLon = toRad(lon2 - lon1);
-            var y = sin(dLon) * cos(lat2);
-            var x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
-            var brng = toDeg(atan2(y, x));
-
-            var bearings = ['NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N'];
-
-            var index = brng - 22.5;
-            if (index < 0)
-                index += 360;
-            index = parseInt(index / 45);
-
-            return bearings[index];
-        },
-
-        // @return {point} my point at 't' <0,1>
-        pointAt: function(t) {
-            var x = (1 - t) * this.start.x + t * this.end.x;
-            var y = (1 - t) * this.start.y + t * this.end.y;
-            return point(x, y);
-        },
-
-        // @return {number} the offset of the point `p` from the line. + if the point `p` is on the right side of the line, - if on the left and 0 if on the line.
-        pointOffset: function(p) {
-            // Find the sign of the determinant of vectors (start,end), where p is the query point.
-            return ((this.end.x - this.start.x) * (p.y - this.start.y) - (this.end.y - this.start.y) * (p.x - this.start.x)) / 2;
-        },
-        clone: function() {
-            return line(this);
-        }
-    };
-
-    // Rectangle.
-    // ----------
-    function rect(x, y, w, h) {
-        if (!(this instanceof rect))
-            return new rect(x, y, w, h);
-        if (y === undefined) {
-            y = x.y;
-            w = x.width;
-            h = x.height;
-            x = x.x;
-        }
-        this.x = x;
-        this.y = y;
-        this.width = w;
-        this.height = h;
-    }
-
-    rect.prototype = {
-        toString: function() {
-            return this.origin().toString() + ' ' + this.corner().toString();
-        },
-        // @return {boolean} true if rectangles are equal.
-        equals: function(r) {
-            var mr = g.rect(this).normalize();
-            var nr = g.rect(r).normalize();
-            return mr.x === nr.x && mr.y === nr.y && mr.width === nr.width && mr.height === nr.height;
-        },
-        origin: function() {
-            return point(this.x, this.y);
-        },
-        corner: function() {
-            return point(this.x + this.width, this.y + this.height);
-        },
-        topRight: function() {
-            return point(this.x + this.width, this.y);
-        },
-        bottomLeft: function() {
-            return point(this.x, this.y + this.height);
-        },
-        center: function() {
-            return point(this.x + this.width / 2, this.y + this.height / 2);
-        },
-        // @return {rect} if rectangles intersect, {null} if not.
-        intersect: function(r) {
-            var myOrigin = this.origin();
-            var myCorner = this.corner();
-            var rOrigin = r.origin();
-            var rCorner = r.corner();
-
-            // No intersection found
-            if (rCorner.x <= myOrigin.x ||
-                rCorner.y <= myOrigin.y ||
-                rOrigin.x >= myCorner.x ||
-                rOrigin.y >= myCorner.y) return null;
-
-            var x = Math.max(myOrigin.x, rOrigin.x);
-            var y = Math.max(myOrigin.y, rOrigin.y);
-
-            return rect(x, y, Math.min(myCorner.x, rCorner.x) - x, Math.min(myCorner.y, rCorner.y) - y);
-        },
-
-        // @return {string} (left|right|top|bottom) side which is nearest to point
-        // @see Squeak Smalltalk, Rectangle>>sideNearestTo:
-        sideNearestToPoint: function(p) {
-            p = point(p);
-            var distToLeft = p.x - this.x;
-            var distToRight = (this.x + this.width) - p.x;
-            var distToTop = p.y - this.y;
-            var distToBottom = (this.y + this.height) - p.y;
-            var closest = distToLeft;
-            var side = 'left';
-
-            if (distToRight < closest) {
-                closest = distToRight;
-                side = 'right';
-            }
-            if (distToTop < closest) {
-                closest = distToTop;
-                side = 'top';
-            }
-            if (distToBottom < closest) {
-                closest = distToBottom;
-                side = 'bottom';
-            }
-            return side;
-        },
-        // @return {bool} true if point p is insight me
-        containsPoint: function(p) {
-            p = point(p);
-            if (p.x >= this.x && p.x <= this.x + this.width &&
-                p.y >= this.y && p.y <= this.y + this.height) {
-                return true;
-            }
-            return false;
-        },
-        // Algorithm ported from java.awt.Rectangle from OpenJDK.
-        // @return {bool} true if rectangle `r` is inside me.
-        containsRect: function(r) {
-            var nr = rect(r).normalize();
-            var W = nr.width;
-            var H = nr.height;
-            var X = nr.x;
-            var Y = nr.y;
-            var w = this.width;
-            var h = this.height;
-            if ((w | h | W | H) < 0) {
-                // At least one of the dimensions is negative...
-                return false;
-            }
-            // Note: if any dimension is zero, tests below must return false...
-            var x = this.x;
-            var y = this.y;
-            if (X < x || Y < y) {
-                return false;
-            }
-            w += x;
-            W += X;
-            if (W <= X) {
-                // X+W overflowed or W was zero, return false if...
-                // either original w or W was zero or
-                // x+w did not overflow or
-                // the overflowed x+w is smaller than the overflowed X+W
-                if (w >= x || W > w) return false;
-            } else {
-                // X+W did not overflow and W was not zero, return false if...
-                // original w was zero or
-                // x+w did not overflow and x+w is smaller than X+W
-                if (w >= x && W > w) return false;
-            }
-            h += y;
-            H += Y;
-            if (H <= Y) {
-                if (h >= y || H > h) return false;
-            } else {
-                if (h >= y && H > h) return false;
-            }
-            return true;
-        },
-        // @return {point} a point on my boundary nearest to p
-        // @see Squeak Smalltalk, Rectangle>>pointNearestTo:
-        pointNearestToPoint: function(p) {
-            p = point(p);
-            if (this.containsPoint(p)) {
-                var side = this.sideNearestToPoint(p);
-                switch (side){
-                    case 'right': return point(this.x + this.width, p.y);
-                    case 'left': return point(this.x, p.y);
-                    case 'bottom': return point(p.x, this.y + this.height);
-                    case 'top': return point(p.x, this.y);
-                }
-            }
-            return p.adhereToRect(this);
-        },
-        // Find point on my boundary where line starting
-        // from my center ending in point p intersects me.
-        // @param {number} angle If angle is specified, intersection with rotated rectangle is computed.
-        intersectionWithLineFromCenterToPoint: function(p, angle) {
-            p = point(p);
-            var center = point(this.x + this.width / 2, this.y + this.height / 2);
-            var result;
-            if (angle) p.rotate(center, angle);
-
-            // (clockwise, starting from the top side)
-            var sides = [
-                line(this.origin(), this.topRight()),
-                line(this.topRight(), this.corner()),
-                line(this.corner(), this.bottomLeft()),
-                line(this.bottomLeft(), this.origin())
-            ];
-            var connector = line(center, p);
-
-            for (var i = sides.length - 1; i >= 0; --i) {
-                var intersection = sides[i].intersection(connector);
-                if (intersection !== null) {
-                    result = intersection;
-                    break;
-                }
-            }
-            if (result && angle) result.rotate(center, -angle);
-            return result;
-        },
-        // Move and expand me.
-        // @param r {rectangle} representing deltas
-        moveAndExpand: function(r) {
-            this.x += r.x || 0;
-            this.y += r.y || 0;
-            this.width += r.width || 0;
-            this.height += r.height || 0;
-            return this;
-        },
-        round: function(decimals) {
-            this.x = decimals ? this.x.toFixed(decimals) : round(this.x);
-            this.y = decimals ? this.y.toFixed(decimals) : round(this.y);
-            this.width = decimals ? this.width.toFixed(decimals) : round(this.width);
-            this.height = decimals ? this.height.toFixed(decimals) : round(this.height);
-            return this;
-        },
-        // Normalize the rectangle; i.e., make it so that it has a non-negative width and height.
-        // If width < 0 the function swaps the left and right corners,
-        // and it swaps the top and bottom corners if height < 0
-        // like in http://qt-project.org/doc/qt-4.8/qrectf.html#normalized
-        normalize: function() {
-            var newx = this.x;
-            var newy = this.y;
-            var newwidth = this.width;
-            var newheight = this.height;
-            if (this.width < 0) {
-                newx = this.x + this.width;
-                newwidth = -this.width;
-            }
-            if (this.height < 0) {
-                newy = this.y + this.height;
-                newheight = -this.height;
-            }
-            this.x = newx;
-            this.y = newy;
-            this.width = newwidth;
-            this.height = newheight;
-            return this;
-        },
-        // Find my bounding box when I'm rotated with the center of rotation in the center of me.
-        // @return r {rectangle} representing a bounding box
-        bbox: function(angle) {
-            var theta = toRad(angle || 0);
-            var st = abs(sin(theta));
-            var ct = abs(cos(theta));
-            var w = this.width * ct + this.height * st;
-            var h = this.width * st + this.height * ct;
-            return rect(this.x + (this.width - w) / 2, this.y + (this.height - h) / 2, w, h);
-        },
-        snapToGrid: function(gx, gy) {
-            var origin = this.origin().snapToGrid(gx, gy);
-            var corner = this.corner().snapToGrid(gx, gy);
-            this.x = origin.x;
-            this.y = origin.y;
-            this.width = corner.x - origin.x;
-            this.height = corner.y - origin.y;
-            return this;
-        },
-        clone: function() {
-            return rect(this);
-        }
-    };
-
-    // Ellipse.
-    // --------
-    function ellipse(c, a, b) {
-        if (!(this instanceof ellipse))
-            return new ellipse(c, a, b);
-        c = point(c);
-        this.x = c.x;
-        this.y = c.y;
-        this.a = a;
-        this.b = b;
-    }
-
-    ellipse.prototype = {
-        toString: function() {
-            return point(this.x, this.y).toString() + ' ' + this.a + ' ' + this.b;
-        },
-        bbox: function() {
-            return rect(this.x - this.a, this.y - this.b, 2 * this.a, 2 * this.b);
-        },
-        // Find point on me where line from my center to
-        // point p intersects my boundary.
-        // @param {number} angle If angle is specified, intersection with rotated ellipse is computed.
-        intersectionWithLineFromCenterToPoint: function(p, angle) {
-            p = point(p);
-            if (angle) p.rotate(point(this.x, this.y), angle);
-            var dx = p.x - this.x;
-            var dy = p.y - this.y;
-            var result;
-            if (dx === 0) {
-                result = this.bbox().pointNearestToPoint(p);
-                if (angle) return result.rotate(point(this.x, this.y), -angle);
-                return result;
-            }
-            var m = dy / dx;
-            var mSquared = m * m;
-            var aSquared = this.a * this.a;
-            var bSquared = this.b * this.b;
-            var x = sqrt(1 / ((1 / aSquared) + (mSquared / bSquared)));
-
-            x = dx < 0 ? -x : x;
-            var y = m * x;
-            result = point(this.x + x, this.y + y);
-            if (angle) return result.rotate(point(this.x, this.y), -angle);
-            return result;
-        },
-        clone: function() {
-            return ellipse(this);
-        }
-    };
-
-    // Bezier curve.
-    // -------------
-    var bezier = {
-        // Cubic Bezier curve path through points.
-        // Ported from C# implementation by Oleg V. Polikarpotchkin and Peter Lee (http://www.codeproject.com/KB/graphics/BezierSpline.aspx).
-        // @param {array} points Array of points through which the smooth line will go.
-        // @return {array} SVG Path commands as an array
-        curveThroughPoints: function(points) {
-            var controlPoints = this.getCurveControlPoints(points);
-            var path = ['M', points[0].x, points[0].y];
-
-            for (var i = 0; i < controlPoints[0].length; i++) {
-                path.push('C', controlPoints[0][i].x, controlPoints[0][i].y, controlPoints[1][i].x, controlPoints[1][i].y, points[i + 1].x, points[i + 1].y);
-            }
-            return path;
-        },
-
-        // Get open-ended Bezier Spline Control Points.
-        // @param knots Input Knot Bezier spline points (At least two points!).
-        // @param firstControlPoints Output First Control points. Array of knots.length - 1 length.
-        //  @param secondControlPoints Output Second Control points. Array of knots.length - 1 length.
-        getCurveControlPoints: function(knots) {
-            var firstControlPoints = [];
-            var secondControlPoints = [];
-            var n = knots.length - 1;
-            var i;
-
-            // Special case: Bezier curve should be a straight line.
-            if (n == 1) {
-                // 3P1 = 2P0 + P3
-                firstControlPoints[0] = point((2 * knots[0].x + knots[1].x) / 3,
-                                              (2 * knots[0].y + knots[1].y) / 3);
-                // P2 = 2P1 – P0
-                secondControlPoints[0] = point(2 * firstControlPoints[0].x - knots[0].x,
-                                               2 * firstControlPoints[0].y - knots[0].y);
-                return [firstControlPoints, secondControlPoints];
-            }
-
-            // Calculate first Bezier control points.
-            // Right hand side vector.
-            var rhs = [];
-
-            // Set right hand side X values.
-            for (i = 1; i < n - 1; i++) {
-                rhs[i] = 4 * knots[i].x + 2 * knots[i + 1].x;
-            }
-            rhs[0] = knots[0].x + 2 * knots[1].x;
-            rhs[n - 1] = (8 * knots[n - 1].x + knots[n].x) / 2.0;
-            // Get first control points X-values.
-            var x = this.getFirstControlPoints(rhs);
-
-            // Set right hand side Y values.
-            for (i = 1; i < n - 1; ++i) {
-                rhs[i] = 4 * knots[i].y + 2 * knots[i + 1].y;
-            }
-            rhs[0] = knots[0].y + 2 * knots[1].y;
-            rhs[n - 1] = (8 * knots[n - 1].y + knots[n].y) / 2.0;
-            // Get first control points Y-values.
-            var y = this.getFirstControlPoints(rhs);
-
-            // Fill output arrays.
-            for (i = 0; i < n; i++) {
-                // First control point.
-                firstControlPoints.push(point(x[i], y[i]));
-                // Second control point.
-                if (i < n - 1) {
-                    secondControlPoints.push(point(2 * knots [i + 1].x - x[i + 1],
-                                                   2 * knots[i + 1].y - y[i + 1]));
-                } else {
-                    secondControlPoints.push(point((knots[n].x + x[n - 1]) / 2,
-                                                   (knots[n].y + y[n - 1]) / 2));
-                }
-            }
-            return [firstControlPoints, secondControlPoints];
-        },
-
-        // Solves a tridiagonal system for one of coordinates (x or y) of first Bezier control points.
-        // @param rhs Right hand side vector.
-        // @return Solution vector.
-        getFirstControlPoints: function(rhs) {
-            var n = rhs.length;
-            // `x` is a solution vector.
-            var x = [];
-            var tmp = [];
-            var b = 2.0;
-
-            x[0] = rhs[0] / b;
-            // Decomposition and forward substitution.
-            for (var i = 1; i < n; i++) {
-                tmp[i] = 1 / b;
-                b = (i < n - 1 ? 4.0 : 3.5) - tmp[i];
-                x[i] = (rhs[i] - x[i - 1]) / b;
-            }
-            for (i = 1; i < n; i++) {
-                // Backsubstitution.
-                x[n - i - 1] -= tmp[n - i] * x[n - i];
-            }
-            return x;
-        },
-
-        // Solves an inversion problem -- Given the (x, y) coordinates of a point which lies on
-        // a parametric curve x = x(t)/w(t), y = y(t)/w(t), ﬁnd the parameter value t
-        // which corresponds to that point.
-        // @param control points (start, control start, control end, end)
-        // @return a function accepts a point and returns t.
-        getInversionSolver: function(p0, p1, p2, p3) {
-            var pts = arguments;
-            function l(i, j) {
-                // calculates a determinant 3x3
-                // [p.x  p.y  1]
-                // [pi.x pi.y 1]
-                // [pj.x pj.y 1]
-                var pi = pts[i];
-                var pj = pts[j];
-                return function(p) {
-                    var w = (i % 3 ? 3 : 1) * (j % 3 ? 3 : 1);
-                    var lij = p.x * (pi.y - pj.y) + p.y * (pj.x - pi.x) + pi.x * pj.y - pi.y * pj.x;
-                    return w * lij;
-                };
-            }
-            return function solveInversion(p) {
-                var ct = 3 * l(2, 3)(p1);
-                var c1 = l(1, 3)(p0) / ct;
-                var c2 = -l(2, 3)(p0) / ct;
-                var la = c1 * l(3, 1)(p) + c2 * (l(3, 0)(p) + l(2, 1)(p)) + l(2, 0)(p);
-                var lb = c1 * l(3, 0)(p) + c2 * l(2, 0)(p) + l(1, 0)(p);
-                return lb / (lb - la);
-            };
-        },
-
-        // Divide a Bezier curve into two at point defined by value 't' <0,1>.
-        // Using deCasteljau algorithm. http://math.stackexchange.com/a/317867
-        // @param control points (start, control start, control end, end)
-        // @return a function accepts t and returns 2 curves each defined by 4 control points.
-        getCurveDivider: function(p0, p1, p2, p3) {
-            return function divideCurve(t) {
-                var l = line(p0, p1).pointAt(t);
-                var m = line(p1, p2).pointAt(t);
-                var n = line(p2, p3).pointAt(t);
-                var p = line(l, m).pointAt(t);
-                var q = line(m, n).pointAt(t);
-                var r = line(p, q).pointAt(t);
-                return [{ p0: p0, p1: l, p2: p, p3: r }, { p0: r, p1: q, p2: n, p3: p3 }];
-            };
-        }
-    };
-
-    // Scale.
-    var scale = {
-
-        // Return the `value` from the `domain` interval scaled to the `range` interval.
-        linear: function(domain, range, value) {
-
-            var domainSpan = domain[1] - domain[0];
-            var rangeSpan = range[1] - range[0];
-            return (((value - domain[0]) / domainSpan) * rangeSpan + range[0]) || 0;
-        }
-    };
-
-    return {
-        toDeg: toDeg,
-        toRad: toRad,
-        snapToGrid: snapToGrid,
-        normalizeAngle: normalizeAngle,
-        point: point,
-        line: line,
-        rect: rect,
-        ellipse: ellipse,
-        bezier: bezier,
-        scale: scale
-    };
-
-})();
-
 SVGElement.prototype.getTransformToElement = SVGElement.prototype.getTransformToElement || function(toElement) {
     return toElement.getScreenCTM().inverse().multiply(this.getScreenCTM());
 };
@@ -2169,13 +2169,15 @@ var dedu = {
             }
             return hash;
         },
-
+        randomString: function(len){
+          return (1+~~(Math.random()*4294967)).toString(16).substring(0,len);
+        },
         /**
          * Return a value at the path in a nested object. delim is the delimiter used in the path
          * @example
-         * 
+         *
          * joint.util.getByPath({ a: { aa: { aaa: 3 } } }, 'a/aa/aaa', '/');//3
-         * 
+         *
          * @param {Object} obj
          * @param {String} path
          * @param {String} delim
@@ -2202,10 +2204,10 @@ var dedu = {
          * Set a value at the path in a nested object. delim is the delimiter used in the path
          *  Returns the augmented object
          *  @example
-         *  
+         *
          *  joint.util.setByPath({ b: {bb:{}} }, 'b/bb/bbb', 2, '/');
          *  //{ b: {bb:{bbb:2}} },
-         *  
+         *
          * @param {Object} obj
          * @param {String} path
          * @param {*} value
@@ -2237,10 +2239,10 @@ var dedu = {
         /**
          * Unset (delete) a property at the path in a nested object. delim is the delimiter used in the path. Returns the augmented object.
          * @example
-         * 
+         *
          * joint.util.unsetByPath({ a: { aa: { aaa: 3 } } }, 'a/aa/aaa', '/');
          * // { a: { aa: {} } }
-         * 
+         *
          * @param {Object} obj
          * @param {String} path
          * @param {String} delim
@@ -2441,9 +2443,9 @@ var dedu = {
          * @method normalizeEvent
          * @param {JQueryEvent|*} evt
          * @example
-         * 
+         *
          * var evt = dedu.util.normalizeEvent(evt);
-         * 
+         *
          * @returns {*}
          */
         normalizeEvent: function(evt) {
@@ -2861,13 +2863,13 @@ var dedu = {
          * @param {DOMObject|SVGObject} element
          * @param {Object} attrs
          * @example
-         * 
+         *
          * var myEl = document.querySelector('.mydiv');
          * dedu.util.setAttributesBySelector(myEl,{
          *  '.mydiv': { 'data-foo': 'bar' },    // Note the reference to the myEl element itself.
          *  'input': { 'value': 'my value' }   // descendant input
          * });
-         * 
+         *
          */
         setAttributesBySelector: function(element, attrs) {
 
@@ -3203,12 +3205,12 @@ var dedu = {
              * Heavilly inspired by the D3.js library implementation.
              * @method number
              * @example
-             * 
+             *
              * joint.util.format.number('.2f', 5)    // 5.00
              * joint.util.format.number('03d', 5)    // 005
              * joint.util.format.number('.1%', .205)    // 20.5%
              * joint.util.format.number('*^9', 5)    // ****5****
-             * 
+             *
              */
             number: function(specifier, value, locale) {
 
@@ -3464,13 +3466,10 @@ dedu.Cell = Backbone.Model.extend({
     constructor: function (attributes, options) {
         var defaults;
         var attrs = attributes || {};
-        this.cid = _.uniqueId('c');
+        this.cid = _.uniqueId('d');
         this.attributes = {};
         if (defaults = _.result(this, 'defaults')) {
-            //<custom code>
-            // Replaced the call to _.defaults with _.merge.
-            attrs = _.merge({}, defaults, attrs);
-            //</custom code>
+            attrs = _.extendOwn({}, defaults, attrs);
         }
         attrs.redID = attrs.redID || (1 + Math.random() * 4294967295).toString(16);  //be used by user program
         this.set(attrs, options);
@@ -3486,12 +3485,13 @@ dedu.Cell = Backbone.Model.extend({
      * @param {Object} options
      * @memberof dedu.Cell
      */
-    initialize: function (options) {
-        if (!options || !options.id) {
+    initialize: function (attributes,options) {
+        if (!attributes || !attributes.id) {
             this.set('id', dedu.util.uuid(), {silent: true});
         }
         // Collect ports defined in `attrs` and keep collecting whenever `attrs` object changes.
         this.processPorts();
+        this.initalHook && this.initalHook(attributes);
     },
 
     /**
@@ -3633,13 +3633,13 @@ dedu.Cell = Backbone.Model.extend({
                 // Fill update with the `value` on `path`.
                 update = dedu.util.setByPath(update, path, value, '/');
 
-                var baseAttributes = _.merge({}, this.attributes);
+                var baseAttributes = _.extendOwn({}, this.attributes);
                 // if rewrite mode enabled, we replace value referenced by path with
                 // the new one (we don't merge).
                 opt.rewrite && dedu.util.unsetByPath(baseAttributes, path, '/');
 
                 // Merge update with the model attributes.
-                var attributes = _.merge(baseAttributes, update);
+                var attributes = _.extendOwn(baseAttributes, update);
                 // Finally, set the property to the updated attributes.
                 return this.set(property, attributes[property], opt);
             } else {
@@ -3647,7 +3647,7 @@ dedu.Cell = Backbone.Model.extend({
             }
 
         }
-        return this.set(_.merge({}, this.attributes, props), value);
+        return this.set(_.extendOwn({}, this.attributes, props), value);
     },
 
     isEmbeddedIn: function (cell, opt) {
@@ -4010,7 +4010,8 @@ dedu.CellView = Backbone.View.extend({
             // Trigger the event on both the element itself and also on the paper.
             this.trigger.apply(this, [evt].concat(args));
             // Paper event handlers receive the view object as the first argument.
-            this.paper.trigger.apply(this.paper, [evt, this].concat(args));
+            // this.paper.trigger.apply(this.paper, [evt, this].concat(args));
+            this.paper.notify(evt, this,args);
         }
     },
 
@@ -4461,7 +4462,7 @@ dedu.ElementView = dedu.CellView.extend({
             }
 
             if (!vref) {
-                throw new Error('dia.ElementView: reference does not exists.');
+                throw new Error('dedu.ElementView: reference does not exists.');
             }
 
             // Get the bounding box of the reference element relative to the root `<g>` element.
@@ -5129,7 +5130,7 @@ dedu.LinkView = dedu.CellView.extend({
     startListening: function () {
         var model = this.model;
 
-        this.listenTo(model,'change:vertices',this.onVerticesChange);
+        this.listenTo(model,'change:vertices',this.render);
         this.listenTo(model, 'change:source', this.onSourceChange);
         this.listenTo(model, 'change:target', this.onTargetChange);
 
@@ -5242,7 +5243,7 @@ dedu.LinkView = dedu.CellView.extend({
             }));
         }, this);
 
-        return this;        
+        return this;
     },
 
     renderArrowheadMarkers: function() {
@@ -5401,12 +5402,12 @@ dedu.LinkView = dedu.CellView.extend({
                     } else if (prevSample) {
                         angle = g.point(prevSample).theta(labelCoordinates);
                     }
-                    labelCoordinates = g.point(labelCoordinates).offset(offset).rotate(labelCoordinates, angle - 90);                                        
-                }                
+                    labelCoordinates = g.point(labelCoordinates).offset(offset).rotate(labelCoordinates, angle - 90);
+                }
 
-                this._labelCache[idx].attr('transform', 'translate(' + labelCoordinates.x + ', ' + labelCoordinates.y + ')');                                                
+                this._labelCache[idx].attr('transform', 'translate(' + labelCoordinates.x + ', ' + labelCoordinates.y + ')');
             },this);
-        }                
+        }
 
         return this;
 
@@ -6024,13 +6025,13 @@ dedu.LinkView = dedu.CellView.extend({
             }
             this._afterArrowheadMove();
         }
-    
+
         delete this._action;
         this.notify('link:pointerup', evt, x, y);
         dedu.CellView.prototype.pointerup.apply(this, arguments);
     },
 
-    
+
 
 },{
     /**
@@ -6064,8 +6065,8 @@ dedu.GraphCells = Backbone.Collection.extend({
      * @memberof dedu.GraphCells`
      */
     cellNamespace: dedu.shape,
-    initialize:function(models,opt){
-        if(opt.cellNamespace){
+    initialize: function(models, opt) {
+        if (opt.cellNamespace) {
             this.cellNamespace = opt.cellNamespace;
         }
     },
@@ -6074,18 +6075,41 @@ dedu.GraphCells = Backbone.Collection.extend({
      * @param attrs
      * @param options
      */
-    model:function(attrs,options){
+    model: function(attrs, options) {
         console.log(options);
         var namespace = options.collection.cellNamespace;
 
         // Find the model class in the namespace or use the default one.
-        var ModelClass = (attrs.type === 'link')
-            ? dedu.Link
-            : dedu.util.getByPath(namespace, attrs.type, '.') || dedu.Element;
+        var ModelClass = (attrs.type === 'link') ? dedu.Link : dedu.util.getByPath(namespace, attrs.type, '.') || dedu.Element;
 
         return new ModelClass(attrs, options);
     }
 });
+
+
+/*
+  id: unique identify for graph
+  type: graph | subgraph
+  root: cells | cell
+*/
+dedu.GraphCollection = Backbone.Collection.extend({
+    model: function(attrs, options) {
+        attrs = _.defaults({}, attrs, {
+            id: dedu.util.uuid(),
+            type: 'graph',
+            // Passing `cellModel` function in the options object to graph allows for
+            // setting models based on attribute objects. This is especially handy
+            // when processing JSON graphs that are in a different than JointJS format.
+            root: new dedu.GraphCells(options.models || [], {
+                // model: opt.cellModel,
+                // cellNamespace: opt.cellNamespace,
+                graph: this
+            })
+        });
+        return new Backbone.Model(attrs);
+    }
+});
+
 
 /**
  * `dedu.Graph` A model holding all the cells (elements and links) of the diagram
@@ -6095,25 +6119,26 @@ dedu.GraphCells = Backbone.Collection.extend({
  */
 dedu.Graph = Backbone.Model.extend({
 
-    initialize:function(attrs,opt){
+    initialize: function(attrs, opt) {
 
         opt = opt || {};
 
-        // Passing `cellModel` function in the options object to graph allows for
-        // setting models based on attribute objects. This is especially handy
-        // when processing JSON graphs that are in a different than JointJS format.
-        var cells = new dedu.GraphCells([], {
-            model: opt.cellModel,
-            cellNamespace: opt.cellNamespace,
-            graph: this
-        });
-        Backbone.Model.prototype.set.call(this, 'cells', cells);
+        //has many graphs at a time
+        var graphs = new dedu.GraphCollection;
+        Backbone.Model.prototype.set.call(this, 'graphs', graphs);
+        if (!opt.tabs) {
+            this.createGraph();
+        }
+
 
         // Make all the events fired in the `cells` collection available.
         // to the outside world.
-        this.get("cells").on("all",this.trigger,this);
-        this.get('cells').on('remove', this._removeCell, this);
-
+        // this.get("cells").on("all",this.trigger,this);
+        // this.active_cells().on('change', this.changeGraph, this);
+        // this.on('change', this.changeGraph, this);
+        // this.on("all", this.trigger, this);
+        // this.active_cells().on('remove', this._removeCell, this);
+        // this.on('remove', this._removeCell, this);
 
         // Outgoing edges per node. Note that we use a hash-table for the list
         // of outgoing edges for a faster lookup.
@@ -6131,11 +6156,213 @@ dedu.Graph = Backbone.Model.extend({
         // [edge ID] -> true
         this._edges = {};
 
-        this.selectionSet = [];//user select much elements
+        this.selectionSet = []; //user select much elements
 
-        cells.on('add', this._restructureOnAdd, this);
-        cells.on('remove', this._restructureOnRemove, this);
+        // cells.on('add', this._restructureOnAdd, this);
+        // cells.on('remove', this._restructureOnRemove, this);
+        this.on('addCell', this._restructureOnAdd, this);
+        this.on('remove', this._restructureOnRemove, this);
     },
+
+    /*
+    user can create many graph.
+    * parent subflow id
+    * opt{
+      tabs: true,if you use tabs
+    }
+    * createGraph() create a new graph
+    * createGraph(cell, region_name)
+    * - region has shown: switch tab
+    * - region has not exits: create a region graph
+    */
+    createGraph: function(cell, opt) {
+        opt = opt || {};
+        var graphs = this.get('graphs');
+        var graph, id;
+
+
+        if (cell) {
+            cell.regions || (cell.regions = {});
+            if (opt.region_name) {
+
+                let region = cell.regions[opt.region_name];
+                if (region.pending_id) {
+                    //switch region
+
+                    graph = graphs.get(region.pending_id);
+                } else {
+                    // restore subflow
+                    graph = graphs.add({}, {
+                        models: cell.regions[opt.region_name]
+                    }, opt);
+
+                }
+            } else {
+                //create region
+                let regionName = 'region' + dedu.util.randomString(6);
+                graph = graphs.add({}, opt);
+                graph.parent = {
+                    cell: cell,
+                    region: regionName
+                };
+                let region = cell.regions[regionName] = [];
+                region.pending_id = graph.id;
+                region.graph = graph;
+            }
+        } else {
+            graph = graphs.add({}, opt);
+        }
+        id = graph.id;
+        this.switchGraph(id);
+        return graph;
+    },
+
+    saveSubGraph: function(graph, parent) {
+        var active_cells;
+        var graphs = this.get('graphs');
+        graph && graph.parent && (active_cells = graph.get('root'));
+        if (active_cells) {
+            var regionName = parent.region;
+            var region = parent.cell.regions[regionName] = active_cells.models;
+            region.graph = undefined;
+            region.pending_id = undefined;
+
+        }
+    },
+
+    save: function() {
+        var cells = this.active_cells(),
+            len = cells.length;
+        for (var i = 0; i < len; i++) {
+            var cell = cells.at(i);
+            if (!cell.isLink()) {
+                this.saveCell(cell);
+            }
+
+        }
+    },
+
+    saveCell: function(cell) {
+        if (cell.regions) {
+            _.each(cell.regions, (_region, name, regions) => {
+                if (_region.graph) {
+                    var cells = _region.graph.get('root').models;
+                    cells.graph = _region.graph;
+                    cells.pending_id = cells.pending_id;
+                    regions[name] = cells;
+                }
+            })
+
+        }
+    },
+
+    switchGraph: function(id) {
+        var active_cells = this.get('graphs').get(id).get('root');
+        this.set('active_graph_id', id);
+        this.resetCells(active_cells);
+    },
+
+    removeGraph: function(id) {
+        var graphs = this.get('graphs');
+        var graph = graphs.get(id);
+        if (graph.parent) {
+            this.saveSubGraph(graph, graph.parent);
+            graphs.remove(graph.parent);
+        }
+        graphs.remove(graph);
+        this.switchGraph(graphs.at(0).id);
+        return graphs.at(0).id;
+    },
+
+    createSubGraph: function(root) {
+        if (!(root instanceof Backbone.Model)) return;
+        var graph;
+        // root.models = [];
+        if (root.pending_id) {
+            return this.get('graphs').get(root.pending_id);
+        } else {
+            graph = this.get('graphs').add({
+                type: 'subgraph',
+                root: root
+            });
+
+        }
+        // this.switchGraph(graph.id);
+        return graph;
+    },
+
+    exportGraph: function(id) {
+        var cells = this.active_cells();
+        var states = {},
+            transitions = {},
+            state_machine = {},
+            len = cells.length;
+        for (var i = 0; i < len; i++) {
+            var cell = cells.at(i);
+            this.parseCell(cell, null, states, transitions, state_machine);
+        }
+        flow = {
+            flat_states: states,
+            state_machine: state_machine,
+            transitions: transitions
+        }
+        return flow;
+    },
+
+    parseCell: function(cell, parent, states, transitions, state_machine) {
+        if (cell.isLink()) {
+            var link = {};
+            link.id = cell.id;
+            link.src = cell.get('source').id;
+            link.target = cell.get('target').id;
+            transitions[link.id] = link;
+        } else {
+            var state = {};
+            state.qualifiedName = state.name = cell.get('name');
+            state.type = cell.get('type');
+            state.id = cell.id;
+            if (parent) {
+                state.qualifiedName = parent.qualifiedName + "." + state.qualifiedName;
+            }
+
+            state.onEntry = cell.get('entry');
+            state.onExit = cell.get('exit');
+
+            states[state.id] = state;
+            state_machine[state.id] = _.clone(state);
+
+            if (cell.regions) {
+                var regions = state_machine[state.id].regions = {};
+                _.each(cell.regions, (_region, name) => {
+                    regions[name] = {};
+                    _region.forEach((_cell, index) => {
+
+                        this.parseCell(_cell, state, states, transitions, regions[name]);
+                    })
+                })
+
+            }
+
+        }
+    },
+
+    // createSubGraph: function (root) {
+    //   if (!(root instanceof Backbone.Model)) return;
+    //   var graph;
+    //   // root.models = [];
+    //   if (root.pending_id) {
+    //     return this.get('graphs').get(root.pending_id);
+    //   } else {
+    //     graph = this.get('graphs').add({
+    //       type: 'subgraph',
+    //       root: root
+    //     });
+
+    //   }
+    //   // this.switchGraph(graph.id);
+    //   return graph;
+    // },
+
 
     _restructureOnAdd: function(cell) {
 
@@ -6175,10 +6402,10 @@ dedu.Graph = Backbone.Model.extend({
      * @param {Number} id
      * @returns {boolean}
      */
-    isExist:function(id){
-        var models = this.get('cells').models;
-        for(var i=0;i<models.length;i++){
-            if(models[i].get('redID')==id){
+    isExist: function(id) {
+        var models = this.active_cells().models;
+        for (var i = 0; i < models.length; i++) {
+            if (models[i].get('redID') == id) {
                 return true;
             }
         }
@@ -6190,10 +6417,10 @@ dedu.Graph = Backbone.Model.extend({
      * @param {String} redID
      * @returns {dedu.Cell}
      */
-    getCellByRedID:function(redID) {
-        var models = this.get('cells').models;
-        for(var i in models){
-            if(models[i].get('redID') == redID){
+    getCellByRedID: function(redID) {
+        var models = this.active_cells().models;
+        for (var i in models) {
+            if (models[i].get('redID') == redID) {
                 return models[i];
             }
         }
@@ -6204,7 +6431,7 @@ dedu.Graph = Backbone.Model.extend({
      * @returns {dedu.Cell}
      */
     getCell: function(id) {
-        return this.get('cells').get(id);
+        return this.active_cells().get(id);
     },
 
     /**
@@ -6212,7 +6439,7 @@ dedu.Graph = Backbone.Model.extend({
      * @returns {Array<dedu.Cell>}
      */
     getCells: function() {
-        return this.get('cells').toArray();
+        return this.active_cells().toArray();
     },
 
     /**
@@ -6221,7 +6448,7 @@ dedu.Graph = Backbone.Model.extend({
      */
     getElements: function() {
 
-        return this.get('cells').filter(function(cell) {
+        return this.active_cells().filter(function(cell) {
 
             return cell instanceof dedu.Element;
         });
@@ -6232,53 +6459,53 @@ dedu.Graph = Backbone.Model.extend({
      * @returns {Array<dedu.Link>}
      */
     getLinks: function() {
-        return this.get('cells').filter(function(cell) {
+        return this.active_cells().filter(function(cell) {
 
             return cell instanceof joint.dia.Link;
         });
     },
 
-    selectAll:function(){
+    selectAll: function() {
 
-        this.get('cells').models.forEach(function(model){
+        this.active_cells().models.forEach(function(model) {
             model.focus();
         });
-        this.selectionSet = this.get('cells').models;
+        this.selectionSet = this.active_cells().models;
     },
 
-    getAllPosition: function () {
+    getAllPosition: function() {
         var nodes = {};
-        this.get('cells').models.forEach(function(model){
-            if(model instanceof dedu.Element){
+        this.active_cells().models.forEach(function(model) {
+            if (model instanceof dedu.Element) {
 
-                if(model instanceof dedu.shape.node_red.subflowportModel){
-                    nodes[model.get('index')-1] = {position:model.get('position'),type:'subflowport'};
-                }else{
-                    nodes[model.get('redID')] = {position:model.get('position')};
+                if (model instanceof dedu.shape.node_red.subflowportModel) {
+                    nodes[model.get('index') - 1] = { position: model.get('position'), type: 'subflowport' };
+                } else {
+                    nodes[model.get('redID')] = { position: model.get('position') };
                 }
             }
         });
         return nodes;
     },
 
-    updateSelection: function (selection_models_new) {
-        var selection_models = _.difference(this.selectionSet,selection_models_new);
-        selection_models.forEach(function(model){
+    updateSelection: function(selection_models_new) {
+        var selection_models = _.difference(this.selectionSet, selection_models_new);
+        selection_models.forEach(function(model) {
             model.focus();
         });
         this.selectionSet = selection_models_new;
     },
 
-    cancelSelection: function (model_array) {
-        var selection_models = _.difference(this.selectionSet,model_array);
-        selection_models.forEach(function(model){
+    cancelSelection: function(model_array) {
+        var selection_models = _.difference(this.selectionSet, model_array);
+        selection_models.forEach(function(model) {
             model.unfocus();
         });
         this.selectionSet = [];
     },
 
-    focus:function(model){
-        if(this.selectionSet.indexOf(model)==-1){
+    focus: function(model) {
+        if (this.selectionSet.indexOf(model) == -1) {
             this.cancelSelection([model]);
             model.focus();
             this.selectionSet.push(model);
@@ -6302,29 +6529,205 @@ dedu.Graph = Backbone.Model.extend({
      *   graph.addCell(rect).addCell(rect2);
      *
      */
-    addCell:function(cell,options){
-        this.get('cells').add(this._prepareCell(cell), options || {});
-        var args ;
+    addCell: function(cell, options) {
+        this.trigger('addCell', cell);
+        var cells = this.active_cells();
+        //current tab's paper
+        cells.add(this._prepareCell(cell), options || {});
+        var args;
         var self = this;
-        if(cell instanceof dedu.Link){
-            cell.on('link:complete',function(){
+        if (cell instanceof dedu.Link) {
+            cell.on('link:complete', function() {
                 args = {
                     source: this.get('source'),
                     target: this.get('target'),
                     redID: this.get('redID'),
                     type: 'link'
                 };
-                self.notify.apply(this,['node-red:node-link-added'].concat(args));
-            },cell);
-        }else if(cell instanceof dedu.Element){
+                self.notify.apply(this, ['node-red:node-link-added'].concat(args));
+            }, cell);
+        } else if (cell instanceof dedu.Element) {
             args = {
                 redID: cell.get('redID'),
-                type:'node'
+                type: 'node'
             };
-            this.notify.apply(this,['node-red:node-link-added'].concat(args));
+            this.notify.apply(this, ['node-red:node-link-added'].concat(args));
         }
-        
+
         return this;
+    },
+
+    splitCells: function(cells) {
+        var elements = {},
+            links = {},sum_elements=0,sum_links=0;
+        _.each(cells, function(cell) {
+            if (cell.isLink()) {
+                links[cell.get('source').id+cell.get('target').id] = cell;
+                sum_links++;
+            } else {
+                elements[cell.id] = cell;
+                sum_elements++;
+            }
+        });
+        Object.defineProperty(elements,'length',{
+          value: sum_elements,
+          enumerable: false
+        });
+        Object.defineProperty(links,'length',{
+          value: sum_links,
+          enumerable: false
+        })
+        return {
+            elements: elements,
+            links: links
+        }
+    },
+
+    layout: function() {
+        // var g = new dagre.graphlib.Graph(),
+        //   cells = this.active_cells(),
+        //   len = cells.length;
+        // g.setGraph({});
+        // for (var i = 0; i < len; i++) {
+        //   var cell = cells.at(i);
+        //   g.setNode(cell.id, { width: cell.get('size').width, height: cell.get('size').height });
+        // }
+
+        // dagre.layout(g, {
+        //   nodesep: 10,
+        //   ranksep: 10
+        // });
+        // g.nodes().forEach(function (value) {
+        //   var cell = cells.get(value);
+        //   cell.set('position', {
+        //     x: g.node(value).x,
+        //     y: g.node(value).y
+        //   })
+        // })
+        var that = this;
+        var d = {};
+        var userStyles = null;
+        var config = {
+            arrowSize: +d.arrowSize || 1,
+            bendSize: +d.bendSize || 0.3,
+            direction: { down: 'TB', right: 'LR' }[d.direction] || 'TB',
+            gutter: +d.gutter || 5,
+            edgeMargin: (+d.edgeMargin) || 0,
+            edges: { hard: 'hard', rounded: 'rounded' }[d.edges] || 'rounded',
+            fill: (d.fill || '#eee8d5;#fdf6e3;#eee8d5;#fdf6e3').split(';'),
+            fillArrows: 'true',
+            font: d.font || 'Calibri',
+            fontSize: (+d.fontSize) || 12,
+            leading: (+d.leading) || 1.25,
+            lineWidth: (+d.lineWidth) || 3,
+            padding: (+d.padding) || 8,
+            spacing: (+d.spacing) || 40,
+            stroke: d.stroke || '#33322E',
+            title: d.title || 'nomnoml',
+            zoom: +d.zoom || 1,
+            styles: userStyles
+        };
+        var skCanvas = skanaar.Svg('')
+
+        var graphs = this.get('graphs');
+        var graph = graphs.get(this.get('active_graph_id'));
+        var collection = this.active_cells()
+        var cells = collection.models;
+        var measurer = {
+            setFont: function(a, b, c) { setFont(a, b, c, skCanvas); },
+            textWidth: function(s) {
+                return skCanvas.measureText(s).width
+            },
+            textHeight: function() {
+                return config.leading * config.fontSize
+            }
+        };
+        layoutCell(cells);
+
+        function setFont(config, isBold, isItalic) {
+            var style = (isBold === 'bold' ? 'bold' : '')
+            if (isItalic) style = 'italic ' + style
+            var defFont = 'Helvetica, sans-serif'
+            var template = 'font-weight:#; font-size:#pt; font-family:\'#\', #'
+            var font = skanaar.format(template, style, config.fontSize, config.font, defFont)
+            skCanvas.font(font)
+        }
+
+
+        function layoutCell(cells) {
+            cells = that.splitCells(cells);
+            var elems = cells.elements,
+                links = cells.links;
+            if (elems.length<=0)
+                return;
+
+            var g = new dagre.graphlib.Graph();
+            g.setGraph({});
+            g.setDefaultEdgeLabel(function() { return {}; });
+
+            for(var id in elems){
+              layoutClassifier(elems[id]);
+              g.setNode(id, { width: elems[id].width, height: elems[id].height });
+            }
+
+            for(var id in links){
+              g.setEdge(links[id].get('source').id, links[id].get('target').id);
+            }
+
+            dagre.layout(g);
+
+            g.nodes().forEach(function(index) {
+                var elem = elems[index];
+                var node = g.node(index);
+
+                elem.set('position', {
+                    x: node.x,
+                    y: node.y
+                });
+
+                if (node.width && node.height) {
+                    elem.set('size', {
+                        width: node.width,
+                        height: node.height
+                    })
+                }
+            });
+
+            g.edges().forEach(function(e) {
+
+              var edge = g.edge(e);
+              var link = links[e.v+e.w];
+
+              link.set('vertices', edge.points)
+
+            });
+
+        }
+
+        function layoutClassifier(cell) {
+            if (cell instanceof dedu.Element) {
+                // _.each(cell.children.models, layoutCell)
+                if (cell.get('text')) {
+                    var size = measureLines([cell.get('text')]);
+                    cell.width = size.width;
+                    cell.height = size.height;
+                    // cell.x = cell.width / 2;
+                    // cell.y = cell.height / 2;
+                } else {
+                    cell.width = cell.get('size').width;
+                    cell.height = cell.get('size').height;
+                }
+
+            }
+        }
+
+        function measureLines(lines) {
+            return {
+                width: Math.round(_.max(_.map(lines, measurer.textWidth)) + 2 * config.padding),
+                height: Math.round(measurer.textHeight() * lines.length + 2 * config.padding)
+            }
+        }
+
     },
 
     /**
@@ -6353,13 +6756,18 @@ dedu.Graph = Backbone.Model.extend({
      * @returns {dedu.Graph}
      */
     resetCells: function(cells, opt) {
-
-        this.get('cells').reset(_.map(cells, this._prepareCell, this), opt);
-
+        // this.active_cells().reset(_.map(cells, this._prepareCell, this), opt);
+        this.trigger('reset');
         return this;
     },
 
-    _prepareCell:function(cell){
+    active_cells: function() {
+        var graphs = this.get('graphs');
+        return graphs.get(this.get('active_graph_id')).get('root');
+    },
+
+    // check cell is legal
+    _prepareCell: function(cell) {
         var attrs = (cell instanceof Backbone.Model) ? cell.attributes : cell;
 
         if (_.isUndefined(attrs.z)) {
@@ -6373,57 +6781,53 @@ dedu.Graph = Backbone.Model.extend({
     },
 
     maxZIndex: function() {
-
-        var lastCell = this.get('cells').last();
+        var lastCell = this.active_cells().last();
         return lastCell ? (lastCell.get('z') || 0) : 0;
     },
 
-    clear: function(opt) {
+    //empty all data
+    clear: function(active_cells, opt) {
 
         opt = _.extend({}, opt, { clear: true });
 
-        var cells = this.get('cells').models;
+        var cells = active_cells && active_cells.models;
 
-        if (cells.length === 0) return this;
+        if (!cells || cells.length === 0) return this;
 
         this.trigger('batch:start', { batchName: 'clear' });
 
         // The elements come after the links.
-        _.sortBy(cells,function(cell) {
+        _.sortBy(cells, function(cell) {
             return cell.isLink() ? 1 : 2;
         });
 
         do {
-
             // Remove all the cells one by one.
             // Note that all the links are removed first, so it's
             // safe to remove the elements without removing the connected
             // links first.
             cells.shift().remove(opt);
-
         } while (cells.length > 0);
 
         this.trigger('batch:stop', { batchName: 'clear' });
-
         return this;
     },
 
-    removeSection: function () {
-        this.get('cells').remove(this.selectionSet);
+    removeSection: function() {
+        this.active_cells().remove(this.selectionSet);
         var selectionIDs = {};
-        for(var i=0;i<this.selectionSet.length;i++){
-            selectionIDs[this.selectionSet[i].get('redID')] = this.selectionSet[i] instanceof dedu.Link?'link':'node';
+        for (var i = 0; i < this.selectionSet.length; i++) {
+            selectionIDs[this.selectionSet[i].get('redID')] = this.selectionSet[i] instanceof dedu.Link ? 'link' : 'node';
         }
-        this.notify.apply(this,['node-red:node-link-removed'].concat(selectionIDs));
+        this.notify.apply(this, ['node-red:node-link-removed'].concat(selectionIDs));
         this.selectionSet = [];
     },
 
-    notify:function(evt){
+    notify: function(evt) {
         var args = Array.prototype.slice.call(arguments, 1);
         this.trigger.apply(this, [evt].concat(args));
     },
 });
-
 
 dedu.shape = {basic:{}};
 
@@ -6734,6 +7138,766 @@ dedu.shape.basic.PortsViewInterface = {
 
     }
 };
+
+/**
+ * `dedu.Paper` 是{@link dedu.Graph}的view
+ * @class
+ * @augments Backbone.View
+ */
+dedu.Paper = Backbone.View.extend({
+  /**
+   * 渲染元素的class
+   * @member {String}
+   * @memberof dedu.Paper
+   * @default
+   */
+  className: 'paper',
+
+  /**
+   * `dedu.Paper`的默认属性
+   * @member {Object}
+   * @memberof dedu.Paper
+   */
+  options: {
+
+    /**
+     * @property {Number} options.width=800 - 渲染区域的宽度
+     */
+    width: 800,
+    /**
+     * @property {Number} options.height=600 - 渲染区域的高度
+     */
+    height: 600,
+    /**
+     * @property {Object} options.origin={x:0,y:0} - x,y coordinates in top-left corner
+     */
+    origin: { x: 0, y: 0 }, // x,y coordinates in top-left corner
+
+    /**
+     * @property {Number} options.gridSize=1 - 网格大小
+     */
+    gridSize: 1,
+    perpendicularLinks: false,
+    /**
+     * @property {dedu.ElementView} options.elementView - 默认的elementView
+     */
+    elementView: dedu.ElementView,
+    /**
+     *  @property {dedu.LinkView} options.LinkView - 默认的LinkView
+     */
+    linkView: dedu.LinkView,
+
+    /**
+     * @property {Object} options.interactive - 哪些元素可以进行交互
+     */
+    interactive: {
+      labelMove: false
+    },
+
+    snapLinks: { radius: 30 }, // false, true, { radius: value }
+    // Marks all available magnets with 'available-magnet' class name and all available cells with
+    // 'available-cell' class name. Marks them when dragging a link is started and unmark
+    // when the dragging is stopped.
+    markAvailable: false,
+
+
+    // Defines what link model is added to the graph after an user clicks on an active magnet.
+    // Value could be the Backbone.model or a function returning the Backbone.model
+    // defaultLink: function(elementView, magnet) { return condition ? new customLink1() : new customLink2() }
+    defaultLink: new dedu.Link,
+
+    // A connector that is used by links with no connector defined on the model.
+    // e.g. { name: 'rounded', args: { radius: 5 }} or a function
+    defaultConnector: { name: 'normal' },
+
+    // A router that is used by links with no router defined on the model.
+    // e.g. { name: 'oneSide', args: { padding: 10 }} or a function
+    defaultRouter: null,
+
+    /* CONNECTING */
+
+    // Check whether to add a new link to the graph when user clicks on an a magnet.
+    validateMagnet: function (cellView, magnet) {
+      return magnet.getAttribute('magnet') !== 'passive';
+    },
+
+    // Check whether to allow or disallow the link connection while an arrowhead end (source/target)
+    // being changed.
+    validateConnection: function (cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
+      return (end === 'target' ? cellViewT : cellViewS) instanceof dedu.ElementView;
+    },
+
+    // Restrict the translation of elements by given bounding box.
+    // Option accepts a boolean:
+    //  true - the translation is restricted to the paper area
+    //  false - no restrictions
+    // A method:
+    // restrictTranslate: function(elementView) {
+    //     var parentId = elementView.model.get('parent');
+    //     return parentId && this.model.getCell(parentId).getBBox();
+    // },
+    // Or a bounding box:
+    // restrictTranslate: { x: 10, y: 10, width: 790, height: 590 }
+    restrictTranslate: false,
+
+    // When set to true the links can be pinned to the paper.
+    // i.e. link source/target can be a point e.g. link.get('source') ==> { x: 100, y: 100 };
+    linkPinning: false,
+
+    /**
+     *  @property {dedu.shape} options.cellViewNamespace - 默认的cellViewNamespace
+     */
+    cellViewNamespace: dedu.shape
+  },
+
+  constructor: function (options) {
+
+    this._configure(options);
+
+    Backbone.View.apply(this, arguments);
+  },
+
+  _configure: function (options) {
+    if (this.options) options = _.extendOwn({}, _.result(this, 'options'), options);
+    this.options = options;
+  },
+
+  initialize: function () {
+
+    this.lasso = null;
+    this.mouse_mode = 0;
+
+    this.svg = Snap().node;
+    this.viewport = V('g').addClass('viewport').node;
+    this.vis = V('g').addClass("vis").node;
+    this.outer_background = V('rect').node;
+
+    this.defs = V('defs').node;
+
+    V(this.svg).append([this.viewport, this.defs]);
+    V(this.viewport).append(this.vis);
+    V(this.vis).append(this.outer_background);
+    this.$el.append(this.svg);
+
+    this.listenTo(this.model, 'addCell', this.onCellAdded);
+    this.listenTo(this.model, 'remove', this.removeView);
+    this.listenTo(this.model, 'reset', this.resetViews);
+    this.listenTo(this.model, 'sort', this.sortViews);
+    this.listenTo(this.model, 'batch:stop', this._onBatchStop);
+
+    this.setOrigin();
+    this.setDimensions();
+
+
+    // Hash of all cell views.
+    this._views = {};
+
+    this.on({ 'blank:pointerdown': this.blank_pointDown, 'blank:pointermove': this.blank_pointMove, 'blank:pointerup': this.blank_pointUp });
+    // default cell highlighting
+    this.on({ 'cell:highlight': this.onCellHighlight, 'cell:unhighlight': this.onCellUnhighlight });
+
+  },
+
+  events: {
+    "mousedown .vis": "canvasMouseDown",
+    "mousemove .vis": "canvasMouseMove",
+    "mouseup .vis": "canvasMouseUp",
+    "mouseover .element": "cellMouseover",
+    "dblclick": "mousedblclick",
+    "click": "mouseclick"
+  },
+
+  /**
+   * render cell that be added to `dedu.Graph`
+   * @method onCellAdded
+   * @param {dedu.Cell} cell
+   * @param graph
+   * @param opt
+   */
+  onCellAdded: function (cell, graph, opt) {
+    this.renderView(cell);
+  },
+
+  removeView: function (cell) {
+    var view = this._views[cell.id];
+
+    if (view) {
+      view.remove();
+      delete this._views[cell.id];
+    }
+
+    return view;
+
+  },
+
+  resetViews: function (opt) {
+
+    $(this.outer_background).empty();
+
+    // clearing views removes any event listeners
+    this.removeViews();
+
+    var cells = this.model.active_cells().models.slice();
+
+    // `beforeRenderViews()` can return changed cells array (e.g sorted).
+    // cells = this.beforeRenderViews(cells, opt) || cells;
+
+    if (this._frameId) {
+
+      joint.util.cancelFrame(this._frameId);
+      delete this._frameId;
+    }
+
+    if (this.options.async) {
+
+      this.asyncRenderViews(cells, opt);
+      // Sort the cells once all elements rendered (see asyncRenderViews()).
+
+    } else {
+
+      _.each(cells, this.renderView, this);
+
+      // Sort the cells in the DOM manually as we might have changed the order they
+      // were added to the DOM (see above).
+      this.sortViews();
+    }
+  },
+
+  sortViews: function () {
+    console.log("sort");
+
+  },
+
+
+  /**
+   * Find a view for a model `cell`. `cell` can also be a string representing a model `id`.
+   * @param {dedu.Cell} cell
+   * @returns {dedu.CellView}
+   */
+  findViewByModel: function (cell) {
+
+    var id = _.isString(cell) ? cell : cell.id;
+
+    return this._views[id];
+  },
+
+  // Find all views in given area
+  findViewsInArea: function (rect, opt) {
+
+    opt = _.defaults(opt || {}, { strict: false });
+    rect = g.rect(rect);
+
+    var views = _.map(this.model.getElements(), this.findViewByModel, this);
+    var method = opt.strict ? 'containsRect' : 'intersect';
+
+    return _.filter(views, function (view) {
+      return view && rect[method](g.rect(view.vel.bbox(false, this.viewport)));
+    }, this);
+  },
+
+  /**
+   * Find a cell, the id of which is equal to `id`
+   * @param {String} id
+   * @returns {dedu.Cell}
+   */
+  getModelById: function (id) {
+
+    return this.model.getCell(id);
+  },
+
+  /**
+   * 渲染`cell`
+   * @param {dedu.Cell} cell - the model cell to be rendered
+   * @returns {dedu.CellView}
+   */
+  renderView: function (cell) {
+    var view = this._views[cell.id] = this.createViewForModel(cell);
+    V(this.vis).append(view.el);
+    view.paper = this;
+    view.render();
+
+    return view;
+  },
+  /**
+   * Find the first view clibing up the DOM tree starting at element 'el'.Note that `el` can also be a selector or a jQuery object.
+   * @param {String|JQueryObject} $el
+   * @returns {*}
+   */
+
+  findView: function ($el) {
+    var el = _.isString($el)
+      ? this.viewport.querySelector($el)
+      : $el instanceof $ ? $el[0] : $el;
+
+    while (el && el !== this.el && el !== document) {
+      var id = el.getAttribute('model-id');
+      if (id) return this._views[id];
+
+      el = el.parentNode;
+
+    }
+    return undefined;
+  },
+  // Returns a geometry rectangle represeting the entire
+  // paper area (coordinates from the left paper border to the right one
+  // and the top border to the bottom one).
+  getArea: function () {
+    var transformationMatrix = this.viewport.getCTM().inverse();
+  },
+
+  getRestrictedArea: function () {
+    var restrictedArea;
+    if (_.isFunction(this.options.restrictTranslate)) {
+    } else if (this.options.restrictedTranslate === true) {
+      restrictedArea = this.getArea();
+    } else {
+      restrictedArea = this.options.restrictTranslate || null;
+    }
+
+    return restrictedArea;
+
+  },
+
+  snapToGrid: function (p) {
+    // Convert global coordinates to the local ones of the `viewport`. Otherwise,
+    // improper transformation would be applied when the viewport gets transformed (scaled/rotated).
+
+    var localPoint = V(this.viewport).toLocalPoint(p.x, p.y);
+
+    return {
+      x: g.snapToGrid(localPoint.x, this.options.gridSize),
+      y: g.snapToGrid(localPoint.y, this.options.gridSize)
+    };
+  },
+
+  createViewForModel: function (cell) {
+    // Model to View
+    // A class taken from the paper options.
+    var optionalViewClass;
+
+    // A default basic class (either dia.ElementView or dia.LinkView)
+    var defaultViewClass;
+
+    var namespace = this.options.cellViewNamespace;
+    var type = cell.get('type') + "View";
+
+    var namespaceViewClass = dedu.util.getByPath(namespace, type, ".");
+
+    if (cell.isLink()) {
+      optionalViewClass = this.options.linkView;
+      defaultViewClass = dedu.LinkView;
+    } else {
+      optionalViewClass = this.options.elementView;
+      defaultViewClass = dedu.ElementView;
+    }
+
+    var ViewClass = (optionalViewClass.prototype instanceof Backbone.View)
+      ? namespaceViewClass || optionalViewClass
+      : optionalViewClass.call(this, cell) || namespaceViewClass || defaultViewClass;
+
+    return new ViewClass({
+      model: cell,
+      interactive: this.options.interactive,
+      paper: this
+    });
+
+  },
+
+  /**
+   * 更改原点
+   * @param {Number} ox - 新原点的x坐标
+   * @param {Number} oy - 新原点的y坐标
+   * @memberof dedu.Paper
+   */
+  setOrigin: function (ox, oy) {
+    this.options.origin.x = ox || 0;
+    this.options.origin.y = oy || 0;
+
+    V(this.viewport).translate(ox, oy, { absolut: true });
+
+    this.trigger('translate', ox, oy);  //trigger event translate
+  },
+
+  setDimensions: function (width, height) {
+    width = this.options.width = width || this.options.width;
+    height = this.options.height = height || this.options.height;
+
+    V(this.svg).attr({ width: width, height: height });
+    V(this.outer_background).attr({ width: width, height: height, fill: '#fff' });
+
+    this.trigger('resize', width, height);
+  },
+
+  _onBatchStop: function (data) {
+    var name = data && data.batchName;
+    if (name === 'add' && !this.model.hasActiveBatch('add')) {
+      this.sortViews();
+    } else if (name === 'clear') {
+      // this.removeViews();
+    }
+  },
+
+  removeViews: function () {
+
+    _.invoke(this._views, 'remove');
+
+    this._views = {};
+  },
+
+  // Cell highlighting
+  // -----------------
+  onCellHighlight: function (cellView, el) {
+    V(el).addClass('highlighted');
+  },
+
+  onCellUnhighlight: function (cellView, el) {
+    V(el).removeClass('highlighted');
+  },
+
+
+  // Interaction.
+  // ------------
+
+  /**
+   * 空白处 mouse down
+   * @param {Event} evt
+   * @param {Number} x
+   * @param {Number} y
+   * @memberof dedu.Paper
+   */
+  blank_pointDown: function (evt, x, y) {
+    this.model.cancelSelection();
+
+    var lasso = this.lasso;
+    var mouse_mode = this.mouse_mode;
+
+    if (mouse_mode === 0) {
+      if (lasso) {
+        lasso.remove();
+        lasso = null;
+      }
+
+      var point = [x, y];
+      var rect = V('rect')
+        .attr("ox", point[0])
+        .attr("oy", point[1])
+        .attr("rx", 1)
+        .attr("ry", 1)
+        .attr("x", point[0])
+        .attr("y", point[1])
+        .attr("width", 0)
+        .attr("height", 0)
+        .attr("class", "lasso");
+      this.lasso = rect;
+      V(this.vis).append(rect);
+    }
+    this.trigger("blank_pointDown");
+  },
+
+  /**
+   * 空白处 mouse move
+   * @param {Event} evt
+   * @param {Number} x
+   * @param {Number} y
+   * @memberof dedu.Paper
+   */
+  blank_pointMove: function (evt, x, y) {
+    var mouse_position = [evt.offsetX, evt.offsetY];
+    var lasso = this.lasso;
+    var mouse_mode = this.mouse_mode;
+    if (lasso) {
+      var ox = parseInt(lasso.attr("ox"));
+      var oy = parseInt(lasso.attr("oy"));
+      var x = parseInt(lasso.attr("x"));
+      var y = parseInt(lasso.attr("y"));
+      var w;
+      var h;
+      if (mouse_position[0] < ox) {
+        x = mouse_position[0];
+        w = ox - x;
+      } else {
+        w = mouse_position[0] - x;
+      }
+      if (mouse_position[1] < oy) {
+        y = mouse_position[1];
+        h = oy - y;
+      } else {
+        h = mouse_position[1] - y;
+      }
+      lasso
+        .attr("x", x)
+        .attr("y", y)
+        .attr("width", w)
+        .attr("height", h);
+      return;
+    }
+  },
+
+  /**
+   * 空白处 mouse up
+   * @param {Event} evt
+   * @param {Number} x
+   * @param {Number} y
+   * @memberof dedu.Paper
+   */
+  blank_pointUp: function (evt, x, y) {
+    var lasso = this.lasso;
+    var mouse_mode = this.mouse_mode;
+    if (lasso) {
+      this.model.selectionSet = [];
+
+      var x = parseInt(lasso.attr("x"));
+      var y = parseInt(lasso.attr("y"));
+      var x2 = x + parseInt(lasso.attr("width"));
+      var y2 = y + parseInt(lasso.attr("height"));
+
+
+      var selection_models = [];
+      _.each(this._views, function (cellView) {
+        if (cellView instanceof dedu.LinkView) {
+          return;
+        }
+        var model = cellView.model;
+        var position = model.get('position');
+
+        model.set('selected', position.x > x && position.x < x2 && position.y > y && position.y < y2);
+        if (model.get('selected')) {
+          selection_models.push(cellView.model);
+        }
+
+      }, this);
+
+      this.model.updateSelection(selection_models);
+
+      lasso.remove();
+      lasso = null;
+    }
+    this.trigger('paper:selection_create', evt);
+  },
+
+
+  /**
+   *  mouse down
+   *  * 判断鼠标点击的位置
+   *  1. 图元上,则调用该图元的事件处理函数
+   *  2. 空白处,则调用 {@link dedu.Paper~blank_pointDown}
+   * @param {Event} evt
+   * @param {Number} x
+   * @param {Number} y
+   * @memberof dedu.Paper
+   */
+  canvasMouseDown: function (evt) {
+
+    evt.preventDefault();
+
+    var evt = dedu.util.normalizeEvent(evt);
+    var view = this.findView(evt.target);
+
+    if (this.guard(evt, view)) return;
+
+    var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
+    if (view) {
+      if (this.guard(evt, view)) return;
+
+      this.model.focus(view.model);
+      this.sourceView = view;
+      this.sourceView.pointerdown(evt, localPoint.x, localPoint.y);
+
+
+    } else {
+      this.trigger('blank:pointerdown', evt, localPoint.x, localPoint.y);
+    }
+
+    this.trigger('paper:selection_create', evt);
+  },
+
+  /**
+   *  mouse move
+   *  * 判断鼠标点击的位置
+   *  1. 图元上,则调用该图元的事件处理函数
+   *  2. 空白处,则调用 {@link dedu.Paper~blank_pointMove}
+   * @param {Event} evt
+   * @param {Number} x
+   * @param {Number} y
+   * @memberof dedu.Paper
+   */
+  canvasMouseMove: function (evt) {
+
+    evt.preventDefault();
+    evt = dedu.util.normalizeEvent(evt);
+    var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
+    if (this.sourceView) {
+      if (this.sourceView instanceof dedu.LinkView) {
+        this.sourceView.pointermove(evt, localPoint.x, localPoint.y);
+        return;
+      }
+      //Mouse moved counter.
+      // this._mousemoved++;
+      var grid = this.options.gridSize;
+      var position = this.sourceView.model.get('position');
+      var tx = g.snapToGrid(position.x, grid) - position.x + g.snapToGrid(localPoint.x - this.sourceView._dx, grid);
+      var ty = g.snapToGrid(position.y, grid) - position.y + g.snapToGrid(localPoint.y - this.sourceView._dy, grid);
+      this.sourceView._dx = g.snapToGrid(localPoint.x, grid);
+      this.sourceView._dy = g.snapToGrid(localPoint.y, grid);
+
+      _.each(this.model.selectionSet, function (model) {
+        this.findViewByModel(model).pointermove(evt, tx, ty, localPoint);
+      }, this);
+
+    } else {
+      this.trigger('blank:pointermove', evt, localPoint.x, localPoint.y);
+    }
+
+  },
+
+  /**
+   *  mouse up
+   *  * 判断鼠标点击的位置
+   *  1. 图元上,则调用该图元的事件处理函数
+   *  2. 空白处,则调用 {@link dedu.Paper~blank_pointUp}
+   * @param {Event} evt
+   * @param {Number} x
+   * @param {Number} y
+   * @memberof dedu.Paper
+   */
+  canvasMouseUp: function (evt) {
+    evt = dedu.util.normalizeEvent(evt);
+
+    var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
+
+    if (this.sourceView) {
+
+      this.sourceView.pointerup(evt, localPoint.x, localPoint.y);
+
+      //"delete sourceView" occasionally throws an error in chrome (illegal access exception)
+      this.sourceView = null;
+
+    } else {
+
+      this.trigger('blank:pointerup', evt, localPoint.x, localPoint.y);
+    }
+  },
+
+  /**
+   * 双击事件
+   * @param {Event} evt
+   */
+  mousedblclick: function (evt) {
+    evt.preventDefault();
+    evt = dedu.util.normalizeEvent(evt);
+
+    var view = this.findView(evt.target);
+    if (this.guard(evt, view)) return;
+
+    var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
+
+    if (view) {
+
+      view.pointerdblclick(evt, localPoint.x, localPoint.y);
+
+    } else {
+
+      this.trigger('blank:pointerdblclick', evt, localPoint.x, localPoint.y);
+    }
+  },
+
+  /**
+   * 单击事件
+   * @param {Event} evt
+   */
+  mouseclick: function (evt) {
+
+    // Trigger event when mouse not moved.
+    if (this._mousemoved <= this.options.clickThreshold) {
+
+      evt = dedu.util.normalizeEvent(evt);
+
+      var view = this.findView(evt.target);
+      if (this.guard(evt, view)) return;
+
+      var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
+
+      if (view) {
+
+        view.pointerclick(evt, localPoint.x, localPoint.y);
+
+      } else {
+
+        this.trigger('blank:pointerclick', evt, localPoint.x, localPoint.y);
+      }
+    }
+
+    this._mousemoved = 0;
+  },
+
+  cellMouseover: function (evt) {
+
+    evt = dedu.util.normalizeEvent(evt);
+    var view = this.findView(evt.target);
+    if (view) {
+      if (this.guard(evt, view)) return;
+      view.mouseover(evt);
+    }
+  },
+
+  // Guard guards the event received. If the event is not interesting, guard returns `true`.
+  // Otherwise, it return `false`.
+  guard: function (evt, view) {
+    if (view && view.model && (view.model instanceof dedu.Cell)) {
+      return false;
+    } else if (this.svg === evt.target || this.el === evt.target || $.contains(this.svg, evt.target)) {
+      return false;
+    }
+    return true; //Event guarded. Paper should not react on it in any way.
+  },
+
+  /**
+   * get default linkview {@link dedu.Paper~options.linkView}
+   * @method getDefaultLink
+   * @param cellView
+   * @param magnet
+   * @returns {*}
+   */
+  getDefaultLink: function (cellView, magnet) {
+
+    return _.isFunction(this.options.defaultLink)
+      // default link is a function producing link model
+      ? this.options.defaultLink.call(this, cellView, magnet)
+      // default link is the Backbone model
+      : this.options.defaultLink.clone();
+  },
+
+  notify(evt, cell, args){
+    this.model.trigger(evt,cell.model,args);
+  }
+
+});
+
+/**
+ * 添加svg的属性,主要为了和node-red~editor的兼容
+ * @class
+ * @augments dedu.Paper
+ */
+dedu.Chart = dedu.Paper.extend({
+    options: dedu.util.supplement({
+        tabindex: 1,
+        style: {
+
+        }
+    }, dedu.Paper.prototype.options),
+    initialize: function() {
+        dedu.Paper.prototype.initialize.apply(this, arguments);
+
+        Snap(this.svg).attr({ tabindex: this.options.tabindex });
+
+        var style = "";
+        _.each(this.options.style, function(value, key) {
+            style += key + ":" + value + ";"
+        });
+        Snap(this.svg).attr({ style: style });
+    }
+});
+
 /**
  * Created by y50-70 on 3/4/2016.
  */
@@ -6742,7 +7906,7 @@ dedu.shape.basic.PortsViewInterface = {
 dedu.connectors.normal = function (sourcePoint, targetPoint, vertices) {
     // Construct the `d` attribute of the `<path>` element.
 
-    var d = ['M',sourcePoint.x,sourcePoint.y,"C"];
+    var d = ['M',sourcePoint.x,sourcePoint.y,"L"];
 
 
 
@@ -6753,13 +7917,14 @@ dedu.connectors.normal = function (sourcePoint, targetPoint, vertices) {
 
     var midPointX = Math.abs(sourcePoint.x - targetPoint.x);
 
-    d.push(sourcePoint.x+midPointX/2,sourcePoint.y);
-    d.push(targetPoint.x-midPointX/2,targetPoint.y);
+    // d.push(sourcePoint.x+midPointX/2,sourcePoint.y);
+    // d.push(targetPoint.x-midPointX/2,targetPoint.y);
 
     d.push(targetPoint.x,targetPoint.y);
 
     return d.join(' ');
 };
+
 
 dedu.shape.devs = {};
 
@@ -6858,6 +8023,7 @@ dedu.shape.devs.ModelView = dedu.ElementView.extend(
             }
         })
 );
+
 dedu.shape.node = {};
 /**
  * @class
@@ -7043,6 +8209,7 @@ dedu.shape.node.ModelView = dedu.shape.devs.ModelView.extend({
     }
 });
 
+
 dedu.shape.simple = {};
 /**
  * SuspendPort model interface
@@ -7115,7 +8282,7 @@ dedu.shape.simple.SuspendPortViewInterface = {
                 '.portdown':{'ref-x':port_ref_position.portdown['ref-x'],'ref-y':port_ref_position.portdown['ref-y']},
                 '.portleft':{'ref-x':port_ref_position.portleft['ref-x'],'ref-y':port_ref_position.portleft['ref-y']}
             });
-        }else{        
+        }else{
             this.model.attr({
                 '.suspend':{ref:'.body',r:3,display:'none'},
                 '.portup':{'ref-x':.5,'ref-y':0},
@@ -7243,7 +8410,7 @@ dedu.shape.simple.GenericView = dedu.ElementView.extend(
         },
         unfocus:function(){
             this.vel.findOne('.body').removeClass('selected');
-            
+
         }
     })
 );
@@ -7288,7 +8455,7 @@ dedu.shape.uml.StartState = dedu.shape.simple.Generic.extend({
             portleft:{
                 'ref-x':-0.5,
                 'ref-y':0
-            }                        
+            }
        },
        attrs: {
            '.uml-start-state-body': {
@@ -7297,6 +8464,7 @@ dedu.shape.uml.StartState = dedu.shape.simple.Generic.extend({
                'fill': '#444'
            }
        },
+       name: 'Initial'+dedu.util.randomString(6)
     }, dedu.shape.simple.Generic.prototype.defaults)
 });
 
@@ -7344,9 +8512,77 @@ dedu.shape.uml.EndState = dedu.shape.simple.Generic.extend({
                    'r': 10,
                    'stroke': '#333'
                }
-            }
+            },
+            name: 'End'+dedu.util.randomString(6)
        }, dedu.shape.simple.Generic.prototype.defaults)
 });
+
+dedu.shape.uml.Choise = dedu.shape.simple.Generic.extend({
+  markup: [
+        '<g class="rotatable">',
+        '<g class="scalable">',
+        '<polyline points="50,0,0,50,50,100,100,50,50,0"></polyline>',
+        '</g>',
+        '</g>'
+  ].join(''),
+
+  defaults: dedu.util.deepSupplement({
+
+    type: 'uml.Choise',
+    size: {width: 40, height:40},
+    attrs: {
+      'polyline': {
+        'stroke': '#333',
+        'stroke-width': 2
+      }
+    }
+  }, dedu.shape.simple.Generic.prototype.defaults)
+});
+
+dedu.shape.uml.DeepHistory =  dedu.shape.simple.Generic.extend({
+  markup: [
+    '<g class="rotatable">',
+    '<g class="scalable">',
+    '<circle class="uml-deep-history-body uml-history-body"/>',
+    '<path class="h" d="M-10,-15l0,30l0,-15l20,0l0,-15l0,30" stroke="#000000" fill="none"></path>',
+    '</g>',
+    '</g>'
+  ].join(''),
+
+  defaults: dedu.util.deepSupplement({
+    type: 'uml.DeepHistory',
+    size: {width: 40, height: 40},
+    attrs: {
+      ".uml-deep-history-body": {
+          'r': 40,
+          'stroke': '#333'
+      }
+    }
+  }, dedu.shape.simple.Generic.prototype.defaults)
+  });
+
+dedu.shape.uml.ShadowHistory = dedu.shape.simple.Generic.extend({
+  markup: [
+    '<g class="rotatable">',
+    '<g class="scalable">',
+    '<circle class="uml-deep-history-body uml-history-body"/>',
+    '<path class="h" d="M-10,-15l0,30l0,-15l20,0l0,-15l0,30" stroke="#000000" fill="none"></path>',
+    '<text id="star">*</text>',
+    '</g>',
+    '</g>'
+  ].join(''),
+  defaults: dedu.util.deepSupplement({
+    type: 'uml.ShadowHistory',
+    attrs: {
+      "#star": {
+        "x": 13,
+        "y": 25,
+        "fill": '#333',
+        "font-size": '48'
+      }
+    }
+  }, dedu.shape.uml.DeepHistory.prototype.defaults)
+})
 
 /**
  * @class
@@ -7358,11 +8594,18 @@ dedu.shape.uml.State = dedu.shape.simple.Generic.extend({
         '<g class="scalable">',
         '<rect class="uml-state-body"/>',
         '</g>',
-        '<path class="uml-state-separator"/>',
+        // '<path class="uml-state-separator"/>',
         '<text class="uml-state-name"/>',
-        '<text class="uml-state-events"/>',
+        // '<text class="uml-state-events"/>',
         '</g>'
     ].join(''),
+
+    initalHook:function(attrs){
+         //验证规则
+        if(attrs.name){
+            this.set('text',attrs.name)
+        }
+    },
 
     defaults: dedu.util.deepSupplement({
 
@@ -7375,22 +8618,22 @@ dedu.shape.uml.State = dedu.shape.simple.Generic.extend({
                 'fill': '#fff9ca', 'stroke': '#333', 'stroke-width': 1
             },
             '.uml-state-name': {
-                'ref': '.uml-state-body', 'ref-x': .5, 'ref-y':0, 'text-anchor': 'middle',
+                'ref': '.uml-state-body', 'ref-x': .5, 'ref-y':.4, 'text-anchor': 'middle',
                 'fill': '#000000', 'font-family': 'Courier New', 'font-size': 12,
                 'font-weight':'bold'
             },
-            '.uml-state-separator': {
-                'stroke': '#333', 'stroke-width': 2
-            },
-            '.uml-state-events': {
-                'ref': '.uml-state-separator', 'ref-x': 5, 'ref-y': 5,
-                'fill': '#000000', 'font-family': 'Courier New', 'font-size': 10,
-                'display':'block'
-            }
+            // '.uml-state-separator': {
+            //     'stroke': '#333', 'stroke-width': 2
+            // },
+            // '.uml-state-events': {
+            //     'ref': '.uml-state-separator', 'ref-x': 5, 'ref-y': 5,
+            //     'fill': '#000000', 'font-family': 'Courier New', 'font-size': 10,
+            //     'display':'block'
+            // }
         },
 
         events: [],
-        name: 'State'
+        name: 'State'+dedu.util.randomString(6)
     }, dedu.shape.simple.Generic.prototype.defaults)
 
 });
@@ -7411,8 +8654,8 @@ dedu.shape.uml.StateView = dedu.shape.simple.GenericView.extend({
         dedu.shape.simple.GenericView.prototype.render.apply(this,arguments);
         this.originSize = this.model.get('size');
         this.updateName();
-        this.updatePath();
-        this.updateEvents();
+        // this.updatePath();
+        // this.updateEvents();
     },
 
     updateEvents: function () {
@@ -7440,7 +8683,7 @@ dedu.shape.uml.StateView = dedu.shape.simple.GenericView.extend({
         // We are using `silent: true` here because updatePath() is meant to be called
         // on resize and there's no need to to update the element twice (`change:size`
         // triggers also an update).
-        this.vel.findOne('.uml-state-separator').attr('d', d);
+        // this.vel.findOne('.uml-state-separator').attr('d', d);
     },
 
     focus: function () {
@@ -7490,183 +8733,7 @@ dedu.shape.uml.EndStateView  = dedu.shape.simple.GenericView.extend({
         this.hideSuspendPort();
     }
 });
-/**
- * Created by lmz on 16/5/5.
- */
 
-dedu.shape.uml.Class = dedu.shape.basic.Generic.extend({
-
-    markup: [
-        '<g class="rotatable">',
-        '<g class="scalable">',
-        '<rect class="uml-class-name-rect"/><rect class="uml-class-attrs-rect"/><rect class="uml-class-methods-rect"/>',
-        '</g>',
-        '<text class="uml-class-name-text"/><text class="uml-class-attrs-text"/><text class="uml-class-methods-text"/>',
-        '</g>'
-    ].join(''),
-
-    defaults: dedu.util.deepSupplement({
-
-        type: 'uml.Class',
-        size:{
-            width:60,
-            height:100
-        },
-        attrs: {
-            rect: { 'width': 200 },
-
-            '.uml-class-name-rect': { 'stroke': 'black', 'stroke-width': 1, 'fill': '#fff9ca' },
-            '.uml-class-attrs-rect': { 'stroke': 'black', 'stroke-width': 1, 'fill': '#fff9ca' },
-            '.uml-class-methods-rect': { 'stroke': 'black', 'stroke-width': 1, 'fill': '#fff9ca' },
-
-            '.uml-class-name-text': {
-                'ref': '.uml-class-name-rect', 'ref-y': .5, 'ref-x': .5, 'text-anchor': 'middle', 'y-alignment': 'middle', 'font-weight': 'bold',
-                'fill': 'black', 'font-size': 12,text:'xxx'
-            },
-            '.uml-class-attrs-text': {
-                'ref': '.uml-class-attrs-rect', 'ref-y': 5, 'ref-x': 5,
-                'fill': 'black', 'font-size': 12,
-            },
-            '.uml-class-methods-text': {
-                'ref': '.uml-class-methods-rect', 'ref-y': 5, 'ref-x': 5,
-                'fill': 'black', 'font-size': 12,
-            }
-        },
-
-        name: [],
-        attributes: [],
-        methods: []
-
-    }, dedu.shape.basic.Generic.prototype.defaults),
-
-    initialize: function() {
-
-        this.on('change:name change:attributes change:methods', function() {
-            this.updateRectangles();
-            this.trigger('uml-update');
-        }, this);
-
-        this.updateRectangles();
-
-        dedu.shape.basic.Generic.prototype.initialize.apply(this, arguments);
-    },
-
-    getClassName: function() {
-        return this.get('name');
-    },
-
-    updateRectangles: function() {
-
-        var attrs = this.get('attrs');
-
-        var rects = [
-            { type: 'name', text: this.getClassName() },
-            { type: 'attrs', text: this.get('attributes') },
-            { type: 'methods', text: this.get('methods') }
-        ];
-
-        var offsetY = 0;
-        var line_height = this.get('attrs')['.uml-class-name-text']['font-size'];
-        //console.log(line_height);
-
-        _.each(rects, function(rect) {
-
-            var lines = _.isArray(rect.text) ? rect.text : [rect.text];
-            var rectHeight = lines.length * line_height + line_height/2;
-
-            attrs['.uml-class-' + rect.type + '-text'].text = lines.join('\n');
-            attrs['.uml-class-' + rect.type + '-rect'].height = rectHeight;
-            attrs['.uml-class-' + rect.type + '-rect'].transform = 'translate(0,' + offsetY + ')';
-
-            offsetY += rectHeight;
-        });
-    }
-
-});
-
-dedu.shape.uml.ClassView = dedu.ElementView.extend({
-
-    initialize: function() {
-
-        dedu.ElementView.prototype.initialize.apply(this, arguments);
-
-        this.listenTo(this.model, 'uml-update', function() {
-            this.update();
-            this.resize();
-        });
-    }
-});
-
-dedu.shape.uml.Abstract = dedu.shape.uml.Class.extend({
-
-    defaults: dedu.util.deepSupplement({
-        type: 'uml.Abstract',
-        attrs: {
-            '.uml-class-name-rect': { fill : '#e74c3c' },
-            '.uml-class-attrs-rect': { fill : '#c0392b' },
-            '.uml-class-methods-rect': { fill : '#c0392b' }
-        }
-    }, dedu.shape.uml.Class.prototype.defaults),
-
-    getClassName: function() {
-        return ['<<Abstract>>', this.get('name')];
-    }
-
-});
-dedu.shape.uml.AbstractView = dedu.shape.uml.ClassView;
-
-dedu.shape.uml.Interface = dedu.shape.uml.Class.extend({
-
-    defaults: dedu.util.deepSupplement({
-        type: 'uml.Interface',
-        attrs: {
-            '.uml-class-name-rect': { fill : '#f1c40f' },
-            '.uml-class-attrs-rect': { fill : '#f39c12' },
-            '.uml-class-methods-rect': { fill : '#f39c12' }
-        }
-    }, dedu.shape.uml.Class.prototype.defaults),
-
-    getClassName: function() {
-        return ['<<Interface>>', this.get('name')];
-    }
-
-});
-dedu.shape.uml.InterfaceView = dedu.shape.uml.ClassView;
-
-dedu.shape.uml.Generalization = dedu.Link.extend({
-    defaults: {
-        type: 'uml.Generalization',
-        attrs: { '.marker-target': { d: 'M 20 0 L 0 10 L 20 20 z', fill: 'white' }}
-    }
-});
-
-dedu.shape.uml.Implementation = dedu.Link.extend({
-    defaults: {
-        type: 'uml.Implementation',
-        attrs: {
-            '.marker-target': { d: 'M 20 0 L 0 10 L 20 20 z', fill: 'white' },
-            '.connection': { 'stroke-dasharray': '3,3' }
-        }
-    }
-});
-
-dedu.shape.uml.Aggregation = dedu.Link.extend({
-    defaults: {
-        type: 'uml.Aggregation',
-        attrs: { '.marker-target': { d: 'M 40 10 L 20 20 L 0 10 L 20 0 z', fill: 'white' }}
-    }
-});
-
-dedu.shape.uml.Composition = dedu.Link.extend({
-    defaults: {
-        type: 'uml.Composition',
-        attrs: { '.marker-target': { d: 'M 40 10 L 20 20 L 0 10 L 20 0 z', fill: 'black' }}
-    }
-});
-
-dedu.shape.uml.Association = dedu.Link.extend({
-    defaults: { type: 'uml.Association' }
-});
 /**
  * Created by lmz on 16/5/8.
  */
@@ -7725,788 +8792,3 @@ dedu.shape.node_red.subflowportModelView = dedu.shape.devs.ModelView.extend({
 
     }
 });
-/**
- * `dedu.Paper` 是{@link dedu.Graph}的view
- * @class
- * @augments Backbone.View
- */
-dedu.Paper = Backbone.View.extend({
-    /**
-     * 渲染元素的class
-     * @member {String}
-     * @memberof dedu.Paper
-     * @default
-     */
-    className: 'paper',
-
-    /**
-     * `dedu.Paper`的默认属性
-     * @member {Object}
-     * @memberof dedu.Paper
-     */
-    options: {
-
-        /**
-         * @property {Number} options.width=800 - 渲染区域的宽度
-         */
-        width: 800,
-        /**
-         * @property {Number} options.height=600 - 渲染区域的高度
-         */
-        height: 600,
-        /**
-         * @property {Object} options.origin={x:0,y:0} - x,y coordinates in top-left corner
-         */
-        origin: { x: 0, y: 0 }, // x,y coordinates in top-left corner
-
-        /**
-         * @property {Number} options.gridSize=1 - 网格大小
-         */
-        gridSize:1,
-        perpendicularLinks: false,
-        /**
-         * @property {dedu.ElementView} options.elementView - 默认的elementView
-         */
-        elementView: dedu.ElementView,
-        /**
-         *  @property {dedu.LinkView} options.LinkView - 默认的LinkView
-         */
-        linkView: dedu.LinkView,
-
-        /**
-         * @property {Object} options.interactive - 哪些元素可以进行交互
-         */
-        interactive: {
-            labelMove: false
-        },
-
-        snapLinks: { radius: 30 }, // false, true, { radius: value }
-        // Marks all available magnets with 'available-magnet' class name and all available cells with
-        // 'available-cell' class name. Marks them when dragging a link is started and unmark
-        // when the dragging is stopped.
-        markAvailable: false,
-
-
-        // Defines what link model is added to the graph after an user clicks on an active magnet.
-        // Value could be the Backbone.model or a function returning the Backbone.model
-        // defaultLink: function(elementView, magnet) { return condition ? new customLink1() : new customLink2() }
-        defaultLink: new dedu.Link,
-
-        // A connector that is used by links with no connector defined on the model.
-        // e.g. { name: 'rounded', args: { radius: 5 }} or a function
-        defaultConnector: { name: 'normal' },
-
-        // A router that is used by links with no router defined on the model.
-        // e.g. { name: 'oneSide', args: { padding: 10 }} or a function
-        defaultRouter: null,
-
-        /* CONNECTING */
-
-        // Check whether to add a new link to the graph when user clicks on an a magnet.
-        validateMagnet: function(cellView, magnet) {
-            return magnet.getAttribute('magnet') !== 'passive';
-        },
-
-        // Check whether to allow or disallow the link connection while an arrowhead end (source/target)
-        // being changed.
-        validateConnection: function(cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
-            return (end === 'target' ? cellViewT : cellViewS) instanceof dedu.ElementView;
-        },
-
-        // Restrict the translation of elements by given bounding box.
-        // Option accepts a boolean:
-        //  true - the translation is restricted to the paper area
-        //  false - no restrictions
-        // A method:
-        // restrictTranslate: function(elementView) {
-        //     var parentId = elementView.model.get('parent');
-        //     return parentId && this.model.getCell(parentId).getBBox();
-        // },
-        // Or a bounding box:
-        // restrictTranslate: { x: 10, y: 10, width: 790, height: 590 }
-        restrictTranslate: false,
-
-        // When set to true the links can be pinned to the paper.
-        // i.e. link source/target can be a point e.g. link.get('source') ==> { x: 100, y: 100 };
-        linkPinning: false,
-
-        /**
-         *  @property {dedu.shape} options.cellViewNamespace - 默认的cellViewNamespace
-         */
-        cellViewNamespace: dedu.shape
-    },
-
-    constructor:function(options){
-
-        this._configure(options);
-
-        Backbone.View.apply(this, arguments);
-    },
-
-    _configure: function (options) {
-        if (this.options) options = _.merge({}, _.result(this, 'options'), options);
-        this.options = options;
-    },
-
-    initialize:function() {
-
-        this.lasso = null;
-        this.mouse_mode = 0;
-
-        this.svg = V('svg').node;
-        this.viewport = V('g').addClass('viewport').node;
-        this.vis = V('g').addClass("vis").node;
-        this.outer_background = V('rect').node;
-
-        this.defs = V('defs').node;
-
-        V(this.svg).append([this.viewport,this.defs]);
-        V(this.viewport).append(this.vis);
-        V(this.vis).append(this.outer_background);
-        this.$el.append(this.svg);
-
-        this.listenTo(this.model, 'add', this.onCellAdded);
-        this.listenTo(this.model, 'remove', this.removeView);
-        this.listenTo(this.model, 'reset', this.resetViews);
-        this.listenTo(this.model, 'sort', this.sortViews);
-
-        this.setOrigin();
-        this.setDimensions();
-
-
-        // Hash of all cell views.
-        this._views = {};
-
-        this.on({'blank:pointerdown':this.blank_pointDown,'blank:pointermove':this.blank_pointMove,'blank:pointerup':this.blank_pointUp});
-        // default cell highlighting
-        this.on({ 'cell:highlight': this.onCellHighlight, 'cell:unhighlight': this.onCellUnhighlight });
-
-    },
-
-    events:{
-      "mousedown .vis":"canvasMouseDown",
-      "mousemove .vis":"canvasMouseMove",
-      "mouseup .vis":"canvasMouseUp",
-      "mouseover .element":"cellMouseover",
-      "dblclick": "mousedblclick",
-      "click": "mouseclick",
-
-    },
-
-    /**
-     * render cell that be added to `dedu.Graph`
-     * @method onCellAdded
-     * @param {dedu.Cell} cell
-     * @param graph
-     * @param opt
-     */
-    onCellAdded:function(cell,graph,opt){
-        this.renderView(cell);
-    },
-    
-    removeView: function (cell) {
-        var view = this._views[cell.id];
-
-        if (view) {
-            view.remove();
-            delete this._views[cell.id];
-        }
-
-        return view;
-
-    },
-
-    resetViews: function () {
-        console.log("rest");
-
-    },
-
-    sortViews: function () {
-        console.log("sort");
-
-    },
-
-
-    /**
-     * Find a view for a model `cell`. `cell` can also be a string representing a model `id`.
-     * @param {dedu.Cell} cell
-     * @returns {dedu.CellView}
-     */
-    findViewByModel: function(cell) {
-
-        var id = _.isString(cell) ? cell : cell.id;
-
-        return this._views[id];
-    },
-
-    // Find all views in given area
-    findViewsInArea: function(rect, opt) {
-
-        opt = _.defaults(opt || {}, { strict: false });
-        rect = g.rect(rect);
-
-        var views = _.map(this.model.getElements(), this.findViewByModel, this);
-        var method = opt.strict ? 'containsRect' : 'intersect';
-
-        return _.filter(views, function(view) {
-            return view && rect[method](g.rect(view.vel.bbox(false, this.viewport)));
-        }, this);
-    },
-
-    /**
-     * Find a cell, the id of which is equal to `id`
-     * @param {String} id
-     * @returns {dedu.Cell}
-     */
-    getModelById:function(id){
-
-        return this.model.getCell(id);
-    },
-
-    /**
-     * 渲染`cell`
-     * @param {dedu.Cell} cell - the model cell to be rendered
-     * @returns {dedu.CellView}
-     */
-    renderView:function(cell){
-        var view = this._views[cell.id] = this.createViewForModel(cell);
-        V(this.vis).append(view.el);
-        view.paper = this;
-        view.render();
-
-        return view;
-    },
-    /**
-     * Find the first view clibing up the DOM tree starting at element 'el'.Note that `el` can also be a selector or a jQuery object.
-     * @param {String|JQueryObject} $el
-     * @returns {*}
-     */
-
-    findView:function($el){
-        var el = _.isString($el)
-        ?this.viewport.querySelector($el)
-        :$el instanceof $ ? $el[0]:$el;
-
-        while(el && el !== this.el && el !== document){
-            var id = el.getAttribute('model-id');
-            if(id) return this._views[id];
-
-            el = el.parentNode;
-
-        }
-        return undefined;
-    },
-    // Returns a geometry rectangle represeting the entire
-    // paper area (coordinates from the left paper border to the right one
-    // and the top border to the bottom one).
-    getArea:function(){
-         var transformationMatrix = this.viewport.getCTM().inverse();
-    },
-
-    getRestrictedArea:function(){
-        var restrictedArea;
-        if (_.isFunction(this.options.restrictTranslate)) {
-        }else if(this.options.restrictedTranslate === true){
-            restrictedArea = this.getArea();
-        }else{
-            restrictedArea = this.options.restrictTranslate || null;
-        }
-
-        return restrictedArea;
-
-    },
-
-    snapToGrid:function(p){
-        // Convert global coordinates to the local ones of the `viewport`. Otherwise,
-        // improper transformation would be applied when the viewport gets transformed (scaled/rotated).
-
-        var localPoint = V(this.viewport).toLocalPoint(p.x, p.y);
-
-        return {
-            x:g.snapToGrid(localPoint.x,this.options.gridSize),
-            y:g.snapToGrid(localPoint.y,this.options.gridSize)
-        };
-    },
-
-    createViewForModel:function(cell){
-        // Model to View
-                // A class taken from the paper options.
-        var optionalViewClass;
-
-        // A default basic class (either dia.ElementView or dia.LinkView)
-        var defaultViewClass;
-
-        var namespace = this.options.cellViewNamespace;
-        var type = cell.get('type') + "View";
-
-        var namespaceViewClass = dedu.util.getByPath(namespace,type,".");
-
-        if (cell.isLink()) {
-            optionalViewClass = this.options.linkView;
-            defaultViewClass = dedu.LinkView;
-        } else {
-            optionalViewClass = this.options.elementView;
-            defaultViewClass = dedu.ElementView;
-        }
-
-        var ViewClass = (optionalViewClass.prototype instanceof Backbone.View)
-        ? namespaceViewClass || optionalViewClass
-        : optionalViewClass.call(this,cell) || namespaceViewClass || defaultViewClass;
-
-        return new ViewClass({
-            model:cell,
-            interactive: this.options.interactive,
-            paper:this
-        });
-
-    },
-
-    /**
-     * 更改原点
-     * @param {Number} ox - 新原点的x坐标
-     * @param {Number} oy - 新原点的y坐标
-     * @memberof dedu.Paper
-     */
-    setOrigin:function(ox,oy) {
-        this.options.origin.x = ox || 0;
-        this.options.origin.y = oy || 0;
-
-        V(this.viewport).translate(ox,oy,{absolut:true});
-
-        this.trigger('translate',ox,oy);  //trigger event translate
-    },
-
-    setDimensions:function(width,height) {
-           width = this.options.width = width || this.options.width;
-           height = this.options.height = height || this.options.height;
-
-           V(this.svg).attr({width:width,height:height});
-           V(this.outer_background).attr({width:width,height:height,fill:'#fff'});
-
-           this.trigger('resize',width,height);
-    },
-
-    // Cell highlighting
-    // -----------------
-    onCellHighlight: function (cellView, el) {
-        V(el).addClass('highlighted');
-    },
-
-    onCellUnhighlight: function (cellView, el) {
-        V(el).removeClass('highlighted');
-    },
-
-
-    // Interaction.
-    // ------------
-
-    /**
-     * 空白处 mouse down
-     * @param {Event} evt
-     * @param {Number} x
-     * @param {Number} y
-     * @memberof dedu.Paper
-     */
-    blank_pointDown:function(evt,x,y){
-        this.model.cancelSelection();
-
-        var lasso = this.lasso;
-        var mouse_mode = this.mouse_mode;
-
-        if (mouse_mode === 0) {
-            if (lasso) {
-                lasso.remove();
-                lasso = null;
-            }
-
-            var point = [x, y];
-            var rect = V('rect')
-                .attr("ox", point[0])
-                .attr("oy", point[1])
-                .attr("rx", 1)
-                .attr("ry", 1)
-                .attr("x", point[0])
-                .attr("y", point[1])
-                .attr("width", 0)
-                .attr("height", 0)
-                .attr("class", "lasso");
-            this.lasso = rect;
-            V(this.vis).append(rect);
-        }
-        this.trigger("blank_pointDown");
-    },
-
-    /**
-     * 空白处 mouse move
-     * @param {Event} evt
-     * @param {Number} x
-     * @param {Number} y
-     * @memberof dedu.Paper
-     */
-    blank_pointMove:function(evt,x,y){
-        var mouse_position = [evt.offsetX, evt.offsetY];
-        var lasso = this.lasso;
-        var mouse_mode = this.mouse_mode;
-        if (lasso) {
-            var ox = parseInt(lasso.attr("ox"));
-            var oy = parseInt(lasso.attr("oy"));
-            var x = parseInt(lasso.attr("x"));
-            var y = parseInt(lasso.attr("y"));
-            var w;
-            var h;
-            if (mouse_position[0] < ox) {
-                x = mouse_position[0];
-                w = ox - x;
-            } else {
-                w = mouse_position[0] - x;
-            }
-            if (mouse_position[1] < oy) {
-                y = mouse_position[1];
-                h = oy - y;
-            } else {
-                h = mouse_position[1] - y;
-            }
-            lasso
-                .attr("x", x)
-                .attr("y", y)
-                .attr("width", w)
-                .attr("height", h);
-            return;
-        }
-    },
-
-    /**
-     * 空白处 mouse up
-     * @param {Event} evt
-     * @param {Number} x
-     * @param {Number} y
-     * @memberof dedu.Paper
-     */
-    blank_pointUp:function(evt,x,y){
-        var lasso = this.lasso;
-        var mouse_mode = this.mouse_mode;
-        if (lasso) {
-            this.model.selectionSet = [];
-
-            var x = parseInt(lasso.attr("x"));
-            var y = parseInt(lasso.attr("y"));
-            var x2 = x + parseInt(lasso.attr("width"));
-            var y2 = y + parseInt(lasso.attr("height"));
-
-
-            var selection_models = [];
-            _.each(this._views, function (cellView) {
-                if(cellView instanceof dedu.LinkView){
-                    return;
-                }
-                var model = cellView.model;
-                var position = model.get('position');
-
-                model.set('selected',position.x>x && position.x<x2 && position.y>y && position.y<y2);
-                if(model.get('selected')){
-                    selection_models.push(cellView.model);
-                }
-
-            },this);
-
-            this.model.updateSelection(selection_models);
-
-            lasso.remove();
-            lasso = null;
-        }
-        this.trigger('paper:selection_create', evt);
-    },
-
-
-    /**
-     *  mouse down
-     *  * 判断鼠标点击的位置
-     *  1. 图元上,则调用该图元的事件处理函数
-     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointDown}
-     * @param {Event} evt
-     * @param {Number} x
-     * @param {Number} y
-     * @memberof dedu.Paper
-     */
-    canvasMouseDown:function(evt){
-
-        evt.preventDefault();
-
-        var evt = dedu.util.normalizeEvent(evt);
-        var view = this.findView(evt.target);
-
-        if (this.guard(evt, view)) return;
-
-        var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
-        if(view){
-            if(this.guard(evt,view)) return;
-
-            this.model.focus(view.model);
-            this.sourceView = view;
-            this.sourceView.pointerdown(evt, localPoint.x, localPoint.y);
-
-
-        }else{
-            this.trigger('blank:pointerdown', evt, localPoint.x, localPoint.y);
-        }
-
-        this.trigger('paper:selection_create', evt);
-    },
-
-    /**
-     *  mouse move
-     *  * 判断鼠标点击的位置
-     *  1. 图元上,则调用该图元的事件处理函数
-     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointMove}
-     * @param {Event} evt
-     * @param {Number} x
-     * @param {Number} y
-     * @memberof dedu.Paper
-     */
-    canvasMouseMove:function(evt){
-
-        evt.preventDefault();
-        evt = dedu.util.normalizeEvent(evt);
-        var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
-        if(this.sourceView){
-            if(this.sourceView instanceof dedu.LinkView){
-                this.sourceView.pointermove(evt,localPoint.x,localPoint.y);
-                return;
-            }
-            //Mouse moved counter.
-            // this._mousemoved++;
-            var grid = this.options.gridSize;
-            var position = this.sourceView.model.get('position');
-            var tx = g.snapToGrid(position.x, grid) - position.x + g.snapToGrid(localPoint.x - this.sourceView._dx, grid);
-            var ty = g.snapToGrid(position.y, grid) - position.y + g.snapToGrid(localPoint.y - this.sourceView._dy, grid);
-            this.sourceView._dx = g.snapToGrid(localPoint.x, grid);
-            this.sourceView._dy = g.snapToGrid(localPoint.y, grid);
-
-            _.each(this.model.selectionSet, function (model) {
-                this.findViewByModel(model).pointermove(evt,tx,ty,localPoint);
-            },this);
-
-        }else{
-            this.trigger('blank:pointermove', evt, localPoint.x, localPoint.y);
-        }
-
-    },
-
-    /**
-     *  mouse up
-     *  * 判断鼠标点击的位置
-     *  1. 图元上,则调用该图元的事件处理函数
-     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointUp}
-     * @param {Event} evt
-     * @param {Number} x
-     * @param {Number} y
-     * @memberof dedu.Paper
-     */
-    canvasMouseUp:function(evt){
-        evt = dedu.util.normalizeEvent(evt);
-
-        var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
-
-        if (this.sourceView) {
-
-            this.sourceView.pointerup(evt, localPoint.x, localPoint.y);
-
-            //"delete sourceView" occasionally throws an error in chrome (illegal access exception)
-            this.sourceView = null;
-
-        } else {
-
-            this.trigger('blank:pointerup', evt, localPoint.x, localPoint.y);
-        }
-    },
-
-    /**
-     * 双击事件
-     * @param {Event} evt
-     */
-    mousedblclick: function(evt) {
-        evt.preventDefault();
-        evt = dedu.util.normalizeEvent(evt);
-
-        var view = this.findView(evt.target);
-        if (this.guard(evt, view)) return;
-
-        var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
-
-        if (view) {
-
-            view.pointerdblclick(evt, localPoint.x, localPoint.y);
-
-        } else {
-
-            this.trigger('blank:pointerdblclick', evt, localPoint.x, localPoint.y);
-        }
-    },
-
-    /**
-     * 单击事件
-     * @param {Event} evt
-     */
-    mouseclick: function(evt) {
-
-        // Trigger event when mouse not moved.
-        if (this._mousemoved <= this.options.clickThreshold) {
-
-            evt = dedu.util.normalizeEvent(evt);
-
-            var view = this.findView(evt.target);
-            if (this.guard(evt, view)) return;
-
-            var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
-
-            if (view) {
-
-                view.pointerclick(evt, localPoint.x, localPoint.y);
-
-            } else {
-
-                this.trigger('blank:pointerclick', evt, localPoint.x, localPoint.y);
-            }
-        }
-
-        this._mousemoved = 0;
-    },
-
-    cellMouseover:function(evt){
-
-        evt = dedu.util.normalizeEvent(evt);
-        var view = this.findView(evt.target);
-        if(view){
-            if(this.guard(evt,view)) return;
-            view.mouseover(evt);
-        }
-    },
-
-    // Guard guards the event received. If the event is not interesting, guard returns `true`.
-    // Otherwise, it return `false`.
-    guard: function(evt, view) {
-        if(view && view.model && (view.model instanceof dedu.Cell)){
-            return false;
-        }else if (this.svg === evt.target || this.el === evt.target || $.contains(this.svg, evt.target)) {
-            return false;
-        }
-        return true; //Event guarded. Paper should not react on it in any way.
-    },
-
-    /**
-     * get default linkview {@link dedu.Paper~options.linkView}
-     * @method getDefaultLink
-     * @param cellView
-     * @param magnet
-     * @returns {*}
-     */
-    getDefaultLink: function (cellView, magnet) {
-
-        return _.isFunction(this.options.defaultLink)
-            // default link is a function producing link model
-            ? this.options.defaultLink.call(this, cellView, magnet)
-            // default link is the Backbone model
-            : this.options.defaultLink.clone();
-    }
-
-});
-
-/**
- * 添加svg的属性,主要为了和node-red~editor的兼容
- * @class
- * @augments dedu.Paper
- */
-dedu.Chart = dedu.Paper.extend({
-    options: dedu.util.supplement({
-        tabindex: 1,
-        style: {
-
-        }
-    }, dedu.Paper.prototype.options),
-    initialize: function() {
-        dedu.Paper.prototype.initialize.apply(this, arguments);
-
-        V(this.svg).attr({ tabindex: this.options.tabindex });
-
-        var style = "";
-        _.each(this.options.style, function(value, key) {
-            style += key + ":" + value + ";"
-        });
-        V(this.svg).attr({ style: style });
-    }
-});
-
-/**
- * Created by lmz on 16/5/3.
- */
-
-
-dedu.plugins = {};
-
-dedu.plugins.PlainSvg = (function () {
-    var namespace = dedu.shape;
-
-    var defaultViewClass = dedu.ElementView;
-    var tmp_chart = null;
-    // $(function(){
-    //     $('body').append($('<div id="tmp_chart"></div>'));
-    //     tmp_chart = new dedu.Chart({
-    //         el: $('#tmp_chart'),
-    //         width: 36,
-    //         height: 36,
-    //         tabindex: 1,
-    //         gridSize: 1,
-    //         style: {}
-    //     });
-    // });
-
-
-    function renderView(node_type, options) {
-        var view = createViewForModel(node_type, options);
-        V(tmp_chart.vis).append(view.el);
-        view.paper = tmp_chart;
-        view.render();
-
-        return view;
-    }
-
-    function createViewForModel(node_type, options) {
-        var view_type = node_type + "View";
-
-        var namespaceViewClass = dedu.util.getByPath(namespace, view_type, ".");
-        var namespaceClass = dedu.util.getByPath(namespace, node_type, ".");
-
-        var ViewClass = namespaceViewClass || defaultViewClass;
-
-        var cell = new namespaceClass(options);
-
-        var view = new ViewClass({
-            model: cell,
-            skip_render: true,
-            paper: tmp_chart
-        });
-        return view;
-    }
-
-    function getPaleteeSvg( node_type, options) {
-
-        var $tmp_svg = $('<svg style="width: 36px; height: 36px; display: block; position: relative; overflow: hidden; cursor: move; "></svg>');
-
-        var view = renderView(node_type, options);
-
-        $tmp_svg.append($(view.el));
-
-
-        //free memory
-        delete view.model;
-        delete view;
-
-        return $tmp_svg;
-        //console.log($tmp_a);
-    }
-
-    return {
-        getPaleteeSvg:getPaleteeSvg
-    }
-})();
-

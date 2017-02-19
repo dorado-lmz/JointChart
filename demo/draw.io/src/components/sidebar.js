@@ -1,18 +1,17 @@
 import React from 'react';
 import DepolyStore from '../stores/DepolyStore.js';
 import {parseFlow} from '../runtime/runtime.js';
-import Nav from 'react-bootstrap/lib/Nav'
-import NavItem from 'react-bootstrap/lib/NavItem'
+import Tabs from 'react-bootstrap/lib/Tabs';
+import Tab from 'react-bootstrap/lib/Tab';
+import InfoComponent from './InfoComponent.js';
+import EventSystemComponent from './EventSystemComponent.js';
 
 class SidebarComponent extends React.Component {
 
   render() {
     return (
       <div id="sidebar">
-        <SidebarTabsComponent />
-        <div id="sidebar-content">
-
-        </div>
+        <SidebarTabsComponent graph={this.props.graph}/>
         <div id="sidebar-footer"></div>
       </div>
     )
@@ -32,22 +31,31 @@ class SidebarComponent extends React.Component {
 
 }
 
-
 class SidebarTabsComponent extends React.Component {
   constructor() {
     super();
+    this.state = {
+      activeKey: 1
+    }
   }
 
   render() {
     return (
-      <Nav bsStyle="tabs" activeKey="1" onSelect={this.handleSelect}>
-        <NavItem eventKey="1" href="/home">Info</NavItem>
-        <NavItem eventKey="2" title="Item">NavItem 2 content</NavItem>
-      </Nav>
+        <Tabs defaultActiveKey={this.state.activeKey} animation={false} id="noanim-tab-example">
+          <Tab eventKey={1} title="Info" className="sidebar-content">
+            <InfoComponent graph={this.props.graph}/>
+          </Tab>
+          <Tab eventKey={2} title="EventSystem" className="sidebar-content">
+            <EventSystemComponent graph={this.props.graph}/>
+          </Tab>
+        </Tabs>
     );
   }
 
   handleSelect = (eventKey, event)=> {
+    this.setState({
+      activeKey: eventKey
+    });
     console.log(event.target)
     console.log(eventKey)
   }

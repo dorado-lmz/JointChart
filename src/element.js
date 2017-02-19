@@ -415,7 +415,7 @@ dedu.ElementView = dedu.CellView.extend({
             }
 
             if (!vref) {
-                throw new Error('dia.ElementView: reference does not exists.');
+                throw new Error('dedu.ElementView: reference does not exists.');
             }
 
             // Get the bounding box of the reference element relative to the root `<g>` element.
@@ -618,7 +618,7 @@ dedu.ElementView = dedu.CellView.extend({
         },this);
 
         // target is a valid magnet start linking
-         if(this._closestView || evt.target.getAttribute('magnet') && paper.options.validateMagnet.call(paper, this, evt.target)){
+        if(this._closestView || evt.target.getAttribute('magnet') && paper.options.validateMagnet.call(paper, this, evt.target)){
             //this.model.trigger('batch:start', { batchName: 'add-link' });
 
             var link = paper.getDefaultLink(this, evt.target);

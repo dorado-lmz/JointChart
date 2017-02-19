@@ -8,13 +8,10 @@ dedu.Cell = Backbone.Model.extend({
     constructor: function (attributes, options) {
         var defaults;
         var attrs = attributes || {};
-        this.cid = _.uniqueId('c');
+        this.cid = _.uniqueId('d');
         this.attributes = {};
         if (defaults = _.result(this, 'defaults')) {
-            //<custom code>
-            // Replaced the call to _.defaults with _.merge.
             attrs = _.merge({}, defaults, attrs);
-            //</custom code>
         }
         attrs.redID = attrs.redID || (1 + Math.random() * 4294967295).toString(16);  //be used by user program
         this.set(attrs, options);
@@ -30,12 +27,13 @@ dedu.Cell = Backbone.Model.extend({
      * @param {Object} options
      * @memberof dedu.Cell
      */
-    initialize: function (options) {
-        if (!options || !options.id) {
+    initialize: function (attributes,options) {
+        if (!attributes || !attributes.id) {
             this.set('id', dedu.util.uuid(), {silent: true});
         }
         // Collect ports defined in `attrs` and keep collecting whenever `attrs` object changes.
         this.processPorts();
+        this.initalHook && this.initalHook(attributes);
     },
 
     /**

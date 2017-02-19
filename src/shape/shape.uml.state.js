@@ -177,11 +177,18 @@ dedu.shape.uml.State = dedu.shape.simple.Generic.extend({
         '<g class="scalable">',
         '<rect class="uml-state-body"/>',
         '</g>',
-        '<path class="uml-state-separator"/>',
+        // '<path class="uml-state-separator"/>',
         '<text class="uml-state-name"/>',
-        '<text class="uml-state-events"/>',
+        // '<text class="uml-state-events"/>',
         '</g>'
     ].join(''),
+
+    initalHook:function(attrs){
+         //验证规则
+        if(attrs.name){
+            this.set('text',attrs.name)
+        }
+    },
 
     defaults: dedu.util.deepSupplement({
 
@@ -194,18 +201,18 @@ dedu.shape.uml.State = dedu.shape.simple.Generic.extend({
                 'fill': '#fff9ca', 'stroke': '#333', 'stroke-width': 1
             },
             '.uml-state-name': {
-                'ref': '.uml-state-body', 'ref-x': .5, 'ref-y':0, 'text-anchor': 'middle',
+                'ref': '.uml-state-body', 'ref-x': .5, 'ref-y':.4, 'text-anchor': 'middle',
                 'fill': '#000000', 'font-family': 'Courier New', 'font-size': 12,
                 'font-weight':'bold'
             },
-            '.uml-state-separator': {
-                'stroke': '#333', 'stroke-width': 2
-            },
-            '.uml-state-events': {
-                'ref': '.uml-state-separator', 'ref-x': 5, 'ref-y': 5,
-                'fill': '#000000', 'font-family': 'Courier New', 'font-size': 10,
-                'display':'block'
-            }
+            // '.uml-state-separator': {
+            //     'stroke': '#333', 'stroke-width': 2
+            // },
+            // '.uml-state-events': {
+            //     'ref': '.uml-state-separator', 'ref-x': 5, 'ref-y': 5,
+            //     'fill': '#000000', 'font-family': 'Courier New', 'font-size': 10,
+            //     'display':'block'
+            // }
         },
 
         events: [],
@@ -230,8 +237,8 @@ dedu.shape.uml.StateView = dedu.shape.simple.GenericView.extend({
         dedu.shape.simple.GenericView.prototype.render.apply(this,arguments);
         this.originSize = this.model.get('size');
         this.updateName();
-        this.updatePath();
-        this.updateEvents();
+        // this.updatePath();
+        // this.updateEvents();
     },
 
     updateEvents: function () {
@@ -259,7 +266,7 @@ dedu.shape.uml.StateView = dedu.shape.simple.GenericView.extend({
         // We are using `silent: true` here because updatePath() is meant to be called
         // on resize and there's no need to to update the element twice (`change:size`
         // triggers also an update).
-        this.vel.findOne('.uml-state-separator').attr('d', d);
+        // this.vel.findOne('.uml-state-separator').attr('d', d);
     },
 
     focus: function () {

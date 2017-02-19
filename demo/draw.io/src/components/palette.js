@@ -15,9 +15,9 @@ class PaletteComponent extends React.Component {
 		return (
 			<div id="palette">
 	            <div id="palette-search">
-	                <i className="fa fa-search"></i>
-	                <input id="palette-search-input" type="text" data-i18n="[placeholder]palette.filter"></input>
-	                <a href="#" id="palette-search-clear"><i className="fa fa-times"></i></a>
+	                <i className="glyphicon glyphicon-search"></i>
+	                <input id="palette-search-input" type="text" placeholder="filter nodes"></input>
+	                <a href="#" id="palette-search-clear"><i className="glyphicon glyphicon-remove"></i></a>
 	            </div>
 	            <Accordion id="palette-container" className="palette-scroll">
 	            	{categorys.map((category,index) =>

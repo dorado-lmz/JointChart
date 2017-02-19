@@ -4,25 +4,28 @@ import Button from 'react-bootstrap/lib/Button'
 import ButtonGroup from 'react-bootstrap/lib/ButtonGroup';
 import DialogStore from '../stores/DialogStore.js';
 import TabActionCreators from '../actions/TabActionCreators';
+import EventActionCreators from '../actions/EventActionCreators';
 
-class SettingsComponent extends React.Component{
+class DialogComponent extends React.Component{
 
   constructor() {
       super();
       this.state = {
           dialog: {
               show: false
-          }
+          },
+          type: 'stateSettings'
       }
       this.onShow = this.onShow.bind(this);
+      this.onEventShow = this.onEventShow.bind(this);
   }
 
-
-
-  render(){
-    let regions= {};
-    console.log(this.state.dialog.config)
-    this.state.dialog.config && (regions = this.state.dialog.config.regions);
+  stateSettingsDialog(){
+    let regions= {}, cell = this.state.dialog.config, name="";
+    if(!cell)
+      return null;
+    regions = cell.regions;
+    name = cell.get('name');
     return (
       <Modal show={this.state.dialog.show}>
         <Modal.Header>
@@ -40,7 +43,7 @@ class SettingsComponent extends React.Component{
             <div className="form-group">
               <label htmlFor="inputName" className="col-sm-2 control-label">Name</label>
               <div className="col-sm-10">
-                <input type="text" className="form-control" id="inputName" placeholder="Name"/>
+                <input type="text" className="form-control" ref="inputName" id="inputName" value={name} placeholder="Name"/>
               </div>
             </div>
             <div>
@@ -67,19 +70,92 @@ class SettingsComponent extends React.Component{
 
         <Modal.Footer>
           <Button onClick={this.onHide}>Close</Button>
-          <Button bsStyle="primary">Save changes</Button>
+          <Button bsStyle="primary" onClick={this.saveState}>Save changes</Button>
         </Modal.Footer>
 
-      </Modal>
-      );
+      </Modal>);
   }
+
+  render(){
+    let type=this.state.type, content=null;
+    switch(type){
+      case 'stateSettings':
+        content = this.stateSettingsDialog();
+        break;
+      case 'eventSettings':
+        content = this.eventSetingsDialog();
+        break;
+    }
+    return content;
+  }
+
+  eventSetingsDialog(){
+    return (
+      <Modal show={this.state.dialog.show}>
+        <Modal.Header>
+          <span>Event</span>
+        </Modal.Header>
+
+        <Modal.Body>
+          <form className="form-horizontal">
+            <div className="form-group">
+              <label htmlFor="inputName" className="col-sm-2 control-label">Category</label>
+              <div className="col-sm-10">
+                <input type="text" className="form-control" ref="inputCategory" id="inputName" placeholder="Name"/>
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="inputName" className="col-sm-2 control-label">Name</label>
+              <div className="col-sm-10">
+                <input type="text" className="form-control" ref="inputName" id="inputName" placeholder="Name"/>
+              </div>
+            </div>
+            <div>
+            </div>
+
+          </form>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button onClick={this.onHide}>Close</Button>
+          <Button bsStyle="primary" onClick={this.saveEvent}>Save changes</Button>
+        </Modal.Footer>
+
+      </Modal>);
+  }
+
+  saveState = (e) => {
+    var cell = DialogStore.getCell();
+    cell.set('name',this.refs.inputName.value);
+    this.onHide();
+  }
+
+  saveEvent = (e) => {
+    let event = {
+      category: this.refs.inputCategory.value,
+      name: this.refs.inputName.value
+    };
+    EventActionCreators.updateEvent(event);
+  }
+
   onShow(){
     var cell = DialogStore.getCell();
     this.setState({
       dialog: {
         show: true,
         config: cell
-      }
+      },
+      type: 'stateSettings'
+    })
+  }
+  onEventShow(){
+     var event = DialogStore.getEvent();
+    this.setState({
+      dialog: {
+        show: true,
+        config: event
+      },
+      type: 'eventSettings'
     })
   }
   onHide= (e) => {
@@ -108,13 +184,14 @@ class SettingsComponent extends React.Component{
     this.onHide();
   }
 
-
   componentDidMount() {
     DialogStore.addStateSettingsListener(this.onShow);
+    DialogStore.addEventSettingsListener(this.onEventShow);
   }
 
   componentWillUnmount() {
     DialogStore.removeStateSettingsListener(this.onShow);
+     DialogStore.removeEventSettingsListener(this.onEventShow);
   }
 }
-export default SettingsComponent;
+export default DialogComponent;

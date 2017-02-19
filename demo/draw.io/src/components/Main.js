@@ -2,11 +2,11 @@ require('normalize.css/normalize.css');
 require('styles/App.styl');
 
 import React from 'react';
-
+import dedu from 'joint_chart';
 import PaletteComponent from './palette.js';
 import WorkspaceComponent from './workspace.js';
 import SidebarComponent from './sidebar.js';
-import SettingsComponent from './SettingsComponent.js';
+import DialogComponent from './DialogComponent.js';
 
 
 class AppComponent extends React.Component {
@@ -16,14 +16,15 @@ class AppComponent extends React.Component {
       tabs: true
     });
   }
+
   render() {
     return (
       <div className="index">
         <PaletteComponent />
-        <WorkspaceComponent graph={this.graph} openDialog={this.openDialog}/>
+        <WorkspaceComponent graph={this.graph}/>
         <SeparatorComponent position="sidebar"/>
         <SidebarComponent graph={this.graph}/>
-        <SettingsComponent/>
+        <DialogComponent/>
       </div>
     );
   }

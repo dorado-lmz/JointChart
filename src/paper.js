@@ -71,7 +71,8 @@ dedu.Paper = Backbone.View.extend({
 
     // A router that is used by links with no router defined on the model.
     // e.g. { name: 'oneSide', args: { padding: 10 }} or a function
-    defaultRouter: null,
+    // defaultRouter: { name: 'manhattan' },\
+    defaultRouter: null ,
 
     /* CONNECTING */
 
@@ -126,7 +127,19 @@ dedu.Paper = Backbone.View.extend({
     this.lasso = null;
     this.mouse_mode = 0;
 
-    this.svg = Snap().node;
+    var snap_svg = Snap();
+    dedu.Paper.marker_end = snap_svg.path("M 0 0 6 5 0 10 15 5 Z").attr({
+      fill: '#33322E',
+      stroke: '#33322E',
+      'stroke-width': 2,
+      'stroke-linejoin': 'round',
+      'stroke-linecap': 'round'
+    }).marker(0,0,20,10,10,5).attr({
+      markerUnits: 'userSpaceOnUse'
+    });
+
+    this.svg = snap_svg.node;
+
     this.viewport = V('g').addClass('viewport').node;
     this.vis = V('g').addClass("vis").node;
     this.outer_background = V('rect').node;

@@ -1,9 +1,8 @@
 import React from 'react';
-import _ from 'lodash';
+// import _ from 'lodash';
 import $ from 'jquery';
-import Backbone from 'backbone';
-//import {org} from 'imports?$=jquery,_=lodash,Backbone=backbone!../joint_chart.min.js';
-import dedu from 'joint_chart';
+// import Backbone from 'backbone';
+
 import {getConfigByType} from '../stores/chart_utils.js';
 import TabsComponent from './tabs.js';
 import DeployActionCreators from '../actions/DeployActionCreators';
@@ -20,7 +19,7 @@ class WorkspaceComponent extends React.Component {
         graph = this.props.graph;
     console.log(node_type);
     var namespaceClass = dedu.util.getByPath(
-      chart.options.cellViewNamespace, getConfigByType(category,node_type), ".")
+      chart.options.cellViewNamespace, getConfigByType(category,node_type), '.')
     let cell = new namespaceClass({
       position:{
         x: e.pageX-this.originPosition.x,
@@ -37,6 +36,11 @@ class WorkspaceComponent extends React.Component {
     // DeployActionCreators.deploy(graph.active_cells());
   };
 
+  debug = (e) => {
+    let graph = this.props.graph;
+    graph.showAll();
+  };
+
   save = (e) => {
     let graph = this.props.graph;
     graph.save();
@@ -48,6 +52,7 @@ class WorkspaceComponent extends React.Component {
 	            <div id="designer_header">
 	                <div id="toolbar">
                     <button type="button" className="btn btn-default btn-xs pull-left" onClick={this.save}>Save</button>
+                    <button type="button" className="btn btn-primary btn-xs pull-right" onClick={this.debug}>Debug</button>
                     <button type="button" className="btn btn-danger btn-xs pull-right" onClick={this.deploy}>Deploy</button>
 	                </div>
 	            </div>
@@ -89,7 +94,7 @@ class WorkspaceComponent extends React.Component {
 	componentDidMount(){
     let graph = this.props.graph;
 
-		var chart = this.chart = new dedu.Chart({
+		this.chart = new dedu.Chart({
 		    el: $('#chart'),
 		    width: 5000,
 		    height: 5000,
@@ -102,14 +107,14 @@ class WorkspaceComponent extends React.Component {
     let bound_box = document.getElementById('chart').getBoundingClientRect();
     this.originPosition = {
       x: bound_box.left,
-      y: bound_box.top,
+      y: bound_box.top
     };
 
     graph.on('cell:pointerdblclick', (cell) => {
       if (cell instanceof dedu.Cell) {
         var config = {};
         config.title = cell.get('name');
-        config.body = ``;
+        config.body = '';
         config.cell = cell;
 
         // var openDialog = this.props.openDialog;
@@ -117,6 +122,15 @@ class WorkspaceComponent extends React.Component {
         DialogActionCreators.settingState(cell);
       }
     });
+    graph.on('element:pointerdown' , (cell) => {
+
+      DialogActionCreators.infoOfState(cell);
+    });
+
+    graph.on('link:pointerdown', (cell) => {
+
+      DialogActionCreators.infoOfLink(cell);
+    })
 	}
 
 }

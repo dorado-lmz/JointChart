@@ -48,12 +48,12 @@
         i
             font-size: 10px
             color: #666
-            &.fa-search
+            &.glyphicon-search
                 position: absolute;
                 pointer-events: none;
-                left: 12px;
+                left: 8px;
                 top: 12px;
-            &.fa-times
+            &.glyphicon-remove
                 position: absolute
                 right: 7px
                 top: 12px
@@ -96,14 +96,16 @@
                     &::before
                         content:"\e260"
                         -webkit-transform: rotate(0deg);
-                        font: normal normal normal 14px/1 'Glyphicons Halflings';
+                        font: normal normal normal 9px/1 'Glyphicons Halflings';
+                        transform: scale(0.8);
                         margin-right .5em
                     &.collapsed::before
                         content:"\e259"
                         -webkit-transform: rotate(-90deg);
                         -webkit-transition: all 0.2s ease-in-out;
                         display:inline-block
-                        font: normal normal normal 14px/1 'Glyphicons Halflings';
+                        font: normal normal normal 9px/1 'Glyphicons Halflings';
+                        transform: scale(0.8);
                         margin-right .5em
         .panel-collapse
             border-radius:0

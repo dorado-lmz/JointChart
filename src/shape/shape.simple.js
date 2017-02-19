@@ -182,6 +182,16 @@ dedu.shape.simple.GenericView = dedu.ElementView.extend(
             }
             this.showSuspendPort(); // show four ports
         },
+
+        getPositionBySelector: function(el) {
+          el = !el ? this.el : $(el, $(this.el))[0] || this.el;
+          var port = V(el),box = port.bbox();
+          var x = box.x+box.width/2,y = box.y+box.height/2;
+          return {
+            x:x,
+            y:y
+          }
+        },
         /**
          * 移除提示
          * @param el

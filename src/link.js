@@ -30,12 +30,10 @@ dedu.Link = dedu.Cell.extend({
         '<path class="connection_background"/>',
         '<path class="connection_outline"/>',
         '<path class="connection_line"/>',
-        '<path class="marker-source" fill="black" stroke="black" />',
-        '<path class="marker-target" fill="black" stroke="black" />',
         // '<path class="connection-wrap"/>',
         '<g class="labels"/>',
         // '<g class="marker-vertices"/>',
-         '<g class="marker-arrowheads"/>',
+        '<g class="marker-arrowheads"/>',
         // '<g class="link-tools"/>'
     ].join(''),
 
@@ -76,10 +74,13 @@ dedu.Link = dedu.Cell.extend({
         type: 'link',
         source: {},
         target: {},
-        labels:undefined,
+        labels: undefined,
         attrs: {
             '.marker-target': {
                 d: 'M 10 0 L 0 5 L 10 10 z'
+            },
+            '.connection_line': {
+              stroke: '#33322E'
             }
         }
     },
@@ -174,14 +175,14 @@ dedu.LinkView = dedu.CellView.extend({
         return _.unique(this.model.get("type").split(".").concat("link")).join(" ")
     },
 
-    initialize: function (opts) {
+    initialize: function(opts) {
         this.options = _.extend({}, _.result(this, "options"), opts || {});
 
         dedu.CellView.prototype.initialize.apply(this, arguments);
 
         // create methods in prototype, so they can be accessed from any instance and
         // don't need to be create over and over
-        if("function" != typeof this.constructor.prototype.watchSource){
+        if ("function" != typeof this.constructor.prototype.watchSource) {
             this.constructor.prototype.watchSource = this.createWatcher("source");
             this.constructor.prototype.watchTarget = this.createWatcher("target");
         }
@@ -199,39 +200,39 @@ dedu.LinkView = dedu.CellView.extend({
         // bind events
         this.startListening();
 
-        this.model.on('change:selected',function(){
-            if(this.model.get("selected")){
+        this.model.on('change:selected', function() {
+            if (this.model.get("selected")) {
                 this.focus();
-            }else{
+            } else {
                 this.unfocus();
             }
-        },this);
+        }, this);
 
-        this.model.on('change:labels', function () {
+        this.model.on('change:labels', function() {
             this.renderLabels();
             this.updateLabelPositions();
-        },this);
+        }, this);
 
     },
 
     // Returns a function observing changes on an end of the link. If a change happens and new end is a new model,
     // it stops listening on the previous one and starts listening to the new one.
-    createWatcher: function (endType) {
+    createWatcher: function(endType) {
         // create handler for specific end type (source|target).
         var onModelChange = _.partial(this.onEndModelChange, endType);
 
-        function watchEndModel(link,end){
+        function watchEndModel(link, end) {
 
             end = end || {};
 
             var endModel = null;
             var previousEnd = link.previous(endType) || {};
 
-            if(previousEnd.id){
+            if (previousEnd.id) {
                 this.stopListening(this.paper.getModelById(previousEnd.id), 'change', onModelChange);
             }
 
-            if(end.id){
+            if (end.id) {
                 // If the observed model changes, it caches a new bbox and do the link update.
                 endModel = this.paper.getModelById(end.id);
                 this.listenTo(endModel, 'change', onModelChange);
@@ -245,7 +246,7 @@ dedu.LinkView = dedu.CellView.extend({
         return watchEndModel;
     },
 
-    onEndModelChange: function (endType, endModel, opt) {
+    onEndModelChange: function(endType, endModel, opt) {
 
         var doUpdate = !opt.cacheOnly;
         var end = this.model.get(endType) || {};
@@ -346,21 +347,21 @@ dedu.LinkView = dedu.CellView.extend({
         doUpdate && this.update();
     },
 
-    startListening: function () {
+    startListening: function() {
         var model = this.model;
 
-        this.listenTo(model,'change:vertices',this.onVerticesChange);
+        this.listenTo(model, 'change:vertices', this.render);
         this.listenTo(model, 'change:source', this.onSourceChange);
         this.listenTo(model, 'change:target', this.onTargetChange);
 
     },
 
-    onVerticesChange: function (cell, changed, opt) {
+    onVerticesChange: function(cell, changed, opt) {
 
         this.renderVertexMarkers();
     },
 
-    render: function () {
+    render: function() {
         this.$el.empty();
 
         // A special markup can be given in the `properties.markup` property. This might be handy
@@ -375,11 +376,11 @@ dedu.LinkView = dedu.CellView.extend({
 
 
         // Cache all children elements for quicker access.
-        this._V = {};//vectorized markup;
-        _.each(children, function (child) {
+        this._V = {}; //vectorized markup;
+        _.each(children, function(child) {
             var c = child.attr('class');
             c && (this._V[$.camelCase(c)] = child);
-        },this);
+        }, this);
 
         // Only the connection path is mandatory
         if (!this._V.connection_line) throw new Error('link: no connection path in the markup');
@@ -387,7 +388,10 @@ dedu.LinkView = dedu.CellView.extend({
         // rendering labels has to be run after the link is appended to DOM tree. (otherwise <Text> bbox
         // returns zero values)
 
-        this.renderArrowheadMarkers();
+        // this.renderArrowheadMarkers();
+        Snap(this._V.connection_line.node).attr({
+          "marker-end": dedu.Paper.marker_end
+        });
         this.vel.append(children);
         // rendering labels has to be run after the link is appended to DOM tree. (otherwise <Text> bbox
         // returns zero values)
@@ -456,7 +460,7 @@ dedu.LinkView = dedu.CellView.extend({
 
             $rect.attr(_.extend(rectAttributes, {
                 x: textBbox.x,
-                y: textBbox.y - textBbox.height / 2,  // Take into account the y-alignment translation.
+                y: textBbox.y - textBbox.height / 2, // Take into account the y-alignment translation.
                 width: textBbox.width,
                 height: textBbox.height
             }));
@@ -479,20 +483,20 @@ dedu.LinkView = dedu.CellView.extend({
         // SVG elements for .marker-vertex and .marker-vertex-remove tools.
         var markupTemplate = _.template(this.model.get('arrowheadMarkup') || this.model.arrowheadMarkup);
 
-        if(this.model.get('attrs')['.marker-source']){
+        if (this.model.get('attrs')['.marker-source']) {
             this._V.sourceArrowhead = V(markupTemplate({ end: 'source' }));
         }
-        if(this.model.get('attrs')['.marker-target']){
+        if (this.model.get('attrs')['.marker-target']) {
             this._V.targetArrowhead = V(markupTemplate({ end: 'target' }));
         }
-        $markerArrowheads.append(this._V.sourceArrowhead?this._V.sourceArrowhead.node:undefined, this._V.targetArrowhead?this._V.targetArrowhead.node:undefined);
+        $markerArrowheads.append(this._V.sourceArrowhead ? this._V.sourceArrowhead.node : undefined, this._V.targetArrowhead ? this._V.targetArrowhead.node : undefined);
 
         return this;
     },
 
 
     // Default is to process the `attrs` object and set attributes on subelements based on the selectors.
-    update: function () {
+    update: function() {
         // Update attributes.
         _.each(this.model.get('attrs'), function(attrs, selector) {
 
@@ -533,25 +537,27 @@ dedu.LinkView = dedu.CellView.extend({
         // Path finding
         var vertices = this.route = this.findRoute(this.model.get('vertices') || []);
 
+        this.model.set('vertices', [], { silent: true });
+
         // finds all the connection points taking new vertices into account
         this._findConnectionPoints(vertices);
 
         var pathData = this.getPathData(vertices);
 
         // The markup needs to contain a `.connection`
-        this._V.connection_background.attr({'d':pathData});
-        this._V.connection_outline.attr({'d':pathData});
-        this._V.connection_line.attr({'d':pathData});
+        this._V.connection_background.attr({ 'd': pathData });
+        this._V.connection_outline.attr({ 'd': pathData });
+        this._V.connection_line.attr({ 'd': pathData });
 
-		this._translateAndAutoOrientArrows(this._V.markerSource, this._V.markerTarget);
+        // this._translateAndAutoOrientArrows(this._V.markerSource, this._V.markerTarget);
 
         this.updateLabelPositions();
-        this.updateArrowheadMarkers();
+        // this.updateArrowheadMarkers();
 
-        if(this.model.get('selected')){
-            this._V.connection_line.attr({'stroke': '#ff7f0e'});
-        }else{
-            this._V.connection_line.attr({'stroke': '#888'});
+        if (this.model.get('selected')) {
+            this._V.connection_line.attr({ 'stroke': '#ff7f0e' });
+        } else {
+            this._V.connection_line.attr({ 'stroke': '#888' });
         }
     },
 
@@ -560,7 +566,7 @@ dedu.LinkView = dedu.CellView.extend({
         if (!this._V.labels) return this;
 
         var labels = this.model.get('labels') || [];
-        if(!labels.length) return this;
+        if (!labels.length) return this;
 
         var connectionElement = this._V.connection_line.node;
         var connectionLength = connectionElement.getTotalLength();
@@ -570,7 +576,7 @@ dedu.LinkView = dedu.CellView.extend({
         if (!_.isNaN(connectionLength)) {
             var samples;
 
-            _.each(labels,function(label,idx){
+            _.each(labels, function(label, idx) {
                 var position = label.position;
                 var distance = _.isObject(position) ? position.distance : position;
                 var offset = _.isObject(position) ? position.offset : { x: 0, y: 0 };
@@ -625,7 +631,7 @@ dedu.LinkView = dedu.CellView.extend({
                 }
 
                 this._labelCache[idx].attr('transform', 'translate(' + labelCoordinates.x + ', ' + labelCoordinates.y + ')');
-            },this);
+            }, this);
         }
 
         return this;
@@ -648,14 +654,14 @@ dedu.LinkView = dedu.CellView.extend({
         return this;
     },
 
-    hideLabels:function(){
+    hideLabels: function() {
         $(this._V.labels.node).hide();
     },
-    showLabel: function () {
+    showLabel: function() {
         $(this._V.labels.node).show();
     },
 
-    findRoute: function (oldVertices) {
+    findRoute: function(oldVertices) {
         var namespace = dedu.routers;
         var router = this.model.get('router');
 
@@ -672,11 +678,21 @@ dedu.LinkView = dedu.CellView.extend({
                 return oldVertices;
             }
         }
+        var args = router.args || {};
+        var routerFn = _.isFunction(router) ? router : namespace[router.name];
+
+        if (!_.isFunction(routerFn)) {
+            throw new Error('unknown router: "' + router.name + '"');
+        }
+
+        var newVertices = routerFn.call(this, oldVertices || [], args, this);
+
+        return newVertices;
     },
 
     // Return the `d` attribute value of the `<path>` element representing the link
     // between `source` and `target`.
-    getPathData: function (vertices) {
+    getPathData: function(vertices) {
 
         var namespace = dedu.connectors;
         var connector = this.model.get('connector');
@@ -703,7 +719,7 @@ dedu.LinkView = dedu.CellView.extend({
             this._markerCache.sourcePoint, // Note that the value is translated by the size
             this._markerCache.targetPoint, // of the marker. (We'r not using this.sourcePoint)
             vertices || (this.model.get('vertices') || {}),
-            args,//options
+            args, //options
             this
         );
 
@@ -716,7 +732,7 @@ dedu.LinkView = dedu.CellView.extend({
     },
 
 
-    _findConnectionPoints: function (vertices) {
+    _findConnectionPoints: function(vertices) {
         // cache source and target points
         var sourcePoint, targetPoint, sourceMarkerPoint, targetMarkerPoint;
 
@@ -729,7 +745,7 @@ dedu.LinkView = dedu.CellView.extend({
         var lastVertex = _.last(vertices);
 
         targetPoint = this.getConnectionPoint(
-            'target',this.model.get('target'),lastVertex || sourcePoint
+            'target', this.model.get('target'), lastVertex || sourcePoint
         ).round();
         // Move the source point by the width of the marker taking into account
         // its scale around x-axis. Note that scale is the only transform that
@@ -748,15 +764,15 @@ dedu.LinkView = dedu.CellView.extend({
             ).round();
         }
 
-        if (this._V.markerTarget) {
+        // if (!this._V.markerTarget) {
 
-            cache.targetBBox = cache.targetBBox || this._V.markerTarget.bbox(true);
+        //      cache.targetBBox = cache.targetBBox || this._V.markerTarget.bbox(true);
 
-            targetMarkerPoint = g.point(targetPoint).move(
-                lastVertex || sourcePoint,
-                cache.targetBBox.width * this._V.markerTarget.scale().sx * -1
-            ).round();
-        }
+        //     targetMarkerPoint = g.point(targetPoint).move(
+        //         lastVertex || sourcePoint,
+        //         cache.targetBBox.width * this._V.markerTarget.scale().sx * -1
+        //     ).round();
+        // }
 
         // if there was no markup for the marker, use the connection point.
         cache.sourcePoint = sourceMarkerPoint || sourcePoint;
@@ -772,7 +788,7 @@ dedu.LinkView = dedu.CellView.extend({
     // ---------------------------------
 
 
-    _beforeArrowheadMove: function () {
+    _beforeArrowheadMove: function() {
         this._z = this.model.get('z');
         this.model.toFront();
 
@@ -780,14 +796,14 @@ dedu.LinkView = dedu.CellView.extend({
         // the `evt.target` is another element under the pointer, not the link itself.
         this.el.style.pointerEvents = 'none';
 
-        if(this.paper.options.markAvailable){
+        if (this.paper.options.markAvailable) {
 
             //TODO:打开可连接的magnets
             //this._markAvailableMagnets():
         }
     },
 
-    _afterArrowheadMove: function () {
+    _afterArrowheadMove: function() {
         if (!_.isUndefined(this._z)) {
             this.model.set('z', this._z, { ui: true });
             delete this._z;
@@ -804,12 +820,12 @@ dedu.LinkView = dedu.CellView.extend({
         }
     },
 
-    startArrowheadMove: function (end) {
+    startArrowheadMove: function(end) {
         // Allow to delegate events from an another view to this linkView in order to trigger arrowhead
         // move without need to click on the actual arrowhead dom element.
         this._action = 'arrowhead-move';
         this._arrowhead = end;
-        this._initialEnd = _.clone(this.model.get(end)) || {x:0,y:0};
+        this._initialEnd = _.clone(this.model.get(end)) || { x: 0, y: 0 };
         this._validateConnectionArgs = this._createValidateConnectionArgs(this._arrowhead);
         this._beforeArrowheadMove();
     },
@@ -827,7 +843,7 @@ dedu.LinkView = dedu.CellView.extend({
         return false;
     },
 
-    _createValidateConnectionArgs: function (arrowhead) {
+    _createValidateConnectionArgs: function(arrowhead) {
         // It makes sure the arguments for validateConnection have the following form:
         // (source view, source magnet, target view, target magnet and link view)
         var args = [];
@@ -838,24 +854,24 @@ dedu.LinkView = dedu.CellView.extend({
         var i = 0;
         var j = 0;
 
-        if(arrowhead === 'source'){
+        if (arrowhead === 'source') {
             i = 2;
             oppositeArrowhead = 'target';
-        }else{
+        } else {
             j = 2;
             oppositeArrowhead = 'source';
         }
 
         var end = this.model.get(oppositeArrowhead);
 
-        if(end.id){
+        if (end.id) {
             args[i] = this.paper.findViewByModel(end.id);
-            args[i+1] = end.selector && args[i].el.querySelector(end.selector);
+            args[i + 1] = end.selector && args[i].el.querySelector(end.selector);
         }
 
-        function validateConnectionArgs(cellView,magnet){
+        function validateConnectionArgs(cellView, magnet) {
             args[j] = cellView;
-            args[j+1] = cellView.el === magnet? undefined:magnet;
+            args[j + 1] = cellView.el === magnet ? undefined : magnet;
             return args;
         }
         return validateConnectionArgs;
@@ -886,7 +902,7 @@ dedu.LinkView = dedu.CellView.extend({
     // If `selectorOrPoint` is a point, then we're done and that point is the start of the connection.
     // If the `selectorOrPoint` is an element however, we need to know a reference point (or element)
     // that the link leads to in order to determine the start of the connection on the original element.
-    getConnectionPoint:function(end, selectorOrPoint, referenceSelectorOrPoint){
+    getConnectionPoint: function(end, selectorOrPoint, referenceSelectorOrPoint) {
         var spot;
 
         // If the `selectorOrPoint` (or `referenceSelectorOrPoint`) is `undefined`, the `source`/`target` of the link model is `undefined`.
@@ -895,10 +911,10 @@ dedu.LinkView = dedu.CellView.extend({
         _.isEmpty(selectorOrPoint) && (selectorOrPoint = { x: 0, y: 0 });
         _.isEmpty(referenceSelectorOrPoint) && (referenceSelectorOrPoint = { x: 0, y: 0 });
 
-        if(!selectorOrPoint.id){
+        if (!selectorOrPoint.id) {
             // If the source is a point, we don't need a reference point to find the sticky point of connection.
             spot = g.point(selectorOrPoint);
-        }else{
+        } else {
             // If the source is an element, we need to find a point on the element boundary that is closest
             // to the reference point (or reference element).
             // Get the bounding box of the spot relative to the paper viewport. This is necessary
@@ -915,7 +931,7 @@ dedu.LinkView = dedu.CellView.extend({
                 reference = g.point(referenceSelectorOrPoint);
 
 
-            }else{
+            } else {
                 // Reference was passed as an element, therefore we need to find a point on the reference
                 // element boundary closest to the source element.
                 // Get the bounding box of the spot relative to the paper viewport. This is necessary
@@ -992,38 +1008,38 @@ dedu.LinkView = dedu.CellView.extend({
         return spot;
     },
 
-    onSourceChange: function (cell, source) {
+    onSourceChange: function(cell, source) {
 
-        this.watchSource(cell,source).update();
-
-    },
-
-    onTargetChange: function (cell, target) {
-
-        this.watchTarget(cell,target).update();
+        this.watchSource(cell, source).update();
 
     },
 
-    highlight: function (el) {
-        this._V[el].attr({'stroke':'#ff7f0e'});
+    onTargetChange: function(cell, target) {
+
+        this.watchTarget(cell, target).update();
+
     },
 
-    focus: function () {
+    highlight: function(el) {
+        this._V[el].attr({ 'stroke': '#ff7f0e' });
+    },
+
+    focus: function() {
         //dedu.CellView.prototype.focus.apply(this);
         this.highlight('connection_line');
     },
 
-    unfocus: function () {
+    unfocus: function() {
         //dedu.CellView.prototype.unfocus.apply(this);
         this.unhighlight('connection_line');
     },
 
 
-    unhighlight: function (el) {
-        this._V[el].attr({'stroke':'#888'});
+    unhighlight: function(el) {
+        this._V[el].attr({ 'stroke': '#888' });
     },
 
-    pointerdown: function (evt,x,y) {
+    pointerdown: function(evt, x, y) {
         dedu.CellView.prototype.pointerdown.apply(this, arguments);
 
 
@@ -1076,14 +1092,14 @@ dedu.LinkView = dedu.CellView.extend({
 
     pointerdblclick: function(evt, x, y) {
 
-        var m = g.line(g.point(this.sourcePoint.x,this.sourcePoint.y), g.point(this.targetPoint.x,this.targetPoint.y)).midpoint();
-        x = m.x-8;
-        y = m.y-8;
+        var m = g.line(g.point(this.sourcePoint.x, this.sourcePoint.y), g.point(this.targetPoint.x, this.targetPoint.y)).midpoint();
+        x = m.x - 8;
+        y = m.y - 8;
         dedu.CellView.prototype.pointerdblclick.apply(this, arguments);
 
     },
 
-    pointermove: function (evt, x, y) {
+    pointermove: function(evt, x, y) {
 
         switch (this._action) {
             case 'arrowhead-move':
@@ -1100,7 +1116,7 @@ dedu.LinkView = dedu.CellView.extend({
 
                     _.each(viewsInArea, function(view) {
 
-                        if(this.paper.findViewByModel(this.model.get('source').id)==view){
+                        if (this.paper.findViewByModel(this.model.get('source').id) == view) {
                             return;
                         }
                         // skip connecting to the element in case '.': { magnet: false } attribute present
@@ -1140,7 +1156,7 @@ dedu.LinkView = dedu.CellView.extend({
                                     this._closestView = view;
                                     this._closestEnd = {
                                         id: view.model.id,
-                                        redID:view.model.get('redID'),
+                                        redID: view.model.get('redID'),
                                         selector: view.getSelector(magnet),
                                         port: magnet.getAttribute('port')
                                     };
@@ -1151,18 +1167,16 @@ dedu.LinkView = dedu.CellView.extend({
 
                     }, this);
 
-                    this._closestView  && this._closestView.highlight(this._closestEnd.selector, { connecting: true, snapping: true });
+                    this._closestView && this._closestView.highlight(this._closestEnd.selector, { connecting: true, snapping: true });
 
                     this.model.set(this._arrowhead, this._closestEnd || { x: x, y: y }, { ui: true });
 
-                }else{
+                } else {
                     // checking views right under the pointer
 
                     // Touchmove event's target is not reflecting the element under the coordinates as mousemove does.
                     // It holds the element when a touchstart triggered.
-                    var target = (evt.type === 'mousemove')
-                        ? evt.target
-                        : document.elementFromPoint(evt.clientX, evt.clientY);
+                    var target = (evt.type === 'mousemove') ? evt.target : document.elementFromPoint(evt.clientX, evt.clientY);
                     if (this._targetEvent !== target) {
                         // Unhighlight the previous view under pointer if there was one.
                         this._magnetUnderPointer && this._viewUnderPointer.unhighlight(this._magnetUnderPointer, { connecting: true });
@@ -1181,7 +1195,7 @@ dedu.LinkView = dedu.CellView.extend({
                                 // is no view under pointer we're interested in reconnecting to.
                                 // This can only happen if the overall element has the attribute `'.': { magnet: false }`.
                                 this._magnetUnderPointer && this._viewUnderPointer.highlight(this._magnetUnderPointer, { connecting: true });
-                            }else if(V(target).hasClass("tip")){
+                            } else if (V(target).hasClass("tip")) {
                                 console.log("collaspe");
                             } else {
                                 // This type of connection is not valid. Disregard this magnet.
@@ -1206,9 +1220,9 @@ dedu.LinkView = dedu.CellView.extend({
         this.notify('link:pointermove', evt, x, y);
     },
 
-    pointerup: function (evt, x, y) {
+    pointerup: function(evt, x, y) {
 
-        if(this._action === 'arrowhead-move'){
+        if (this._action === 'arrowhead-move') {
             var paperOptions = this.paper.options;
             var arrowhead = this._arrowhead;
 
@@ -1216,8 +1230,15 @@ dedu.LinkView = dedu.CellView.extend({
                 // Finish off link snapping. Everything except view unhighlighting was already done on pointermove.
                 this._closestView && this._closestView.unhighlight(this._closestEnd.selector, { connecting: true, snapping: true });
                 this._closestView && this.trigger.apply(this.model, ['link:complete']);
+
+                // var box = this._closestView.getPositionBySelector(this._closestEnd.selector);
+                // this._closestEnd = {
+                //   x: box.x,
+                //   y: box.y
+                // };
+                // this.model.set(this._arrowhead, this._closestEnd , { ui: true });
                 this._closestView = this._closestEnd = null;
-            }else{
+            } else {
                 var viewUnderPointer = this._viewUnderPointer;
                 var magnetUnderPointer = this._magnetUnderPointer;
 
@@ -1238,7 +1259,7 @@ dedu.LinkView = dedu.CellView.extend({
                     if (port != null) arrowheadValue.selector = selector;
                     this.model.set(arrowhead, arrowheadValue, { ui: true });
                     this.trigger.apply(this.model, 'link:complete');
-                }else{
+                } else {
                     this.model.remove({ ui: true });
                 }
             }
@@ -1252,13 +1273,13 @@ dedu.LinkView = dedu.CellView.extend({
 
 
 
-},{
+}, {
     /**
      * get port of vertex
      * @param {dedu.Link~Vertex} end
      * @returns {string}
      */
-    makeSelector: function (end) {
+    makeSelector: function(end) {
         var selector = '[model-id="' + end.id + '"]';
         // `port` has a higher precendence over `selector`. This is because the selector to the magnet
         // might change while the name of the port can stay the same.
