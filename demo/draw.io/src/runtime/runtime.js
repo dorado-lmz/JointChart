@@ -2,6 +2,7 @@
 var statements = '', PseudoStateMap = {
     'uml.StartState': StateJS.PseudoStateKind.Initial,
     'uml.EndState': StateJS.PseudoStateKind.Terminate,
+    'uml.Choice': StateJS.PseudoStateKind.Choice,
     'uml.ShallowHistory': StateJS.PseudoStateKind.ShallowHistory,
     'uml.DeepHistory': StateJS.PseudoStateKind.DeepHistory,
 };
@@ -45,7 +46,7 @@ export function parseFlow(flow,graph) {
 }
 
 function parseCell(state){
-    if (PseudoStateMap[state.type]){
+    if (PseudoStateMap[state.type] !== void 0){
         state.kind = PseudoStateMap[state.type];
     }else if(state.regions){
         for(var name in state.regions){
@@ -67,7 +68,7 @@ function create(cfg) {
     parseStateList(states, "model");
     parseTransitions(events, callbacks);
     console.log(statements);
-    instance = new StateJS.StateMachineInstance("p3pp3r");
+    instance = new StateJS.StateMachineInstance(dedu.util.randomString(5));
     instance.graph = _graph||{};
     statements += 'StateJS.initialise(model, instance);';
     eval(statements);
@@ -89,11 +90,15 @@ function parseStateList(array_state, parent) {
 }
 
 function parseState(state, parent) {
-    if (state.kind != undefined) {
+    if (state.kind !== undefined) {
         if (StateJS.PseudoStateKind.Initial === state.kind) {
             concat("var " + state.name + " = new StateJS.PseudoState('" + state.name + "', " + parent + ", StateJS.PseudoStateKind.Initial);");
-        } else {
-
+        } else if(StateJS.PseudoStateKind.Choice === state.kind){
+            concat("var " + state.name + " = new StateJS.PseudoState('" + state.name + "', " + parent + ", StateJS.PseudoStateKind.Choise);");
+        }else if(StateJS.PseudoStateKind.ShallowHistory === state.kind){
+            concat("var " + state.name + " = new StateJS.PseudoState('" + state.name + "', " + parent + ", StateJS.PseudoStateKind.ShallowHistory);");
+        }else if(StateJS.PseudoStateKind.DeepHistory === state.kind){
+            concat("var " + state.name + " = new StateJS.PseudoState('" + state.name + "', " + parent + ", StateJS.PseudoStateKind.DeepHistory);");
         }
     } else {
         concat(`var ${state.name} = new StateJS.State('${state.name}', ${parent}).entry(function(){

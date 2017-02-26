@@ -100,21 +100,21 @@ dedu.shape.uml.EndState = dedu.shape.simple.Generic.extend({
        }, dedu.shape.simple.Generic.prototype.defaults)
 });
 
-dedu.shape.uml.Choise = dedu.shape.simple.Generic.extend({
+dedu.shape.uml.Choice = dedu.shape.simple.Generic.extend({
   markup: [
         '<g class="rotatable">',
         '<g class="scalable">',
-        '<polyline class="uml-choise-body" points="50,0,0,50,50,100,100,50,50,0"></polyline>',
+        '<polyline class="uml-choice-body" points="50,0,0,50,50,100,100,50,50,0"></polyline>',
         '</g>',
         '</g>'
   ].join(''),
 
   defaults: dedu.util.deepSupplement({
 
-    type: 'uml.Choise',
+    type: 'uml.Choice',
     size: {width: 40, height:40},
     attrs: {
-      'polyline': {
+      '.uml-choice-body': {
         'stroke': 'blue',
         'stroke-width': 2
       }
@@ -459,15 +459,15 @@ dedu.shape.uml.EndStateView  = dedu.shape.simple.GenericView.extend({
     },
 });
 
-dedu.shape.uml.ChoiseView  = dedu.shape.simple.GenericView.extend({
+dedu.shape.uml.ChoiceView  = dedu.shape.simple.GenericView.extend({
 
     focus: function () {
-        this.vel.select('.uml-choise-body').attr({
+        this.vel.select('.uml-choice-body').attr({
             fill:"#ffc21d"
         });
     },
     unfocus: function () {
-        this.vel.select('.uml-choise-body').attr({
+        this.vel.select('.uml-choice-body').attr({
             fill:"#fff"
         });
         this.hideSuspendPort();

@@ -3,7 +3,7 @@ let mappings = {
     'state-start': 'uml.StartState',
     'state-end': 'uml.EndState',
     'state': 'uml.State',
-    'branch': 'uml.Choise',
+    'branch': 'uml.Choice',
     'history': 'uml.DeepHistory',
     'detail-history': 'uml.ShadowHistory'
   }

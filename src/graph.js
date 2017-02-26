@@ -113,7 +113,7 @@ dedu.Graph = Backbone.Model.extend({
     },
 
     /*
-    user can create many graph.
+    * user can create many graph.
     * parent subflow id
     * opt{
       tabs: true,if you use tabs
@@ -212,7 +212,7 @@ dedu.Graph = Backbone.Model.extend({
         var active_cells = this.get('graphs').get(id).get('root');
         active_cells.on("all",this.trigger,this);
         this.set('active_graph_id', id);
-        this.resetCells(active_cells);
+        this.resetCells();
     },
 
     removeGraph: function(id) {
@@ -226,23 +226,6 @@ dedu.Graph = Backbone.Model.extend({
         this.switchGraph(graphs.at(0).id);
         return graphs.at(0).id;
     },
-
-    // createSubGraph: function(root) {
-    //     if (!(root instanceof Backbone.Model)) return;
-    //     var graph;
-    //     // root.models = [];
-    //     if (root.pending_id) {
-    //         return this.get('graphs').get(root.pending_id);
-    //     } else {
-    //         graph = this.get('graphs').add({
-    //             type: 'subgraph',
-    //             root: root
-    //         });
-
-    //     }
-    //     // this.switchGraph(graph.id);
-    //     return graph;
-    // },
 
     exportGraph: function(id) {
         var cells = this.active_cells();
@@ -526,8 +509,6 @@ dedu.Graph = Backbone.Model.extend({
     },
 
     layout: function(opt) {
-
-
       skanaar.sum = function sum(list, plucker){
           var transform = {
               'undefined': _.identity,
@@ -630,7 +611,6 @@ dedu.Graph = Backbone.Model.extend({
                 compartment.height = textSize.height - 2 * config.padding;
             });
 
-
             for(var regionName in cell.regions){
               var cells = cell.regions[regionName];
               layoutCell(cells, {
@@ -648,7 +628,7 @@ dedu.Graph = Backbone.Model.extend({
             cell.debug = true;
             if(cell instanceof dedu.shape.uml.State){
               var radio  =  Math.round(cell.compartments[0].height / 4),
-                  dy = Math.round(cell.compartments[0].height * .5 - 6);
+                  dy = Math.round(cell.compartments[0].height * .5 );
               cell.compoundUI(true,{
                 'body':{
                   rx:radio,
@@ -714,6 +694,10 @@ dedu.Graph = Backbone.Model.extend({
 
             _.each(g.nodes(),function(index) {
 
+              if(!index){
+                return;
+              }
+
                 var elem = elems[index];
                 var node = g.node(index);
 
@@ -778,12 +762,6 @@ dedu.Graph = Backbone.Model.extend({
             return false;
         }
 
-        function getCenterPoint(position,size){
-          return {
-            x:position.x + ~~(size.width /2) ,
-            y:position.y + ~~(size.height /2)
-          }
-        }
 
         function layoutClassifier(cell) {
             if (cell instanceof dedu.Element) {

@@ -279,6 +279,19 @@ dedu.LinkView = dedu.CellView.extend({
                 var bbox = this[endType + 'BBox'];
                 bbox.x += opt.tx;
                 bbox.y += opt.ty;
+                var path = this.model.get('vertices');
+                if(path){
+                   if(endType==='source' ){
+                    var source = path[0];
+                    path = path.slice(path.length-1);
+                    path.unshift({x:source.x+opt.tx, y:source.y+opt.ty});
+                  }else{
+                    var target = path[path.length-1];
+                    path = path.slice(0,1);
+                    path.push({x:target.x+opt.tx, y:target.y+opt.ty});
+                  }
+                  this.model.set('vertices', path, {silent: true});
+                }
 
             } else {
                 // The slowest path, source/target could have been rotated or resized or any attribute
@@ -358,7 +371,7 @@ dedu.LinkView = dedu.CellView.extend({
 
     onVerticesChange: function(cell, changed, opt) {
 
-        this.renderVertexMarkers();
+        //this.renderVertexMarkers();
     },
 
     render: function() {
@@ -494,7 +507,6 @@ dedu.LinkView = dedu.CellView.extend({
         return this;
     },
 
-
     // Default is to process the `attrs` object and set attributes on subelements based on the selectors.
     update: function() {
         // Update attributes.
@@ -537,7 +549,7 @@ dedu.LinkView = dedu.CellView.extend({
         // Path finding
         var vertices = this.route = this.findRoute(this.model.get('vertices') || []);
 
-        this.model.set('vertices', [], { silent: true });
+        // this.model.set('vertices', [], { silent: true });
 
         // finds all the connection points taking new vertices into account
         this._findConnectionPoints(vertices);
@@ -657,6 +669,7 @@ dedu.LinkView = dedu.CellView.extend({
     hideLabels: function() {
         $(this._V.labels.node).hide();
     },
+
     showLabel: function() {
         $(this._V.labels.node).show();
     },
@@ -786,7 +799,6 @@ dedu.LinkView = dedu.CellView.extend({
 
     // Interaction. The controller part.
     // ---------------------------------
-
 
     _beforeArrowheadMove: function() {
         this._z = this.model.get('z');
