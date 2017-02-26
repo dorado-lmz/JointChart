@@ -36,34 +36,51 @@ class TabsComponent extends React.Component {
     graph.layout();
   }
 
+  fullFormat = (e) => {
+    var graph = this.props.graph;
+    graph.layout({
+      debug:true
+    });
+  }
+
+  closeFullFormat = (e)=>{
+    var graph = this.props.graph;
+    graph.layout();
+  }
+
   render() {
     var tabs = this.state.tabs;
     return (
       <section className="tabs">
-        <ul id="workspace-tabs" className="red-ui-tabs">
+        <ul id="workspace-tabs">
           {
             _.map(tabs, (tab, key) =>
-              <li className={tab.active ? "red-ui-tab active" : "red-ui-tab"} key={key} onClick={this.activeTab} onDoubleClick={this.onTabDblClick}>
-                <a href={"#" + tab.id} className="red-ui-tab-label" title={tab.label}>
+              <li className={tab.active ? "active" : ""} key={key} onClick={this.activeTab} onDoubleClick={this.onTabDblClick}>
+                <a href={"#" + tab.id} className="tab-label" title={tab.label}>
                   <span>{tab.label}</span>
                 </a>
               </li>
             )
           }
         </ul>
-        <div id="workspace-add-tab">
-          <a id="btn-workspace-add-tab" onClick={this.addTab} href="#">
-            <i className="glyphicon glyphicon-plus"></i>
+        <div className="workspace-tab-btn">
+          <a id="btn-workspace-full-format-tab" className="tab-btn" onClick={this.fullFormat} href="#">
+            <i className="glyphicon glyphicon-eye-open"></i>
           </a>
-        </div>
-        <div id="workspace-format-tab">
-          <a id="btn-workspace-format-tab" onClick={this.format} href="#">
-            <i className="fa fa-circle-o"></i>
+          <a id="btn-workspace-close-format-tab" className="tab-btn" onClick={this.closeFullFormat} href="#">
+            <i className="glyphicon glyphicon-eye-close"></i>
+          </a>
+          <a id="btn-workspace-format-tab" className="tab-btn" onClick={this.format} href="#">
+            <i className="glyphicon glyphicon-object-align-left"></i>
+          </a>
+          <a id="btn-workspace-add-tab" className="tab-btn" onClick={this.addTab} href="#">
+            <i className="glyphicon glyphicon-plus"></i>
           </a>
         </div>
       </section>
     );
   }
+
   componentWillMount() {
     this.createTab();
     var graph = this.props.graph;

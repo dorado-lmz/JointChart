@@ -381,32 +381,37 @@ dedu.CellView = Backbone.View.extend({
 
     },
 
-    // Override the Backbone `_ensureElement()` method in order to create a `<g>` node that wraps
-    // all the nodes of the Cell view.
-    _ensureElement: function () {
+    // // Override the Backbone `_ensureElement()` method in order to create a `<g>` node that wraps
+    // // all the nodes of the Cell view.
+    // _ensureElement: function () {
+    //     var el;
 
-        var el;
-
-        if (!this.el) {
-            var attrs = _.extend({
-                id: this.id
-            }, _.result(this, 'attributes'));
-            if (this.className) attrs['class'] = _.result(this, 'className');
-            el = V(_.result(this, 'tagName'), attrs).node;
-        } else {
-            el = _.result(this, 'el');
-        }
-        this.setElement(el, false);
-    },
+    //     if (!this.el) {
+    //         var attrs = _.extend({
+    //             id: this.id
+    //         }, _.result(this, 'attributes'));
+    //         if (this.className) attrs['class'] = _.result(this, 'className');
+    //          this.setElement(this._createElement(_.result(this, 'tagName')));
+    //         this._setAttributes(attrs);
+    //         el = this._createElement(_.result(this, 'tagName'), attrs).node;
+    //     } else {
+    //         el = _.result(this, 'el');
+    //     }
+    //     this.setElement(el, false);
+    // },
 
     // Utilize an alternative DOM manipulation API by
     // adding an element reference wrapped in Vectorizer.
     _setElement: function (el) {
         this.$el = el instanceof Backbone.$ ? el : Backbone.$(el);
         this.el = this.$el[0];
-        this.vel = V(this.el);
+        this.vel = Snap(this.el);
     },
 
+    _createElement: function(tagName) {
+      var xmlns='http://www.w3.org/2000/svg';
+      return document.createElementNS(xmlns, tagName);
+    },
 
     /**
      * Construct a unique selector for the `el` element within this view.得到`el`的css选择器
@@ -479,7 +484,7 @@ dedu.CellView = Backbone.View.extend({
      * @memberof dedu.CellView
      */
     getBBox: function () {
-        return g.rect(this.vel.bbox());
+        return g.rect(this.vel.getBBox());
     },
 
     highlight: function (el, opt) {

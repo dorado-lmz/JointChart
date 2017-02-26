@@ -21,11 +21,14 @@ class DialogComponent extends React.Component{
   }
 
   stateSettingsDialog(){
-    let regions= {}, cell = this.state.dialog.config, name="";
+    let regions= {}, cell = this.state.dialog.config, name="",enter,entry,exit;
     if(!cell)
       return null;
     regions = cell.regions;
     name = cell.get('name');
+    enter = cell.enter;
+    entry = cell.entry;
+    exit = cell.exit;
     return (
       <Modal show={this.state.dialog.show}>
         <Modal.Header>
@@ -41,9 +44,9 @@ class DialogComponent extends React.Component{
         <Modal.Body>
           <form className="form-horizontal">
             <div className="form-group">
-              <label htmlFor="inputName" className="col-sm-2 control-label">Name</label>
+              <label htmlFor="inputName" >Name</label>
               <div className="col-sm-10">
-                <input type="text" className="form-control" ref="inputName" id="inputName" value={name} placeholder="Name"/>
+                <input type="text" className="form-control" ref="inputName" id="inputName" defaultValue={name}/>
               </div>
             </div>
             <div>
@@ -53,14 +56,14 @@ class DialogComponent extends React.Component{
               <li role="presentation"><a href="#exit" data-toggle="tab">exit</a></li>
             </ul>
             <div className="tab-content">
-              <div role="tabpanel" className="tab-pane active" id="entry">
-                <textarea className="form-control" rows="3"></textarea>
+              <div role="tabpanel" className="tab-pane active" id="enter">
+                <textarea className="form-control" ref="inputEnter" defaultValue={enter} rows="3"></textarea>
               </div>
-              <div role="tabpanel" className="tab-pane" id="run">
-                <textarea className="form-control" rows="3"></textarea>
+              <div role="tabpanel" className="tab-pane" id="entry">
+                <textarea className="form-control" ref="inputEntry" defaultValue={entry} rows="3"></textarea>
               </div>
               <div role="tabpanel" className="tab-pane" id="exit">
-                <textarea className="form-control" rows="3"></textarea>
+                <textarea className="form-control" ref="inputExit" defaultValue={exit} rows="3"></textarea>
               </div>
             </div>
             </div>
@@ -127,6 +130,9 @@ class DialogComponent extends React.Component{
   saveState = (e) => {
     var cell = DialogStore.getCell();
     cell.set('name',this.refs.inputName.value);
+    cell.enter = this.refs.inputEnter.value;
+    cell.entry = this.refs.inputEntry.value;
+    cell.exit = this.refs.inputExit.value;
     this.onHide();
   }
 

@@ -89,10 +89,10 @@ dedu.shape.devs.ModelView = dedu.ElementView.extend(
         dedu.shape.basic.PortsViewInterface,
         {
             focus: function () {
-                this.vel.findOne('.body').addClass('selected');
+                this.vel.select('.body').addClass('selected');
             },
             unfocus:function(){
-                this.vel.findOne('.body').removeClass('selected');
+                this.vel.select('.body').removeClass('selected');
             }
         })
 );

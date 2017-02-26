@@ -21,22 +21,37 @@ class EventSystemComponent extends React.Component {
     let events = this.props.graph.events||{};
         return (
         <section>
-      <PanelGroup activeKey={this.state.activeKey} onSelect={this.handleSelect} accordion>
-        {
-          _.map(events,(_eventCollection,category)=>
-              <Panel header={category} eventKey={category} key={category} >
-                <ListGroup>
-                  {
-                    _.map(_eventCollection, (event, _id) =>
-                      <ListGroupItem key={_id} >{event.name}</ListGroupItem>
+        <div className="sidebar-header">
+          <span className="button-group">
+            <a id="debug-tab-filter" className="sidebar-header-button" href="#" onClick={this.addEvent}>
+              <i className="glyphicon glyphicon-plus"></i>
+            </a>
+          </span>
+          <span className="button-group">
+            <a id="debug-tab-clear" title="clear log" className="sidebar-header-button" href="#">
+              <i className="glyphicon glyphicon-trash"></i>
+            </a>
+          </span>
+        </div>
+        <PanelGroup activeKey={this.state.activeKey} onSelect={this.handleSelect} accordion>
+          {
+            _.map(events,(_eventCollection,category)=>
+                <Panel header={category} eventKey={category} key={category} >
+                  <ListGroup>
+                    {
+                      _.map(_eventCollection, (event, _id) =>
+                        <ListGroupItem key={_id} >{event.name}
+                          <a id="debug-tab-clear" title="clear log" data-event-name={category+'-'+_id} className="sidebar-header-button pull-right" onClick={this.props.triggerEvent} href="#">
+                            <i className="glyphicon glyphicon-triangle-right"></i>
+                          </a>
+                        </ListGroupItem>
                       )
-                  }
-                </ListGroup>
-              </Panel>
-          )
-        }
-      </PanelGroup>
-      <Button bsStyle="primary" onClick={this.addEvent}>add event</Button>
+                    }
+                  </ListGroup>
+                </Panel>
+            )
+          }
+        </PanelGroup>
       </section>
         );
   }

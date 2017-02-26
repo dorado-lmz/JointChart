@@ -127,28 +127,31 @@ dedu.Paper = Backbone.View.extend({
     this.lasso = null;
     this.mouse_mode = 0;
 
-    var snap_svg = Snap();
-    dedu.Paper.marker_end = snap_svg.path("M 0 0 6 5 0 10 15 5 Z").attr({
-      fill: '#33322E',
-      stroke: '#33322E',
-      'stroke-width': 2,
+    var snap_svg = this.snap_svg = Snap();
+    dedu.Paper.marker_end = snap_svg.path("M 0 0 6.6 5.3 0 10.6 13.3 5.3 Z").attr({
+      fill: 'blue',
+      stroke: 'blue',
+      'stroke-width': 1,
       'stroke-linejoin': 'round',
       'stroke-linecap': 'round'
-    }).marker(0,0,20,10,10,5).attr({
+    }).marker(0,0,13.3,10.6,13.3,5.3).attr({
       markerUnits: 'userSpaceOnUse'
     });
+    dedu.Paper.marker_end.toDefs();
 
     this.svg = snap_svg.node;
 
-    this.viewport = V('g').addClass('viewport').node;
-    this.vis = V('g').addClass("vis").node;
-    this.outer_background = V('rect').node;
+    var viewport = snap_svg.g().addClass('viewport');
+    this.viewport = viewport.node;
+    var vis = snap_svg.g().addClass("vis");
+    this.vis = vis.node;
+    var outer_background= snap_svg.rect()
+    this.outer_background = outer_background.node;
 
-    this.defs = V('defs').node;
 
-    V(this.svg).append([this.viewport, this.defs]);
-    V(this.viewport).append(this.vis);
-    V(this.vis).append(this.outer_background);
+    snap_svg.append(viewport);
+    viewport.append(vis);
+    vis.append(outer_background);
     this.$el.append(this.svg);
 
     this.listenTo(this.model, 'addCell', this.onCellAdded);
@@ -284,10 +287,22 @@ dedu.Paper = Backbone.View.extend({
    */
   renderView: function (cell) {
     var view = this._views[cell.id] = this.createViewForModel(cell);
-    V(this.vis).append(view.el);
+    // if(cell.isLink()){
+    //   this.outer_background.insertAdjacentHTML('afterend',view.el.outerHTML);
+    // }else{
+      Snap(this.vis).append(Snap(view.el));
+    // }
+
     view.paper = this;
     view.render();
 
+    return view;
+  },
+
+  renderViewSilence: function(cell){
+    var view = this.createViewForModel(cell);
+    view.paper = this;
+    view.render();
     return view;
   },
   /**
@@ -340,6 +355,7 @@ dedu.Paper = Backbone.View.extend({
       x: g.snapToGrid(localPoint.x, this.options.gridSize),
       y: g.snapToGrid(localPoint.y, this.options.gridSize)
     };
+    return p;
   },
 
   createViewForModel: function (cell) {
@@ -385,7 +401,7 @@ dedu.Paper = Backbone.View.extend({
     this.options.origin.x = ox || 0;
     this.options.origin.y = oy || 0;
 
-    V(this.viewport).translate(ox, oy, { absolut: true });
+    // Snap(this.viewport).attr('transform','translate('+ox+', '+oy+')');
 
     this.trigger('translate', ox, oy);  //trigger event translate
   },
@@ -394,8 +410,8 @@ dedu.Paper = Backbone.View.extend({
     width = this.options.width = width || this.options.width;
     height = this.options.height = height || this.options.height;
 
-    V(this.svg).attr({ width: width, height: height });
-    V(this.outer_background).attr({ width: width, height: height, fill: '#fff' });
+    Snap(this.svg).attr({ width: width, height: height });
+    Snap(this.outer_background).attr({ width: width, height: height, fill: '#fff' });
 
     this.trigger('resize', width, height);
   },
@@ -419,11 +435,11 @@ dedu.Paper = Backbone.View.extend({
   // Cell highlighting
   // -----------------
   onCellHighlight: function (cellView, el) {
-    V(el).addClass('highlighted');
+    Snap(el).addClass('highlighted');
   },
 
   onCellUnhighlight: function (cellView, el) {
-    V(el).removeClass('highlighted');
+    Snap(el).removeClass('highlighted');
   },
 
 
@@ -450,18 +466,12 @@ dedu.Paper = Backbone.View.extend({
       }
 
       var point = [x, y];
-      var rect = V('rect')
+      var rect = this.snap_svg.rect(point[0],point[1],0,0,1,1)
         .attr("ox", point[0])
         .attr("oy", point[1])
-        .attr("rx", 1)
-        .attr("ry", 1)
-        .attr("x", point[0])
-        .attr("y", point[1])
-        .attr("width", 0)
-        .attr("height", 0)
         .attr("class", "lasso");
       this.lasso = rect;
-      V(this.vis).append(rect);
+      Snap(this.vis).append(rect);
     }
     this.trigger("blank_pointDown");
   },

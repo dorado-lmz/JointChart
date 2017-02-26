@@ -1,24 +1,4 @@
 
-var flow = {
-  states:{
-    "machineName.operate.on":{
-      id: "",
-      type:"",//start,end,state,composite state,
-      name:"on",
-      qualifiedName: "machineName.operate.on",
-      onEntry:"",
-      onExit:""
-    }
-  },
-
-  transitions:{
-    whens:[],  //条件
-    actions:[], //动作
-    src: "",
-    end: "",
-  }
-};
-
 var statements = '', PseudoStateMap = {
     'uml.StartState': StateJS.PseudoStateKind.Initial,
     'uml.EndState': StateJS.PseudoStateKind.Terminate,
@@ -26,8 +6,11 @@ var statements = '', PseudoStateMap = {
     'uml.DeepHistory': StateJS.PseudoStateKind.DeepHistory,
 };
 
-
-export function parseFlow(flow) {
+var _graph;
+export function parseFlow(flow,graph) {
+  if(graph){
+    _graph = graph;
+  }
   statements = '';
     var flat_states = flow.flat_states, transitions = flow.transitions,
         state_machine = flow.state_machine,_events=[],_callback={},_state_machine = [];
@@ -39,15 +22,19 @@ export function parseFlow(flow) {
     for(var id in transitions){
         var transition = transitions[id],
         event = {
-            name: transition.name,
+            id: transition.id,
             from: flat_states[transition.src].name,
             to: flat_states[transition.target].name
-        },
-        callback = {
-            when:transition.events
-        };
+        },callback;
+
+        if(transition.events){
+          callback = {
+              when:transition.events,
+              _callback: transition.actions
+          }
+          _callback[transition.id] = callback;
+        }
         _events.push(event);
-        // _callback.push(callback);
     }
 
     create({
@@ -69,20 +56,29 @@ function parseCell(state){
         }
     }
 }
-
+var model ;
+var instance ;
+StateJS.setConsole(console);
 function create(cfg) {
     var states = cfg.states || [];
     var events = cfg.events || [];
     var callbacks = cfg.callbacks || {};
-
-    var model = new StateJS.StateMachine("model");
-
+    model = new StateJS.StateMachine("model");
     parseStateList(states, "model");
     parseTransitions(events, callbacks);
     console.log(statements);
-    statements += 'var instance = new StateJS.StateMachineInstance("p3pp3r");StateJS.initialise(model, instance);';
+    instance = new StateJS.StateMachineInstance("p3pp3r");
+    instance.graph = _graph||{};
+    statements += 'StateJS.initialise(model, instance);';
     eval(statements);
+    triggerEvent.bind({
+      model: model,
+      instance: instance
+    })
+}
 
+export function triggerEvent(eventName){
+  StateJS.evaluate(model,instance,eventName);
 }
 
 function parseStateList(array_state, parent) {
@@ -100,8 +96,11 @@ function parseState(state, parent) {
 
         }
     } else {
-        concat("var " + state.name + " = new StateJS.State('" + state.name + "', " + parent + ");");
-
+        concat(`var ${state.name} = new StateJS.State('${state.name}', ${parent}).entry(function(){
+          ${state.onEnter || ''}
+        }).exit(function(){
+          ${state.onExit || ''}
+        });`);
     }
     if (state.regions) {
         parseRegions(state.regions, state.name);
@@ -117,19 +116,45 @@ function parseRegions(regions, state_name) {
 
 function parseTransitions(events, callbacks) {
     for (let item of events) {
-        var callback = callbacks[item.name];
+        var callback = callbacks[item.id];
         if (callback) {
-            let statement = item.from + ".to(" + item.to + ")";
+            let statement = `${item.from}.to(${item.to}).setAttribute({
+              chart_id: '${item.id}'
+            })`;
             if (callback.when) {
                 for (let when_item of callback.when) {
-                    statement += ".when(" + when_item + ")"
+                    statement += `.when(
+                      function(message){
+                          return message === '${when_item}' ;
+                      }).effect(function(message, instance){
+                          console.warn(this.chart_id);
+                          instance.graph.trigger('process_transition',{id:this.chart_id})
+                      })`;
                 }
-                concat(statement);
+
             }
+            if(callback._callback){
+                for (let callback_item of callback._callback) {
+                  statement += `.effect(function(message, instance){
+                    ${parseAction(callback_item)}
+                  })
+                  `;
+                }
+            }
+            concat(statement);
         } else {
             concat(item.from + ".to(" + item.to + ");");
         }
     }
+}
+
+function parseAction(actionName) {
+  var res;
+  switch(actionName){
+    case 'delay1':
+      res = 'setTimeout(function(){console.log("asdf")},1000);';
+  }
+  return res;
 }
 
 function concat(statement: string) {

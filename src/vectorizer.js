@@ -597,7 +597,7 @@ V = Vectorizer = (function() {
             return clone;
         },
 
-        findOne: function(selector) {
+        select: function(selector) {
 
             var found = this.node.querySelector(selector);
             return found ? V(found) : undefined;

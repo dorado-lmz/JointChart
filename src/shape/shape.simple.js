@@ -53,14 +53,18 @@ dedu.shape.simple.SuspendPortViewInterface = {
 
         var suspendTemplate = _.template(this.model.suspendPortMarkup);
 
-        this.up = V(suspendTemplate({dir:'up'})).attr("port",'up');
-        this.right = V(suspendTemplate({dir:'right'})).attr("port",'right');
-        this.down = V(suspendTemplate({dir:'down'})).attr("port",'down');
-        this.left = V(suspendTemplate({dir:'left'})).attr("port",'left');
-        this.rotatableNode.append(this.up);
-        this.rotatableNode.append(this.right);
-        this.rotatableNode.append(this.down);
-        this.rotatableNode.append(this.left);
+        var up = Snap.fragment(suspendTemplate({dir:'up'}));
+        var right = Snap.fragment(suspendTemplate({dir:'right'}));
+        var down = Snap.fragment(suspendTemplate({dir:'down'}));
+        var left = Snap.fragment(suspendTemplate({dir:'left'}));
+        this.rotatableNode.append(up);
+        this.rotatableNode.append(right);
+        this.rotatableNode.append(down);
+        this.rotatableNode.append(left);
+        this.up = this.rotatableNode.select('.portup');
+        this.right = this.rotatableNode.select('.portright');
+        this.down = this.rotatableNode.select('.portdown');
+        this.left = this.rotatableNode.select('.portleft');
 
         var port_ref_position = this.model.get('port_ref_position');
         if(port_ref_position){
@@ -119,7 +123,7 @@ dedu.shape.simple.Generic = dedu.shape.basic.Generic.extend(
         dedu.shape.basic.PortsModelInterface,
         {
             markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><text class="label"/></g>',
-            suspendPortMarkup:'<circle class="suspend port<%= dir %>"/>',
+            suspendPortMarkup:'<circle class="suspend port<%= dir %>" port="<%= dir %>"/>',
             defaults: dedu.util.deepSupplement({
                 type: 'simple.Generic',
                 size: {width: 1, height: 1},
@@ -158,6 +162,9 @@ dedu.shape.simple.Generic = dedu.shape.basic.Generic.extend(
 
                 if(selector === '.outPorts'){attrs[portSelector]['ref-dx'] = 0;}
                 return attrs;
+            },
+            compoundUI: function() {
+
             }
         })
 );
@@ -205,10 +212,10 @@ dedu.shape.simple.GenericView = dedu.ElementView.extend(
             this.hideSuspendPort(); // hide four ports
         },
         focus: function () {
-            this.vel.findOne('.body').addClass('selected');
+            this.vel.select('.body').addClass('selected');
         },
         unfocus:function(){
-            this.vel.findOne('.body').removeClass('selected');
+            this.vel.select('.body').removeClass('selected');
 
         }
     })

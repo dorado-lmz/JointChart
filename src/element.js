@@ -152,22 +152,27 @@ dedu.ElementView = dedu.CellView.extend({
         this.listenTo(this.model, 'change:size', this.resize);
         this.listenTo(this.model, 'change:angle', this.rotate);
 
-
     },
 
     render:function(){
         this.$el.empty();
         this.renderMarkup();
-        this.rotatableNode = this.vel.findOne('.rotatable');
-        this.scalableNode = this.vel.findOne('.scalable');
+        this.rotatableNode = this.vel.select('.rotatable');
+        this.scalableNode = this.vel.select('.scalable');
 
         if(this.renderView){
             this.renderView();//留给第三方拓展使用
         }
-        this.update();
-        this.resize();
-        this.rotate();
-        this.translate();
+
+        var that = this;
+
+        setTimeout(function(){
+          that.update();
+          that.resize();
+          that.rotate();
+          that.translate();
+        },0);
+
         return this;
     },
 
@@ -176,7 +181,7 @@ dedu.ElementView = dedu.CellView.extend({
     renderMarkup:function(){
         var markup = this.model.get('markup') || this.model.markup;
         if(markup){
-            var nodes = V(markup);
+            var nodes = Snap.fragment(markup);
             this.vel.append(nodes);
         }
     },
@@ -193,12 +198,13 @@ dedu.ElementView = dedu.CellView.extend({
             // If there is no scalable elements, than there is nothing to resize.
             return;
         }
-        var scalableBbox = scalable.bbox(true);
+        var scalableBbox = scalable.getBBox();
         // Make sure `scalableBbox.width` and `scalableBbox.height` are not zero which can happen if the element does not have any content. By making
         // the width/height 1, we prevent HTML errors of the type `scale(Infinity, Infinity)`.
-        scalable.attr('transform', 'scale(' + (size.width / (scalableBbox.width || 1)) + ',' + (size.height / (scalableBbox.height || 1)) + ')');
+        // scalable.attr('transform','scale(' + (size.width / (scalableBbox.width || size.width)) + ',' + (size.height / (scalableBbox.height || size.height)) + ')');
+        V(scalable.node).attr('transform','scale(' + (size.width / (scalableBbox.width || size.width)) + ',' + (size.height / (scalableBbox.height || size.height)) + ')');
 
-        this.update();
+        // this.update();
     },
 
     /**
@@ -212,15 +218,18 @@ dedu.ElementView = dedu.CellView.extend({
         var allAttrs = this.model.get('attrs');
 
         var rotatable = this.rotatableNode;
-        if (rotatable) {
-            var rotation = rotatable.attr('transform');
-            rotatable.attr('transform', '');
-        }
+        // if (rotatable) {
+        //     var rotation = rotatable.attr('transform');
+        //     rotatable.attr('transform', '');
+        // }
 
         var relativelyPositioned = [];
         var nodesBySelector = {};
 
         _.each(renderingOnlyAttrs || allAttrs, function(attrs, selector) {
+            if(attrs.hidden){
+              return;
+            }
 
             // Elements that should be updated.
             var $selected = this.findBySelector(selector);
@@ -260,10 +269,10 @@ dedu.ElementView = dedu.CellView.extend({
             // to rewrite them, if needed. (i.e display: 'none')
             if (!_.isUndefined(attrs.text)) {
 
-                $selected.each(function() {
+                // $selected.each(function() {
 
-                    V(this).text(attrs.text + '', { lineHeight: attrs.lineHeight, textPath: attrs.textPath, annotations: attrs.annotations });
-                });
+                //     V(this).text(attrs.text + '', { lineHeight: attrs.lineHeight, textPath: attrs.textPath, annotations: attrs.annotations });
+                // });
                 specialAttributes.push('lineHeight', 'textPath', 'annotations');
             }
 
@@ -273,7 +282,7 @@ dedu.ElementView = dedu.CellView.extend({
 
             $selected.each(function() {
 
-                V(this).attr(finalAttributes);
+                Snap(this).attr(finalAttributes);
             });
 
             // `port` attribute contains the `id` of the port that the underlying magnet represents.
@@ -340,14 +349,13 @@ dedu.ElementView = dedu.CellView.extend({
                 ? _.merge({}, allAttrs[$el.selector], renderingOnlyElAttrs)
                 : allAttrs[$el.selector];
 
-            this.positionRelative(V($el[0]), bbox, elAttrs, nodesBySelector);
+            this.positionRelative(Snap($el[0]), bbox, elAttrs, nodesBySelector);
 
         }, this);
 
-        if (rotatable) {
-
-            rotatable.attr('transform', rotation || '');
-        }
+        // if (rotatable) {
+        //     rotatable.transform('transform', rotation || '');
+        // }
     },
 
     /**
@@ -398,7 +406,7 @@ dedu.ElementView = dedu.CellView.extend({
         }
 
         // Check if the node is a descendant of the scalable group.
-        var scalable = vel.findParentByClass('scalable', this.el);
+        var scalable ;//= vel.findParentByClass('scalable', this.el);
 
         // `ref` is the selector of the reference element. If no `ref` is passed, reference
         // element is the root element.
@@ -408,10 +416,10 @@ dedu.ElementView = dedu.CellView.extend({
 
             if (nodesBySelector && nodesBySelector[ref]) {
                 // First we check if the same selector has been already used.
-                vref = V(nodesBySelector[ref][0]);
+                vref = Snap(nodesBySelector[ref][0]);
             } else {
                 // Other wise we find the ref ourselves.
-                vref = ref === '.' ? this.vel : this.vel.findOne(ref);
+                vref = ref === '.' ? this.vel : this.vel.select(ref);
             }
 
             if (!vref) {
@@ -425,8 +433,7 @@ dedu.ElementView = dedu.CellView.extend({
         // Remove the previous translate() from the transform attribute and translate the element
         // relative to the root bounding box following the `ref-x` and `ref-y` attributes.
         if (vel.attr('transform')) {
-
-            vel.attr('transform', vel.attr('transform').replace(/translate\([^)]*\)/g, '').trim() || '');
+            vel.transform('t0,0');
         }
 
         // 'ref-width'/'ref-height' defines the width/height of the subelement relatively to
@@ -555,7 +562,7 @@ dedu.ElementView = dedu.CellView.extend({
             }
         }
 
-        vel.translate(tx, ty);
+        vel.attr('transform','translate('+tx+', '+ty+')');
     },
 
     rotate:function(){
@@ -564,7 +571,8 @@ dedu.ElementView = dedu.CellView.extend({
 
     translate:function(){
         var position = this.model.get('position') || {x:0,y:0};
-        this.vel.attr('transform','translate('+position.x+','+position.y+')');
+        // this.vel.attr('transform','translate('+position.x+','+position.y+')');
+        V(this.vel.node).attr('transform','translate('+position.x+','+position.y+')');
     },
 
     /**
@@ -581,7 +589,8 @@ dedu.ElementView = dedu.CellView.extend({
     //    console.log(this.up.bbox(false,this.paper.viewport));
 
         return _.filter(views,function(view){
-            return view && rect.intersect(g.rect(view.bbox(false,this.paper.viewport)));
+            return view && rect.intersect(g.rect(view.getBBox()));
+            // return view && rect.intersect(g.rect(view.bbox(false,this.paper.viewport)));
         },this);
     },
 
@@ -628,17 +637,17 @@ dedu.ElementView = dedu.CellView.extend({
                      source: {
                          id: this.model.id,
                          redID:this.model.get('redID'),
-                         selector: this.getSelector(this._closestView.node),
-                         port: evt.target.getAttribute('port')
+                         // selector: this.getSelector(this._closestView.node),
+                         // port: evt.target.getAttribute('port')
                      },
                  });
              }else{
                  link.set({
                      source: {
                          id: this.model.id,
-                         redID: this.model.get('redID'),
-                         selector: this.getSelector(evt.target),
-                         port: evt.target.getAttribute('port')
+                         // redID: this.model.get('redID'),
+                         // selector: this.getSelector(evt.target),
+                         // port: evt.target.getAttribute('port')
                      },
                  });
              }
@@ -728,6 +737,13 @@ dedu.ElementView = dedu.CellView.extend({
             this.notify('element:pointerup', evt, x, y);
             dedu.CellView.prototype.pointerup.apply(this, arguments);
         }
-    }
+    },
+
+    findBySelector: function (selector) {
+        // These are either descendants of `this.$el` of `this.$el` itself.
+        // `.` is a special selector used to select the wrapping `<g>` element.
+        var $selected = selector === '.' ? this.$el : $(this.rotatableNode.node).find(selector);
+        return $selected;
+    },
 
 });

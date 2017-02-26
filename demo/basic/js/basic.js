@@ -1,7 +1,3 @@
-
-
-
-
 var graph = new dedu.Graph;
 
 var chart = new dedu.Chart({
@@ -36,22 +32,22 @@ var halo;
 
 var rb = new dedu.shape.basic.Rect({
     position: { x: 350, y: 50 },
-    size: { width: 50, height: 30 },
+    size: { width: 150, height: 30 },
     attrs: { text: { text: 'basic.Rect' } }
 });
 graph.addCell(rb);
 
 
-var m1 = new dedu.shape.node.Model({
-    position: { x: data.x, y: data.y },
-    size: { width: 120, height: 30 },
-    attrs: {
+// var m1 = new dedu.shape.node.Model({
+//     position: { x: data.x, y: data.y },
+//     size: { width: 120, height: 30 },
+//     attrs: {
 
-    },
-    data:data
+//     },
+//     data:data
 
-});
-graph.addCell(m1);
+// });
+// graph.addCell(m1);
 
 
 var m2 = new dedu.shape.devs.Model({
@@ -93,7 +89,7 @@ graph.addCell(state1);
 
 var start_state = new dedu.shape.uml.StartState({
     position: { x: 250, y: 150 },
-    size: { width: 50, height: 50 },
+    size: { width: 30, height: 30 },
 });
 
 graph.addCell(start_state);
@@ -142,21 +138,21 @@ var simple2 = new dedu.shape.simple.Generic({
 
 graph.addCell(simple2);
 
-var link6 = new dedu.Link({
+// var link6 = new dedu.Link({
 
-    source: { id: m1.id },
-    target: { id: m2.id },
-    labels: [
-        { position: {distance:.5}, attrs: { text: { text: 'event1[condition1]/action1' } }},
-        // { position: { distance: .5, offset: { x: 20, y: 0 } }, attrs: { text: { text: 'Foo', fill: 'white', 'font-family': 'sans-serif' }, rect: { stroke: '#F39C12', 'stroke-width': 20, rx: 5, ry: 5 } }},
-        // { position: -10, attrs: { text: { text: '*' } }}
-    ],
-    attrs: {
-        '.marker-target': {
-            d: 'M 10 0 L 0 5 L 10 10 z'
-        }
-    }
-});
+//     source: { id: m1.id },
+//     target: { id: m2.id },
+//     labels: [
+//         { position: {distance:.5}, attrs: { text: { text: 'event1[condition1]/action1' } }},
+//         // { position: { distance: .5, offset: { x: 20, y: 0 } }, attrs: { text: { text: 'Foo', fill: 'white', 'font-family': 'sans-serif' }, rect: { stroke: '#F39C12', 'stroke-width': 20, rx: 5, ry: 5 } }},
+//         // { position: -10, attrs: { text: { text: '*' } }}
+//     ],
+//     attrs: {
+//         '.marker-target': {
+//             d: 'M 10 0 L 0 5 L 10 10 z'
+//         }
+//     }
+// });
 // graph.addCell(link6);
 
 var subflowport = new dedu.shape.node_red.subflowportModel({
@@ -169,7 +165,7 @@ var subflowport = new dedu.shape.node_red.subflowportModel({
 // graph.addCell(subflowport);
 
 
-graph.layout();
+// graph.layout();
 
 //var link1 = new dedu.Link({
 //    source:{id:m1.id},

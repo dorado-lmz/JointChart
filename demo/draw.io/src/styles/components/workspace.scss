@@ -1,0 +1,48 @@
+@import "flow";
+#workspace{
+    position: absolute;
+    margin: 0;
+    top:0px;
+    left:180px;
+    bottom: 0px;
+    right: 322px;
+    overflow: hidden;
+    @include component-border;
+
+    #designer_header{
+      height: 25px;
+      background: #f0f0f0;
+      & #toolbar{
+        padding: 1px 10px;
+        button{
+          border-radius: 0;
+          margin-right: 1em;
+          i.glyphicon{
+            padding-right: .5em;
+          }
+        }
+      }
+    }
+    .tabs{
+      position: absolute;
+      top:25px;
+      width: 100%;
+    }
+}
+
+
+
+#chart{
+   overflow: auto;
+   background: #e3e3e3;
+   position: absolute;
+   bottom:25px;
+   top: 60px;
+   left:0px;
+   right:0px;
+   box-sizing:border-box;
+   transition: right 0.2s ease;
+}
+#workspace-footer{
+  @include component-footer;
+}

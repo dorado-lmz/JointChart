@@ -19,7 +19,7 @@ class PaletteComponent extends React.Component {
 	                <input id="palette-search-input" type="text" placeholder="filter nodes"></input>
 	                <a href="#" id="palette-search-clear"><i className="glyphicon glyphicon-remove"></i></a>
 	            </div>
-	            <Accordion id="palette-container" className="palette-scroll">
+	            <Accordion id="palette-container">
 	            	{categorys.map((category,index) =>
 		            	<Panel className="palette-category" id={'palette-container-'+category} header={category} eventKey={index} key={index}>
                     <ElemComponent category={category} elems={Object.keys(basicElements[category])}/>

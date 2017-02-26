@@ -1,6 +1,13 @@
 SVGElement.prototype.getTransformToElement = SVGElement.prototype.getTransformToElement || function(toElement) {
     return toElement.getScreenCTM().inverse().multiply(this.getScreenCTM());
 };
+Snap.plugin(function (Snap, Element, Paper, global) {
+       // Snap.newmethod = function () {};
+      Element.prototype.bbox = function () {
+            return this.getBBox();
+      };
+    // Paper.prototype.newmethod = function () {};
+});
 
 var dedu = {
 

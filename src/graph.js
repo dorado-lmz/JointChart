@@ -107,6 +107,9 @@ dedu.Graph = Backbone.Model.extend({
         // cells.on('remove', this._restructureOnRemove, this);
         this.on('addCell', this._restructureOnAdd, this);
         this.on('remove', this._restructureOnRemove, this);
+        this.on('process_transition',function(attrs){
+          console.log(attrs)
+        })
     },
 
     /*
@@ -140,6 +143,10 @@ dedu.Graph = Backbone.Model.extend({
                     graph = graphs.add({}, {
                         models: cell.regions[opt.region_name]
                     }, opt);
+                    graph.parent = {
+                        cell: cell,
+                        region: opt.region_name
+                    };
 
                 }
             } else {
@@ -203,6 +210,7 @@ dedu.Graph = Backbone.Model.extend({
 
     switchGraph: function(id) {
         var active_cells = this.get('graphs').get(id).get('root');
+        active_cells.on("all",this.trigger,this);
         this.set('active_graph_id', id);
         this.resetCells(active_cells);
     },
@@ -212,29 +220,29 @@ dedu.Graph = Backbone.Model.extend({
         var graph = graphs.get(id);
         if (graph.parent) {
             this.saveSubGraph(graph, graph.parent);
-            graphs.remove(graph.parent);
+            // graphs.remove(graph.parent);
         }
         graphs.remove(graph);
         this.switchGraph(graphs.at(0).id);
         return graphs.at(0).id;
     },
 
-    createSubGraph: function(root) {
-        if (!(root instanceof Backbone.Model)) return;
-        var graph;
-        // root.models = [];
-        if (root.pending_id) {
-            return this.get('graphs').get(root.pending_id);
-        } else {
-            graph = this.get('graphs').add({
-                type: 'subgraph',
-                root: root
-            });
+    // createSubGraph: function(root) {
+    //     if (!(root instanceof Backbone.Model)) return;
+    //     var graph;
+    //     // root.models = [];
+    //     if (root.pending_id) {
+    //         return this.get('graphs').get(root.pending_id);
+    //     } else {
+    //         graph = this.get('graphs').add({
+    //             type: 'subgraph',
+    //             root: root
+    //         });
 
-        }
-        // this.switchGraph(graph.id);
-        return graph;
-    },
+    //     }
+    //     // this.switchGraph(graph.id);
+    //     return graph;
+    // },
 
     exportGraph: function(id) {
         var cells = this.active_cells();
@@ -256,10 +264,17 @@ dedu.Graph = Backbone.Model.extend({
 
     parseCell: function(cell, parent, states, transitions, state_machine) {
         if (cell.isLink()) {
-            var link = {};
+            var link = {},eventName = cell.event,actionName = cell.action;
             link.id = cell.id;
             link.src = cell.get('source').id;
             link.target = cell.get('target').id;
+
+            if(eventName){
+              link.events = [eventName];
+            }
+            if(actionName){
+              link.actions = [actionName];
+            }
             transitions[link.id] = link;
         } else {
             var state = {};
@@ -270,8 +285,9 @@ dedu.Graph = Backbone.Model.extend({
                 state.qualifiedName = parent.qualifiedName + "." + state.qualifiedName;
             }
 
-            state.onEntry = cell.get('entry');
-            state.onExit = cell.get('exit');
+            state.onEntry = cell.entry;
+            state.onExit = cell.exit;
+            state.onEnter = cell.enter;
 
             states[state.id] = state;
             state_machine[state.id] = _.clone(state);
@@ -290,25 +306,6 @@ dedu.Graph = Backbone.Model.extend({
 
         }
     },
-
-    // createSubGraph: function (root) {
-    //   if (!(root instanceof Backbone.Model)) return;
-    //   var graph;
-    //   // root.models = [];
-    //   if (root.pending_id) {
-    //     return this.get('graphs').get(root.pending_id);
-    //   } else {
-    //     graph = this.get('graphs').add({
-    //       type: 'subgraph',
-    //       root: root
-    //     });
-
-    //   }
-    //   // this.switchGraph(graph.id);
-    //   return graph;
-    // },
-
-
     _restructureOnAdd: function(cell) {
 
         if (cell.isLink()) {
@@ -528,28 +525,33 @@ dedu.Graph = Backbone.Model.extend({
         }
     },
 
-    layout: function() {
-        // var g = new dagre.graphlib.Graph(),
-        //   cells = this.active_cells(),
-        //   len = cells.length;
-        // g.setGraph({});
-        // for (var i = 0; i < len; i++) {
-        //   var cell = cells.at(i);
-        //   g.setNode(cell.id, { width: cell.get('size').width, height: cell.get('size').height });
-        // }
+    layout: function(opt) {
 
-        // dagre.layout(g, {
-        //   nodesep: 10,
-        //   ranksep: 10
-        // });
-        // g.nodes().forEach(function (value) {
-        //   var cell = cells.get(value);
-        //   cell.set('position', {
-        //     x: g.node(value).x,
-        //     y: g.node(value).y
-        //   })
-        // })
-        var that = this;
+
+      skanaar.sum = function sum(list, plucker){
+          var transform = {
+              'undefined': _.identity,
+              'string': function (obj){ return obj[plucker] },
+              'number': function (obj){ return obj[plucker] },
+              'function': plucker
+          }[typeof plucker]
+          for(var i=0, summation=0, len=list.length; i<len; i++)
+              summation += transform(list[i])
+          return summation
+      }
+
+      skanaar.hasSubstring = function hasSubstring(haystack, needle){
+          if (needle === '') return true
+          if (!haystack) return false
+          return haystack.indexOf(needle) !== -1
+      }
+
+      skanaar.format = function format(template /* variadic params */){
+          var parts = Array.prototype.slice.call(arguments, 1)
+          return _.flatten(_.zip(template.split('#'), parts)).join('')
+      }
+
+        var that = this, opt = opt || {};
         var d = {};
         var userStyles = null;
         var vm = skanaar.vector;
@@ -588,7 +590,9 @@ dedu.Graph = Backbone.Model.extend({
                 return config.leading * config.fontSize
             }
         };
-        layoutCell(cells);
+        layoutCell(cells, opt);
+        that.resetCells();
+        console.log(cells);
 
         function setFont(config, isBold, isItalic) {
             var style = (isBold === 'bold' ? 'bold' : '')
@@ -616,17 +620,86 @@ dedu.Graph = Backbone.Model.extend({
           return p2;
         }
 
-        function layoutCell(cells) {
-            cells = that.splitCells(cells);
+        function layoutCellFullFormat(cell){
+          if(cell.regions){
+
+            cell.compartments = [{lines: [cell.get('name')]}];
+            _.each(cell.compartments,function(compartment ,i){
+                var textSize = measureLines(compartment.lines, i ? 'normal' : 'bold')
+                compartment.width = textSize.width;
+                compartment.height = textSize.height - 2 * config.padding;
+            });
+
+
+            for(var regionName in cell.regions){
+              var cells = cell.regions[regionName];
+              layoutCell(cells, {
+                debug: true,
+                level: true
+              });
+              cell.compartments.push({
+                cells: cells,
+                width: cells.width,
+                height: cells.height
+              });
+            }
+            cell.width = _.max(_.pluck(cell.compartments,'width'));
+            cell.height = skanaar.sum(cell.compartments, 'height');
+            cell.debug = true;
+            if(cell instanceof dedu.shape.uml.State){
+              var radio  =  Math.round(cell.compartments[0].height / 4),
+                  dy = Math.round(cell.compartments[0].height * .5 - 6);
+              cell.compoundUI(true,{
+                'body':{
+                  rx:radio,
+                  ry:radio,
+                },
+                'name':{
+                  dy: dy
+                }
+              });
+            }
+          }
+        }
+
+
+        function layoutCell(_cells, opt) {
+          //分离元素和连线
+            var cells = that.splitCells(_cells);
             var elems = cells.elements,
                 links = cells.links;
             if (elems.length<=0)
                 return;
 
+            //两种模式下的layout
+            if(opt.debug){
+              _.each(_cells, layoutCellFullFormat);
+            }else{
+              _.each(_.values(elems), function(_elem) {
+                _elem.width &&  (_elem.width=0);
+                _elem.height &&  (_elem.height=0);
+                _elem.debug && (_elem.debug = false);
+                _elem.compoundUI(false);
+              })
+            }
+
+            //配置graph对象属性
             var g = new dagre.graphlib.Graph();
-            g.setGraph({});
+            if(opt.level){
+              g.setGraph({
+                marginx: 10,
+                marginy: 10
+              });
+            }else{
+              g.setGraph({
+                marginx: config.spacing,
+                marginy: config.spacing
+              });
+            }
+
             g.setDefaultEdgeLabel(function() { return {}; });
 
+            //计算元素最合适的尺寸
             for(var id in elems){
               layoutClassifier(elems[id]);
               g.setNode(id, { width: elems[id].width, height: elems[id].height });
@@ -636,49 +709,80 @@ dedu.Graph = Backbone.Model.extend({
               g.setEdge(links[id].get('source').id, links[id].get('target').id);
             }
 
+            //布局计算
             dagre.layout(g);
 
-            g.nodes().forEach(function(index) {
+            _.each(g.nodes(),function(index) {
+
                 var elem = elems[index];
                 var node = g.node(index);
 
                 elem.set('position', {
-                    x: node.x,
-                    y: node.y
-                });
+                    x: Math.round(node.x-node.width/2),
+                    y: Math.round(node.y-node.height/2)
+                }, {silent: true});
+
+                elem.x = elem.get('position').x;
+                elem.y = elem.get('position').y;
 
                 if (node.width && node.height) {
                     elem.set('size', {
                         width: node.width,
                         height: node.height
-                    })
+                    }, {silent: true})
                 }
             });
 
-            g.edges().forEach(function(e) {
+            _.each(g.edges(),function(e) {
 
               var edge = g.edge(e),path = edge.points;
-              var link = links[e.v+e.w];
-              var startNode = elems[e.v],
-                  endNode = elems[e.w];
+              var link = links[e.v+e.w],startNode=g.node(e.v),endNode=g.node(e.w);
               path.unshift({
-                x: startNode.get('position').x,
-                y: startNode.get('position').y
+                x: startNode.x,
+                y: startNode.y
               });
               path.push({
-                x: endNode.get('position').x + ~~(endNode.get('size').width /2),
-                y: endNode.get('position').y + ~~(endNode.get('size').height /2)
+                  x: endNode.x,
+                  y: endNode.y
               });
 
               var start = rectIntersection(path[1], _.first(path), startNode);
               var end = rectIntersection(path[path.length-2], _.last(path), endNode);
+              if(!isEqual(start,path[1])){
+                path.splice(0,1,start);
+              }else{
+                path.splice(0,1);
+              }
 
-              path = _.flatten([start,_.tail(_.initial(path)),end]);
+              if(!isEqual(end,path[path.length-2])){
+                path.splice(path.length-1,1,end);
+              }else{
+                path.splice(path.length-1,1);
+              }
 
-              link.set('vertices', path)
+              link.set('vertices', path, {silent: true});
 
             });
 
+            var graphHeight = g._label.height,
+                graphWidth = g._label.width;
+
+            _cells.width = graphWidth + 2*config.padding;
+            _cells.height = graphHeight + config.padding;
+        }
+
+        function isEqual(pointA,pointB){
+          if(pointA.x===pointB.x && pointB.y === pointB.y)
+            return true;
+          else
+            return false;
+        }
+
+        function getCenterPoint(position,size){
+          return {
+            x:position.x + ~~(size.width /2) ,
+            y:position.y + ~~(size.height /2)
+          }
         }
 
         function layoutClassifier(cell) {
@@ -686,15 +790,12 @@ dedu.Graph = Backbone.Model.extend({
                 // _.each(cell.children.models, layoutCell)
                 if (cell.get('text')) {
                     var size = measureLines([cell.get('text')]);
-                    cell.width = size.width;
-                    cell.height = size.height;
-                    // cell.x = cell.width / 2;
-                    // cell.y = cell.height / 2;
+                    cell.width = _.max([size.width,cell.width||0]);
+                    cell.height = _.max([size.height,cell.height||0]);
                 } else {
-                    cell.width = cell.get('size').width;
-                    cell.height = cell.get('size').height;
+                    cell.width = _.max([cell.get('size').width,cell.width||0]);
+                    cell.height = _.max([cell.get('size').height,cell.height||0]);
                 }
-
             }
         }
 

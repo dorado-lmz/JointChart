@@ -27,13 +27,64 @@ class InfoComponent extends React.Component{
 
   stateInfo(){
     let regions = this.state.regions;
-    return (<form>
-      <FieldGroup
-        id="formControlsText"
-        type="text"
-        label="Name"
-        value={this.state.name}
-      />
+    return (
+      <section className="sidebar-node-info">
+      <table className="node-info">
+        <tbody>
+          <tr className="blank">
+            <td colSpan="2">Node</td>
+          </tr>
+          <tr>
+            <td>Type</td>
+            <td>&nbsp;{this.state.type}</td>
+          </tr>
+          <tr><td>ID</td><td>&nbsp;{this.state.id}</td></tr>
+          <tr><td>Name</td><td>&nbsp;{this.state.name}</td></tr>
+          <tr className="blank">
+            <td colSpan="2">
+              <a href="#" className="node-info-property-header">
+                <i className="glyphicon glyphicon-triangle-right"></i> Properties
+              </a>
+            </td>
+          </tr>
+          <tr className="node-info-property-row hide">
+            <td>active</td>
+            <td>
+              <span className="debug-message-element debug-message-top-level">
+              <span>
+                <span className="debug-message-object-value"><span className="debug-message-type-other">true</span></span>
+              </span>
+              </span>
+            </td>
+          </tr>
+          <tr className="node-info-property-row hide">
+            <td>console</td>
+            <td>
+              <span className="debug-message-element debug-message-top-level">
+                <span>
+                  <span className="debug-message-object-value">
+                    <span className="debug-message-type-string debug-message-object-header">"false"</span>
+                  </span>
+                </span>
+              </span>
+            </td>
+          </tr>
+          <tr className="node-info-property-row hide">
+            <td>complete</td>
+            <td>
+              <span className="debug-message-element debug-message-top-level">
+                <span>
+                  <span className="debug-message-object-value">
+                    <span className="debug-message-type-string debug-message-object-header">"payload"</span>
+                  </span>
+                </span>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <form>
+
       <FormGroup>
         <ControlLabel>Regions</ControlLabel>
         <ListGroup>
@@ -42,13 +93,14 @@ class InfoComponent extends React.Component{
             )}
         </ListGroup>
       </FormGroup>
-      </form>);
+      </form>
+      </section>);
   }
 
   linkInfo(){
-    let graph = this.props.graph,events = graph.events,event = this.state.event;
+    let graph = this.props.graph,events = graph.events,event = this.state.event,action=this.state.action;
     return (
-      <form>
+      <form id="link-form">
       <FieldGroup
         id="formControlsText"
         type="text"
@@ -65,7 +117,14 @@ class InfoComponent extends React.Component{
                 <option value={category+"-"+_id}>{event.name}</option>)
             })
           }
-
+        </FormControl>
+      </FormGroup>
+      <FormGroup controlId="formControlsSelect">
+        <ControlLabel>Actions</ControlLabel>
+        <FormControl componentClass="select" value={action || 'none'} placeholder="select" ref="action" onChange={this.actionUpdate}>
+          <option value="none">none</option>
+          <option value="delay1">delay 1s</option>
+          <option value="delay5">delay 5s</option>
         </FormControl>
       </FormGroup>
       </form>);
@@ -93,14 +152,16 @@ class InfoComponent extends React.Component{
   }
 
   onShow = ()=>{
-    var cell = InfoStore.getCell(),name,regions;
+    var cell = InfoStore.getCell(),name,regions,id;
 
     name = cell.get('name');
     regions = cell.regions;
+    id = cell.id;
     this.setState({
       name: name,
       type: 'state',
-      regions: regions
+      regions: regions,
+      id: id
     });
   }
   onLinkShow = ()=>{
@@ -110,9 +171,28 @@ class InfoComponent extends React.Component{
       this.setState({
         name: name,
         type: 'link',
-        event: cell.event
+        event: cell.event,
+        action: cell.action
       });
     }
+  }
+  actionUpdate = (e) => {
+    var cell = InfoStore.getLink(), sel = e.target,
+        selected;
+    for(let i = 0;i<sel.length;i++){
+      let option = sel.options[i];
+      if(option.selected){
+        selected = option.value;
+        break;
+      }
+    }
+    if(selected && selected!='none'){
+      cell.action = selected;
+    }
+     this.setState({
+      action: cell.action
+     });
+    console.log(selected);
   }
   eventUpdate = (e) => {
     var cell = InfoStore.getLink(), sel = e.target,

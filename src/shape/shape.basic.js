@@ -298,11 +298,11 @@ dedu.shape.basic.PortsViewInterface = {
 
         _.each(_.filter(this.model.ports, function(p) { return p.type === 'in'; }), function(port, index) {
 
-            $inPorts.append(V(portTemplate({ id: index, port: port })).node);
+            $inPorts.append(Snap.fragment(portTemplate({ id: index, port: port })));
         });
         _.each(_.filter(this.model.ports, function(p) { return p.type === 'out'; }), function(port, index) {
 
-            $outPorts.append(V(portTemplate({ id: index, port: port })).node);
+            $outPorts.append(Snap.fragment(portTemplate({ id: index, port: port })));
         });
 
     }

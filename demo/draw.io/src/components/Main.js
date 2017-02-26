@@ -1,5 +1,5 @@
 require('normalize.css/normalize.css');
-require('styles/App.styl');
+require('styles/App.scss');
 
 import React from 'react';
 import dedu from 'joint_chart';
@@ -28,7 +28,20 @@ class AppComponent extends React.Component {
       </div>
     );
   }
+  componentDidMount(){
+    var that = this;
+    $.Shortcuts.add({
+      type: 'down',
+      mask: 'Delete',
+      handler: function() {
+          that.graph.removeSection();
+      }
+    }).start();
 
+  }
+  componentWillUnmount(){
+    $.Shortcuts.stop();
+  }
 }
 
 

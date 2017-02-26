@@ -1,0 +1,26 @@
+// @import 'main';
+@import 'colors';
+@import "mixins";
+@import "forms";
+@import 'components/workspace';
+@import 'components/palette';
+@import 'components/tabs';
+@import 'components/sidebar';
+@import 'components/dialog';
+@import "components/sidebar-info";
+
+body{
+  font-size: 14px;
+  font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  background: $background-color;
+}
+
+#sidebar-separator{
+    position: absolute;
+    top: 5px;
+    right: 315px;
+    bottom:10px;
+    width: 7px;
+    background: url(../images/grip.png) no-repeat 50% 50%;
+    cursor: col-resize;
+}

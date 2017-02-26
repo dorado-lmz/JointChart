@@ -1,0 +1,87 @@
+.sidebar-node-info{
+    padding-top: 4px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+.sidebar-node-info  hr {
+    margin: 10px 0;
+}
+table.node-info {
+    font-size: 14px;
+    margin: 0px;
+    width: 97%;
+}
+table.node-info tr {
+    border: 1px solid #ddd;
+}
+table.node-info tr.blank {
+    border: none;
+}
+table.node-info tr.blank td {
+    padding-top: 8px;
+    border: none;
+    font-weight: bold;
+    padding-left: 0px;
+}
+table.node-info td:first-child{
+    color: #666;
+    vertical-align: top;
+    width: 90px;
+    padding: 3px;
+    border-right: 1px solid #ddd;
+}
+table.node-info td:last-child{
+    padding-left: 5px;
+    color: #666;
+}
+div.node-info {
+    margin: 5px;
+}
+.node-info-property-header {
+    color: #666;
+}
+.node-info-property-header:hover,
+.node-info-property-header:focus {
+    color: #666;
+    text-decoration: none;
+}
+.node-help {
+    font-size: 14px;
+    line-height: 1.5em;
+    h1 {
+        font-weight: normal;
+        font-size: 23px;
+        margin: 8px auto;
+    }
+    h2 {
+        font-weight: normal;
+        font-size: 18px;
+        margin: 8px auto;
+    }
+    h3 {
+        font-weight: normal;
+        font-size: 16px;
+        margin: 8px auto;
+    }
+    h4,
+    h5 {
+        font-weight: normal;
+        font-size: 14px;
+        margin: 8px auto;
+    }
+}
+.node-info-tip {
+    position: absolute;
+    top: 40%;
+    left:0;
+    right:0;
+    padding: 20px;
+    font-size: 16px;
+    text-align: center;
+    line-height: 1.9em;
+    color : #bbb;
+    background-color: #fff;
+    @include disable-selection;
+    cursor: default;
+
+}

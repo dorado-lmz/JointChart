@@ -51,7 +51,7 @@ dedu.shape.node.ModelView = dedu.shape.devs.ModelView.extend({
 
     renderView: function () {
 
-        var nodegroup = this.vel.findOne('.nodegroup');
+        var nodegroup = this.vel.select('.nodegroup');
 
         //获取绑定数据
         var data = this.model.data;
@@ -64,7 +64,7 @@ dedu.shape.node.ModelView = dedu.shape.devs.ModelView.extend({
 
         //判断节点是否需要按钮
         if (data._def.button) {
-            var nodeButtonGroup = V('g');
+            var nodeButtonGroup = Snap.g();
             nodegroup.append(nodeButtonGroup);
             nodeButtonGroup.attr("transform", function () {
                     return "translate(" + ((data._def.align == "right") ? 94 : -25) + ",2)";
@@ -175,10 +175,10 @@ dedu.shape.node.ModelView = dedu.shape.devs.ModelView.extend({
 
     focus: function () {
 
-        this.vel.findOne('.node').addClass('selected');
+        this.vel.select('.node').addClass('selected');
     },
     unfocus:function(){
 
-        this.vel.findOne('.node').removeClass('selected');
+        this.vel.select('.node').removeClass('selected');
     }
 });

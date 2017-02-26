@@ -51,9 +51,9 @@ class WorkspaceComponent extends React.Component {
 			<div id="workspace">
 	            <div id="designer_header">
 	                <div id="toolbar">
-                    <button type="button" className="btn btn-default btn-xs pull-left" onClick={this.save}>Save</button>
-                    <button type="button" className="btn btn-primary btn-xs pull-right" onClick={this.debug}>Debug</button>
-                    <button type="button" className="btn btn-danger btn-xs pull-right" onClick={this.deploy}>Deploy</button>
+                    <button type="button" id="save" className="btn btn-default btn-xs pull-left" onClick={this.save}><i className="glyphicon glyphicon-floppy-disk"></i>Save</button>
+                    <button type="button" id="debug" className="btn btn-success btn-xs pull-right" onClick={this.debug}><i className="glyphicon glyphicon-triangle-right"></i>Debug</button>
+                    <button type="button" id="deploy" className="btn btn-danger btn-xs pull-right" onClick={this.deploy}><i className="glyphicon glyphicon-random"></i>Deploy</button>
 	                </div>
 	            </div>
 

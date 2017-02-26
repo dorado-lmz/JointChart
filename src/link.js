@@ -80,7 +80,7 @@ dedu.Link = dedu.Cell.extend({
                 d: 'M 10 0 L 0 5 L 10 10 z'
             },
             '.connection_line': {
-              stroke: '#33322E'
+              stroke: 'blue'
             }
         }
     },
@@ -392,7 +392,7 @@ dedu.LinkView = dedu.CellView.extend({
         Snap(this._V.connection_line.node).attr({
           "marker-end": dedu.Paper.marker_end
         });
-        this.vel.append(children);
+        V(this.vel.node).append(children);
         // rendering labels has to be run after the link is appended to DOM tree. (otherwise <Text> bbox
         // returns zero values)
         this.renderLabels();
@@ -557,7 +557,7 @@ dedu.LinkView = dedu.CellView.extend({
         if (this.model.get('selected')) {
             this._V.connection_line.attr({ 'stroke': '#ff7f0e' });
         } else {
-            this._V.connection_line.attr({ 'stroke': '#888' });
+            this._V.connection_line.attr({ 'stroke': 'blue' });
         }
     },
 
@@ -1036,12 +1036,11 @@ dedu.LinkView = dedu.CellView.extend({
 
 
     unhighlight: function(el) {
-        this._V[el].attr({ 'stroke': '#888' });
+        this._V[el].attr({ 'stroke': 'blue' });
     },
 
     pointerdown: function(evt, x, y) {
         dedu.CellView.prototype.pointerdown.apply(this, arguments);
-
 
         this._dx = x;
         this._dy = y;
@@ -1157,8 +1156,8 @@ dedu.LinkView = dedu.CellView.extend({
                                     this._closestEnd = {
                                         id: view.model.id,
                                         redID: view.model.get('redID'),
-                                        selector: view.getSelector(magnet),
-                                        port: magnet.getAttribute('port')
+                                        // selector: view.getSelector(magnet),
+                                        //port: magnet.getAttribute('port')
                                     };
                                 }
                             }
