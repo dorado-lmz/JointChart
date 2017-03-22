@@ -1,756 +1,799 @@
-/**
- * `dedu.Paper` 是{@link dedu.Graph}的view
- * @class
- * @augments Backbone.View
- */
-dedu.Paper = Backbone.View.extend({
+define(["backbone", "V", 'g', "./element", "./link"], function (Backbone,V,g,dedu) {
   /**
-   * 渲染元素的class
-   * @member {String}
-   * @memberof dedu.Paper
-   * @default
+   * `dedu.Paper` 是{@link dedu.Graph}的view
+   * @class
+   * @augments Backbone.View
    */
-  className: 'paper',
-
-  /**
-   * `dedu.Paper`的默认属性
-   * @member {Object}
-   * @memberof dedu.Paper
-   */
-  options: {
-
+  dedu.Paper = Backbone.View.extend({
     /**
-     * @property {Number} options.width=800 - 渲染区域的宽度
+     * 渲染元素的class
+     * @member {String}
+     * @memberof dedu.Paper
+     * @default
      */
-    width: 800,
-    /**
-     * @property {Number} options.height=600 - 渲染区域的高度
-     */
-    height: 600,
-    /**
-     * @property {Object} options.origin={x:0,y:0} - x,y coordinates in top-left corner
-     */
-    origin: { x: 0, y: 0 }, // x,y coordinates in top-left corner
+    className: 'paper',
 
     /**
-     * @property {Number} options.gridSize=1 - 网格大小
+     * `dedu.Paper`的默认属性
+     * @member {Object}
+     * @memberof dedu.Paper
      */
-    gridSize: 1,
-    perpendicularLinks: false,
-    /**
-     * @property {dedu.ElementView} options.elementView - 默认的elementView
-     */
-    elementView: dedu.ElementView,
-    /**
-     *  @property {dedu.LinkView} options.LinkView - 默认的LinkView
-     */
-    linkView: dedu.LinkView,
+    options: {
 
-    /**
-     * @property {Object} options.interactive - 哪些元素可以进行交互
-     */
-    interactive: {
-      labelMove: false
+      /**
+       * @property {Number} options.width=800 - 渲染区域的宽度
+       */
+      width: 800,
+      /**
+       * @property {Number} options.height=600 - 渲染区域的高度
+       */
+      height: 600,
+      /**
+       * @property {Object} options.origin={x:0,y:0} - x,y coordinates in top-left corner
+       */
+      origin: {
+        x: 0,
+        y: 0
+      }, // x,y coordinates in top-left corner
+
+      /**
+       * @property {Number} options.gridSize=1 - 网格大小
+       */
+      gridSize: 1,
+      perpendicularLinks: false,
+      /**
+       * @property {dedu.ElementView} options.elementView - 默认的elementView
+       */
+      elementView: dedu.ElementView,
+      /**
+       *  @property {dedu.LinkView} options.LinkView - 默认的LinkView
+       */
+      linkView: dedu.LinkView,
+
+      /**
+       * @property {Object} options.interactive - 哪些元素可以进行交互
+       */
+      interactive: {
+        labelMove: false
+      },
+
+      snapLinks: {
+        radius: 30
+      }, // false, true, { radius: value }
+      // Marks all available magnets with 'available-magnet' class name and all available cells with
+      // 'available-cell' class name. Marks them when dragging a link is started and unmark
+      // when the dragging is stopped.
+      markAvailable: false,
+
+
+      // Defines what link model is added to the graph after an user clicks on an active magnet.
+      // Value could be the Backbone.model or a function returning the Backbone.model
+      // defaultLink: function(elementView, magnet) { return condition ? new customLink1() : new customLink2() }
+      defaultLink: new dedu.Link,
+
+      // A connector that is used by links with no connector defined on the model.
+      // e.g. { name: 'rounded', args: { radius: 5 }} or a function
+      defaultConnector: {
+        name: 'normal'
+      },
+
+      // A router that is used by links with no router defined on the model.
+      // e.g. { name: 'oneSide', args: { padding: 10 }} or a function
+      // defaultRouter: { name: 'manhattan' },\
+      defaultRouter: null,
+
+      /* CONNECTING */
+
+      // Check whether to add a new link to the graph when user clicks on an a magnet.
+      validateMagnet: function (cellView, magnet) {
+        return magnet.getAttribute('magnet') !== 'passive';
+      },
+
+      // Check whether to allow or disallow the link connection while an arrowhead end (source/target)
+      // being changed.
+      validateConnection: function (cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
+        return (end === 'target' ? cellViewT : cellViewS) instanceof dedu.ElementView;
+      },
+
+      // Restrict the translation of elements by given bounding box.
+      // Option accepts a boolean:
+      //  true - the translation is restricted to the paper area
+      //  false - no restrictions
+      // A method:
+      // restrictTranslate: function(elementView) {
+      //     var parentId = elementView.model.get('parent');
+      //     return parentId && this.model.getCell(parentId).getBBox();
+      // },
+      // Or a bounding box:
+      // restrictTranslate: { x: 10, y: 10, width: 790, height: 590 }
+      restrictTranslate: false,
+
+      // When set to true the links can be pinned to the paper.
+      // i.e. link source/target can be a point e.g. link.get('source') ==> { x: 100, y: 100 };
+      linkPinning: false,
+
+      /**
+       *  @property {dedu.shape} options.cellViewNamespace - 默认的cellViewNamespace
+       */
+      cellViewNamespace: dedu.shape
     },
 
-    snapLinks: { radius: 30 }, // false, true, { radius: value }
-    // Marks all available magnets with 'available-magnet' class name and all available cells with
-    // 'available-cell' class name. Marks them when dragging a link is started and unmark
-    // when the dragging is stopped.
-    markAvailable: false,
+    constructor: function (options) {
 
+      this._configure(options);
 
-    // Defines what link model is added to the graph after an user clicks on an active magnet.
-    // Value could be the Backbone.model or a function returning the Backbone.model
-    // defaultLink: function(elementView, magnet) { return condition ? new customLink1() : new customLink2() }
-    defaultLink: new dedu.Link,
-
-    // A connector that is used by links with no connector defined on the model.
-    // e.g. { name: 'rounded', args: { radius: 5 }} or a function
-    defaultConnector: { name: 'normal' },
-
-    // A router that is used by links with no router defined on the model.
-    // e.g. { name: 'oneSide', args: { padding: 10 }} or a function
-    // defaultRouter: { name: 'manhattan' },\
-    defaultRouter: null ,
-
-    /* CONNECTING */
-
-    // Check whether to add a new link to the graph when user clicks on an a magnet.
-    validateMagnet: function (cellView, magnet) {
-      return magnet.getAttribute('magnet') !== 'passive';
+      Backbone.View.apply(this, arguments);
     },
 
-    // Check whether to allow or disallow the link connection while an arrowhead end (source/target)
-    // being changed.
-    validateConnection: function (cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
-      return (end === 'target' ? cellViewT : cellViewS) instanceof dedu.ElementView;
+    _configure: function (options) {
+      if (this.options) options = _.extendOwn({}, _.result(this, 'options'), options);
+      this.options = options;
     },
 
-    // Restrict the translation of elements by given bounding box.
-    // Option accepts a boolean:
-    //  true - the translation is restricted to the paper area
-    //  false - no restrictions
-    // A method:
-    // restrictTranslate: function(elementView) {
-    //     var parentId = elementView.model.get('parent');
-    //     return parentId && this.model.getCell(parentId).getBBox();
-    // },
-    // Or a bounding box:
-    // restrictTranslate: { x: 10, y: 10, width: 790, height: 590 }
-    restrictTranslate: false,
+    initialize: function () {
 
-    // When set to true the links can be pinned to the paper.
-    // i.e. link source/target can be a point e.g. link.get('source') ==> { x: 100, y: 100 };
-    linkPinning: false,
+      this.lasso = null;
+      this.mouse_mode = 0;
+
+      var snap_svg = this.snap_svg = Snap();
+      dedu.Paper.marker_end = snap_svg.path("M 0 0 6.6 5.3 0 10.6 13.3 5.3 Z").attr({
+        fill: 'blue',
+        stroke: 'blue',
+        'stroke-width': 1,
+        'stroke-linejoin': 'round',
+        'stroke-linecap': 'round'
+      }).marker(0, 0, 13.3, 10.6, 13.3, 5.3).attr({
+        markerUnits: 'userSpaceOnUse'
+      });
+      dedu.Paper.marker_end.toDefs();
+
+      this.svg = snap_svg.node;
+
+      var viewport = snap_svg.g().addClass('viewport');
+      this.viewport = viewport.node;
+      var vis = snap_svg.g().addClass("vis");
+      this.vis = vis.node;
+      var outer_background = snap_svg.rect()
+      this.outer_background = outer_background.node;
+
+
+      snap_svg.append(viewport);
+      viewport.append(vis);
+      vis.append(outer_background);
+      this.$el.append(this.svg);
+
+      this.listenTo(this.model, 'addCell', this.onCellAdded);
+      this.listenTo(this.model, 'remove', this.removeView);
+      this.listenTo(this.model, 'reset', this.resetViews);
+      this.listenTo(this.model, 'sort', this.sortViews);
+      this.listenTo(this.model, 'batch:stop', this._onBatchStop);
+
+      this.setOrigin();
+      this.setDimensions();
+
+
+      // Hash of all cell views.
+      this._views = {};
+
+      this.on({
+        'blank:pointerdown': this.blank_pointDown,
+        'blank:pointermove': this.blank_pointMove,
+        'blank:pointerup': this.blank_pointUp
+      });
+      // default cell highlighting
+      this.on({
+        'cell:highlight': this.onCellHighlight,
+        'cell:unhighlight': this.onCellUnhighlight
+      });
+
+    },
+
+    events: {
+      "mousedown .vis": "canvasMouseDown",
+      "mousemove .vis": "canvasMouseMove",
+      "mouseup .vis": "canvasMouseUp",
+      "mouseover .element": "cellMouseover",
+      "dblclick": "mousedblclick",
+      "click": "mouseclick"
+    },
 
     /**
-     *  @property {dedu.shape} options.cellViewNamespace - 默认的cellViewNamespace
+     * render cell that be added to `dedu.Graph`
+     * @method onCellAdded
+     * @param {dedu.Cell} cell
+     * @param graph
+     * @param opt
      */
-    cellViewNamespace: dedu.shape
-  },
+    onCellAdded: function (cell, graph, opt) {
+      this.renderView(cell);
+    },
 
-  constructor: function (options) {
+    removeView: function (cell) {
+      var view = this._views[cell.id];
 
-    this._configure(options);
+      if (view) {
+        view.remove();
+        delete this._views[cell.id];
+      }
 
-    Backbone.View.apply(this, arguments);
-  },
+      return view;
 
-  _configure: function (options) {
-    if (this.options) options = _.merge({}, _.result(this, 'options'), options);
-    this.options = options;
-  },
+    },
 
-  initialize: function () {
+    resetViews: function (opt) {
 
-    this.lasso = null;
-    this.mouse_mode = 0;
+      $(this.outer_background).empty();
 
-    var snap_svg = this.snap_svg = Snap();
-    dedu.Paper.marker_end = snap_svg.path("M 0 0 6.6 5.3 0 10.6 13.3 5.3 Z").attr({
-      fill: 'blue',
-      stroke: 'blue',
-      'stroke-width': 1,
-      'stroke-linejoin': 'round',
-      'stroke-linecap': 'round'
-    }).marker(0,0,13.3,10.6,13.3,5.3).attr({
-      markerUnits: 'userSpaceOnUse'
-    });
-    dedu.Paper.marker_end.toDefs();
+      // clearing views removes any event listeners
+      this.removeViews();
 
-    this.svg = snap_svg.node;
+      var cells = this.model.active_cells().models.slice();
 
-    var viewport = snap_svg.g().addClass('viewport');
-    this.viewport = viewport.node;
-    var vis = snap_svg.g().addClass("vis");
-    this.vis = vis.node;
-    var outer_background= snap_svg.rect()
-    this.outer_background = outer_background.node;
+      // `beforeRenderViews()` can return changed cells array (e.g sorted).
+      // cells = this.beforeRenderViews(cells, opt) || cells;
 
+      if (this._frameId) {
 
-    snap_svg.append(viewport);
-    viewport.append(vis);
-    vis.append(outer_background);
-    this.$el.append(this.svg);
+        joint.util.cancelFrame(this._frameId);
+        delete this._frameId;
+      }
 
-    this.listenTo(this.model, 'addCell', this.onCellAdded);
-    this.listenTo(this.model, 'remove', this.removeView);
-    this.listenTo(this.model, 'reset', this.resetViews);
-    this.listenTo(this.model, 'sort', this.sortViews);
-    this.listenTo(this.model, 'batch:stop', this._onBatchStop);
+      if (this.options.async) {
 
-    this.setOrigin();
-    this.setDimensions();
+        this.asyncRenderViews(cells, opt);
+        // Sort the cells once all elements rendered (see asyncRenderViews()).
+
+      } else {
+
+        _.each(cells, this.renderView, this);
+
+        // Sort the cells in the DOM manually as we might have changed the order they
+        // were added to the DOM (see above).
+        this.sortViews();
+      }
+    },
+
+    sortViews: function () {
+      console.log("sort");
+
+    },
 
 
-    // Hash of all cell views.
-    this._views = {};
+    /**
+     * Find a view for a model `cell`. `cell` can also be a string representing a model `id`.
+     * @param {dedu.Cell} cell
+     * @returns {dedu.CellView}
+     */
+    findViewByModel: function (cell) {
 
-    this.on({ 'blank:pointerdown': this.blank_pointDown, 'blank:pointermove': this.blank_pointMove, 'blank:pointerup': this.blank_pointUp });
-    // default cell highlighting
-    this.on({ 'cell:highlight': this.onCellHighlight, 'cell:unhighlight': this.onCellUnhighlight });
+      var id = _.isString(cell) ? cell : cell.id;
 
-  },
+      return this._views[id];
+    },
 
-  events: {
-    "mousedown .vis": "canvasMouseDown",
-    "mousemove .vis": "canvasMouseMove",
-    "mouseup .vis": "canvasMouseUp",
-    "mouseover .element": "cellMouseover",
-    "dblclick": "mousedblclick",
-    "click": "mouseclick"
-  },
+    // Find all views in given area
+    findViewsInArea: function (rect, opt) {
 
-  /**
-   * render cell that be added to `dedu.Graph`
-   * @method onCellAdded
-   * @param {dedu.Cell} cell
-   * @param graph
-   * @param opt
-   */
-  onCellAdded: function (cell, graph, opt) {
-    this.renderView(cell);
-  },
+      opt = _.defaults(opt || {}, {
+        strict: false
+      });
+      rect = g.rect(rect);
 
-  removeView: function (cell) {
-    var view = this._views[cell.id];
+      var views = _.map(this.model.getElements(), this.findViewByModel, this);
+      var method = opt.strict ? 'containsRect' : 'intersect';
 
-    if (view) {
-      view.remove();
-      delete this._views[cell.id];
-    }
+      return _.filter(views, function (view) {
+        return view && rect[method](g.rect(view.vel.bbox(false, this.viewport)));
+      }, this);
+    },
 
-    return view;
+    /**
+     * Find a cell, the id of which is equal to `id`
+     * @param {String} id
+     * @returns {dedu.Cell}
+     */
+    getModelById: function (id) {
 
-  },
+      return this.model.getCell(id);
+    },
 
-  resetViews: function (opt) {
-
-    $(this.outer_background).empty();
-
-    // clearing views removes any event listeners
-    this.removeViews();
-
-    var cells = this.model.active_cells().models.slice();
-
-    // `beforeRenderViews()` can return changed cells array (e.g sorted).
-    // cells = this.beforeRenderViews(cells, opt) || cells;
-
-    if (this._frameId) {
-
-      joint.util.cancelFrame(this._frameId);
-      delete this._frameId;
-    }
-
-    if (this.options.async) {
-
-      this.asyncRenderViews(cells, opt);
-      // Sort the cells once all elements rendered (see asyncRenderViews()).
-
-    } else {
-
-      _.each(cells, this.renderView, this);
-
-      // Sort the cells in the DOM manually as we might have changed the order they
-      // were added to the DOM (see above).
-      this.sortViews();
-    }
-  },
-
-  sortViews: function () {
-    console.log("sort");
-
-  },
-
-
-  /**
-   * Find a view for a model `cell`. `cell` can also be a string representing a model `id`.
-   * @param {dedu.Cell} cell
-   * @returns {dedu.CellView}
-   */
-  findViewByModel: function (cell) {
-
-    var id = _.isString(cell) ? cell : cell.id;
-
-    return this._views[id];
-  },
-
-  // Find all views in given area
-  findViewsInArea: function (rect, opt) {
-
-    opt = _.defaults(opt || {}, { strict: false });
-    rect = g.rect(rect);
-
-    var views = _.map(this.model.getElements(), this.findViewByModel, this);
-    var method = opt.strict ? 'containsRect' : 'intersect';
-
-    return _.filter(views, function (view) {
-      return view && rect[method](g.rect(view.vel.bbox(false, this.viewport)));
-    }, this);
-  },
-
-  /**
-   * Find a cell, the id of which is equal to `id`
-   * @param {String} id
-   * @returns {dedu.Cell}
-   */
-  getModelById: function (id) {
-
-    return this.model.getCell(id);
-  },
-
-  /**
-   * 渲染`cell`
-   * @param {dedu.Cell} cell - the model cell to be rendered
-   * @returns {dedu.CellView}
-   */
-  renderView: function (cell) {
-    var view = this._views[cell.id] = this.createViewForModel(cell);
-    // if(cell.isLink()){
-    //   this.outer_background.insertAdjacentHTML('afterend',view.el.outerHTML);
-    // }else{
+    /**
+     * 渲染`cell`
+     * @param {dedu.Cell} cell - the model cell to be rendered
+     * @returns {dedu.CellView}
+     */
+    renderView: function (cell) {
+      var view = this._views[cell.id] = this.createViewForModel(cell);
+      // if(cell.isLink()){
+      //   this.outer_background.insertAdjacentHTML('afterend',view.el.outerHTML);
+      // }else{
       Snap(this.vis).append(Snap(view.el));
-    // }
+      // }
 
-    view.paper = this;
-    view.render();
+      view.paper = this;
+      view.render();
 
-    return view;
-  },
+      return view;
+    },
 
-  renderViewSilence: function(cell){
-    var view = this.createViewForModel(cell);
-    view.paper = this;
-    view.render();
-    return view;
-  },
-  /**
-   * Find the first view clibing up the DOM tree starting at element 'el'.Note that `el` can also be a selector or a jQuery object.
-   * @param {String|JQueryObject} $el
-   * @returns {*}
-   */
+    renderViewSilence: function (cell) {
+      var view = this.createViewForModel(cell);
+      view.paper = this;
+      view.render();
+      return view;
+    },
+    /**
+     * Find the first view clibing up the DOM tree starting at element 'el'.Note that `el` can also be a selector or a jQuery object.
+     * @param {String|JQueryObject} $el
+     * @returns {*}
+     */
 
-  findView: function ($el) {
-    var el = _.isString($el)
-      ? this.viewport.querySelector($el)
-      : $el instanceof $ ? $el[0] : $el;
+    findView: function ($el) {
+      var el = _.isString($el) ?
+        this.viewport.querySelector($el) :
+        $el instanceof $ ? $el[0] : $el;
 
-    while (el && el !== this.el && el !== document) {
-      var id = el.getAttribute('model-id');
-      if (id) return this._views[id];
+      while (el && el !== this.el && el !== document) {
+        var id = el.getAttribute('model-id');
+        if (id) return this._views[id];
 
-      el = el.parentNode;
+        el = el.parentNode;
 
-    }
-    return undefined;
-  },
-  // Returns a geometry rectangle represeting the entire
-  // paper area (coordinates from the left paper border to the right one
-  // and the top border to the bottom one).
-  getArea: function () {
-    var transformationMatrix = this.viewport.getCTM().inverse();
-  },
+      }
+      return undefined;
+    },
+    // Returns a geometry rectangle represeting the entire
+    // paper area (coordinates from the left paper border to the right one
+    // and the top border to the bottom one).
+    getArea: function () {
+      var transformationMatrix = this.viewport.getCTM().inverse();
+    },
 
-  getRestrictedArea: function () {
-    var restrictedArea;
-    if (_.isFunction(this.options.restrictTranslate)) {
-    } else if (this.options.restrictedTranslate === true) {
-      restrictedArea = this.getArea();
-    } else {
-      restrictedArea = this.options.restrictTranslate || null;
-    }
+    getRestrictedArea: function () {
+      var restrictedArea;
+      if (_.isFunction(this.options.restrictTranslate)) {} else if (this.options.restrictedTranslate === true) {
+        restrictedArea = this.getArea();
+      } else {
+        restrictedArea = this.options.restrictTranslate || null;
+      }
 
-    return restrictedArea;
+      return restrictedArea;
 
-  },
+    },
 
-  snapToGrid: function (p) {
-    // Convert global coordinates to the local ones of the `viewport`. Otherwise,
-    // improper transformation would be applied when the viewport gets transformed (scaled/rotated).
+    snapToGrid: function (p) {
+      // Convert global coordinates to the local ones of the `viewport`. Otherwise,
+      // improper transformation would be applied when the viewport gets transformed (scaled/rotated).
 
-    var localPoint = V(this.viewport).toLocalPoint(p.x, p.y);
+      var localPoint = V(this.viewport).toLocalPoint(p.x, p.y);
 
-    return {
-      x: g.snapToGrid(localPoint.x, this.options.gridSize),
-      y: g.snapToGrid(localPoint.y, this.options.gridSize)
-    };
-    return p;
-  },
+      return {
+        x: g.snapToGrid(localPoint.x, this.options.gridSize),
+        y: g.snapToGrid(localPoint.y, this.options.gridSize)
+      };
+      return p;
+    },
 
-  createViewForModel: function (cell) {
-    // Model to View
-    // A class taken from the paper options.
-    var optionalViewClass;
+    createViewForModel: function (cell) {
+      // Model to View
+      // A class taken from the paper options.
+      var optionalViewClass;
 
-    // A default basic class (either dia.ElementView or dia.LinkView)
-    var defaultViewClass;
+      // A default basic class (either dia.ElementView or dia.LinkView)
+      var defaultViewClass;
 
-    var namespace = this.options.cellViewNamespace;
-    var type = cell.get('type') + "View";
+      var namespace = this.options.cellViewNamespace;
+      var type = cell.get('type') + "View";
 
-    var namespaceViewClass = dedu.util.getByPath(namespace, type, ".");
+      var namespaceViewClass = dedu.util.getByPath(namespace, type, ".");
 
-    if (cell.isLink()) {
-      optionalViewClass = this.options.linkView;
-      defaultViewClass = dedu.LinkView;
-    } else {
-      optionalViewClass = this.options.elementView;
-      defaultViewClass = dedu.ElementView;
-    }
+      if (cell.isLink()) {
+        optionalViewClass = this.options.linkView;
+        defaultViewClass = dedu.LinkView;
+      } else {
+        optionalViewClass = this.options.elementView;
+        defaultViewClass = dedu.ElementView;
+      }
 
-    var ViewClass = (optionalViewClass.prototype instanceof Backbone.View)
-      ? namespaceViewClass || optionalViewClass
-      : optionalViewClass.call(this, cell) || namespaceViewClass || defaultViewClass;
+      var ViewClass = (optionalViewClass.prototype instanceof Backbone.View) ?
+        namespaceViewClass || optionalViewClass :
+        optionalViewClass.call(this, cell) || namespaceViewClass || defaultViewClass;
 
-    return new ViewClass({
-      model: cell,
-      interactive: this.options.interactive,
-      paper: this
-    });
+      return new ViewClass({
+        model: cell,
+        interactive: this.options.interactive,
+        paper: this
+      });
 
-  },
+    },
 
-  /**
-   * 更改原点
-   * @param {Number} ox - 新原点的x坐标
-   * @param {Number} oy - 新原点的y坐标
-   * @memberof dedu.Paper
-   */
-  setOrigin: function (ox, oy) {
-    this.options.origin.x = ox || 0;
-    this.options.origin.y = oy || 0;
+    /**
+     * 更改原点
+     * @param {Number} ox - 新原点的x坐标
+     * @param {Number} oy - 新原点的y坐标
+     * @memberof dedu.Paper
+     */
+    setOrigin: function (ox, oy) {
+      this.options.origin.x = ox || 0;
+      this.options.origin.y = oy || 0;
 
-    // Snap(this.viewport).attr('transform','translate('+ox+', '+oy+')');
+      // Snap(this.viewport).attr('transform','translate('+ox+', '+oy+')');
 
-    this.trigger('translate', ox, oy);  //trigger event translate
-  },
+      this.trigger('translate', ox, oy); //trigger event translate
+    },
 
-  setDimensions: function (width, height) {
-    width = this.options.width = width || this.options.width;
-    height = this.options.height = height || this.options.height;
+    setDimensions: function (width, height) {
+      width = this.options.width = width || this.options.width;
+      height = this.options.height = height || this.options.height;
 
-    Snap(this.svg).attr({ width: width, height: height });
-    Snap(this.outer_background).attr({ width: width, height: height, fill: '#fff' });
+      Snap(this.svg).attr({
+        width: width,
+        height: height
+      });
+      Snap(this.outer_background).attr({
+        width: width,
+        height: height,
+        fill: '#fff'
+      });
 
-    this.trigger('resize', width, height);
-  },
+      this.trigger('resize', width, height);
+    },
 
-  _onBatchStop: function (data) {
-    var name = data && data.batchName;
-    if (name === 'add' && !this.model.hasActiveBatch('add')) {
-      this.sortViews();
-    } else if (name === 'clear') {
-      // this.removeViews();
-    }
-  },
+    _onBatchStop: function (data) {
+      var name = data && data.batchName;
+      if (name === 'add' && !this.model.hasActiveBatch('add')) {
+        this.sortViews();
+      } else if (name === 'clear') {
+        // this.removeViews();
+      }
+    },
 
-  removeViews: function () {
+    removeViews: function () {
 
-    _.invoke(this._views, 'remove');
+      _.invoke(this._views, 'remove');
 
-    this._views = {};
-  },
+      this._views = {};
+    },
 
-  // Cell highlighting
-  // -----------------
-  onCellHighlight: function (cellView, el) {
-    Snap(el).addClass('highlighted');
-  },
+    // Cell highlighting
+    // -----------------
+    onCellHighlight: function (cellView, el) {
+      Snap(el).addClass('highlighted');
+    },
 
-  onCellUnhighlight: function (cellView, el) {
-    Snap(el).removeClass('highlighted');
-  },
+    onCellUnhighlight: function (cellView, el) {
+      Snap(el).removeClass('highlighted');
+    },
 
 
-  // Interaction.
-  // ------------
+    // Interaction.
+    // ------------
 
-  /**
-   * 空白处 mouse down
-   * @param {Event} evt
-   * @param {Number} x
-   * @param {Number} y
-   * @memberof dedu.Paper
-   */
-  blank_pointDown: function (evt, x, y) {
-    this.model.cancelSelection();
+    /**
+     * 空白处 mouse down
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof dedu.Paper
+     */
+    blank_pointDown: function (evt, x, y) {
+      this.model.cancelSelection();
 
-    var lasso = this.lasso;
-    var mouse_mode = this.mouse_mode;
+      var lasso = this.lasso;
+      var mouse_mode = this.mouse_mode;
 
-    if (mouse_mode === 0) {
+      if (mouse_mode === 0) {
+        if (lasso) {
+          lasso.remove();
+          lasso = null;
+        }
+
+        var point = [x, y];
+        var rect = this.snap_svg.rect(point[0], point[1], 0, 0, 1, 1)
+          .attr("ox", point[0])
+          .attr("oy", point[1])
+          .attr("class", "lasso");
+        this.lasso = rect;
+        Snap(this.vis).append(rect);
+      }
+      this.trigger("blank_pointDown");
+    },
+
+    /**
+     * 空白处 mouse move
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof dedu.Paper
+     */
+    blank_pointMove: function (evt, x, y) {
+      var mouse_position = [evt.offsetX, evt.offsetY];
+      var lasso = this.lasso;
+      var mouse_mode = this.mouse_mode;
       if (lasso) {
+        var ox = parseInt(lasso.attr("ox"));
+        var oy = parseInt(lasso.attr("oy"));
+        var x = parseInt(lasso.attr("x"));
+        var y = parseInt(lasso.attr("y"));
+        var w;
+        var h;
+        if (mouse_position[0] < ox) {
+          x = mouse_position[0];
+          w = ox - x;
+        } else {
+          w = mouse_position[0] - x;
+        }
+        if (mouse_position[1] < oy) {
+          y = mouse_position[1];
+          h = oy - y;
+        } else {
+          h = mouse_position[1] - y;
+        }
+        lasso
+          .attr("x", x)
+          .attr("y", y)
+          .attr("width", w)
+          .attr("height", h);
+        return;
+      }
+    },
+
+    /**
+     * 空白处 mouse up
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof dedu.Paper
+     */
+    blank_pointUp: function (evt, x, y) {
+      var lasso = this.lasso;
+      var mouse_mode = this.mouse_mode;
+      if (lasso) {
+        this.model.selectionSet = [];
+
+        var x = parseInt(lasso.attr("x"));
+        var y = parseInt(lasso.attr("y"));
+        var x2 = x + parseInt(lasso.attr("width"));
+        var y2 = y + parseInt(lasso.attr("height"));
+
+
+        var selection_models = [];
+        _.each(this._views, function (cellView) {
+          if (cellView instanceof dedu.LinkView) {
+            return;
+          }
+          var model = cellView.model;
+          var position = model.get('position');
+
+          model.set('selected', position.x > x && position.x < x2 && position.y > y && position.y < y2);
+          if (model.get('selected')) {
+            selection_models.push(cellView.model);
+          }
+
+        }, this);
+
+        this.model.updateSelection(selection_models);
+
         lasso.remove();
         lasso = null;
       }
-
-      var point = [x, y];
-      var rect = this.snap_svg.rect(point[0],point[1],0,0,1,1)
-        .attr("ox", point[0])
-        .attr("oy", point[1])
-        .attr("class", "lasso");
-      this.lasso = rect;
-      Snap(this.vis).append(rect);
-    }
-    this.trigger("blank_pointDown");
-  },
-
-  /**
-   * 空白处 mouse move
-   * @param {Event} evt
-   * @param {Number} x
-   * @param {Number} y
-   * @memberof dedu.Paper
-   */
-  blank_pointMove: function (evt, x, y) {
-    var mouse_position = [evt.offsetX, evt.offsetY];
-    var lasso = this.lasso;
-    var mouse_mode = this.mouse_mode;
-    if (lasso) {
-      var ox = parseInt(lasso.attr("ox"));
-      var oy = parseInt(lasso.attr("oy"));
-      var x = parseInt(lasso.attr("x"));
-      var y = parseInt(lasso.attr("y"));
-      var w;
-      var h;
-      if (mouse_position[0] < ox) {
-        x = mouse_position[0];
-        w = ox - x;
-      } else {
-        w = mouse_position[0] - x;
-      }
-      if (mouse_position[1] < oy) {
-        y = mouse_position[1];
-        h = oy - y;
-      } else {
-        h = mouse_position[1] - y;
-      }
-      lasso
-        .attr("x", x)
-        .attr("y", y)
-        .attr("width", w)
-        .attr("height", h);
-      return;
-    }
-  },
-
-  /**
-   * 空白处 mouse up
-   * @param {Event} evt
-   * @param {Number} x
-   * @param {Number} y
-   * @memberof dedu.Paper
-   */
-  blank_pointUp: function (evt, x, y) {
-    var lasso = this.lasso;
-    var mouse_mode = this.mouse_mode;
-    if (lasso) {
-      this.model.selectionSet = [];
-
-      var x = parseInt(lasso.attr("x"));
-      var y = parseInt(lasso.attr("y"));
-      var x2 = x + parseInt(lasso.attr("width"));
-      var y2 = y + parseInt(lasso.attr("height"));
+      this.trigger('paper:selection_create', evt);
+    },
 
 
-      var selection_models = [];
-      _.each(this._views, function (cellView) {
-        if (cellView instanceof dedu.LinkView) {
-          return;
-        }
-        var model = cellView.model;
-        var position = model.get('position');
+    /**
+     *  mouse down
+     *  * 判断鼠标点击的位置
+     *  1. 图元上,则调用该图元的事件处理函数
+     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointDown}
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof dedu.Paper
+     */
+    canvasMouseDown: function (evt) {
 
-        model.set('selected', position.x > x && position.x < x2 && position.y > y && position.y < y2);
-        if (model.get('selected')) {
-          selection_models.push(cellView.model);
-        }
+      evt.preventDefault();
 
-      }, this);
+      var evt = dedu.util.normalizeEvent(evt);
+      var view = this.findView(evt.target);
 
-      this.model.updateSelection(selection_models);
-
-      lasso.remove();
-      lasso = null;
-    }
-    this.trigger('paper:selection_create', evt);
-  },
-
-
-  /**
-   *  mouse down
-   *  * 判断鼠标点击的位置
-   *  1. 图元上,则调用该图元的事件处理函数
-   *  2. 空白处,则调用 {@link dedu.Paper~blank_pointDown}
-   * @param {Event} evt
-   * @param {Number} x
-   * @param {Number} y
-   * @memberof dedu.Paper
-   */
-  canvasMouseDown: function (evt) {
-
-    evt.preventDefault();
-
-    var evt = dedu.util.normalizeEvent(evt);
-    var view = this.findView(evt.target);
-
-    if (this.guard(evt, view)) return;
-
-    var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
-    if (view) {
       if (this.guard(evt, view)) return;
 
-      this.model.focus(view.model);
-      this.sourceView = view;
-      this.sourceView.pointerdown(evt, localPoint.x, localPoint.y);
+      var localPoint = this.snapToGrid({
+        x: evt.clientX,
+        y: evt.clientY
+      });
+      if (view) {
+        if (this.guard(evt, view)) return;
+
+        this.model.focus(view.model);
+        this.sourceView = view;
+        this.sourceView.pointerdown(evt, localPoint.x, localPoint.y);
 
 
-    } else {
-      this.trigger('blank:pointerdown', evt, localPoint.x, localPoint.y);
-    }
-
-    this.trigger('paper:selection_create', evt);
-  },
-
-  /**
-   *  mouse move
-   *  * 判断鼠标点击的位置
-   *  1. 图元上,则调用该图元的事件处理函数
-   *  2. 空白处,则调用 {@link dedu.Paper~blank_pointMove}
-   * @param {Event} evt
-   * @param {Number} x
-   * @param {Number} y
-   * @memberof dedu.Paper
-   */
-  canvasMouseMove: function (evt) {
-
-    evt.preventDefault();
-    evt = dedu.util.normalizeEvent(evt);
-    var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
-    if (this.sourceView) {
-      if (this.sourceView instanceof dedu.LinkView) {
-        this.sourceView.pointermove(evt, localPoint.x, localPoint.y);
-        return;
+      } else {
+        this.trigger('blank:pointerdown', evt, localPoint.x, localPoint.y);
       }
-      //Mouse moved counter.
-      // this._mousemoved++;
-      var grid = this.options.gridSize;
-      var position = this.sourceView.model.get('position');
-      var tx = g.snapToGrid(position.x, grid) - position.x + g.snapToGrid(localPoint.x - this.sourceView._dx, grid);
-      var ty = g.snapToGrid(position.y, grid) - position.y + g.snapToGrid(localPoint.y - this.sourceView._dy, grid);
-      this.sourceView._dx = g.snapToGrid(localPoint.x, grid);
-      this.sourceView._dy = g.snapToGrid(localPoint.y, grid);
 
-      _.each(this.model.selectionSet, function (model) {
-        this.findViewByModel(model).pointermove(evt, tx, ty, localPoint);
-      }, this);
+      this.trigger('paper:selection_create', evt);
+    },
 
-    } else {
-      this.trigger('blank:pointermove', evt, localPoint.x, localPoint.y);
-    }
+    /**
+     *  mouse move
+     *  * 判断鼠标点击的位置
+     *  1. 图元上,则调用该图元的事件处理函数
+     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointMove}
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof dedu.Paper
+     */
+    canvasMouseMove: function (evt) {
 
-  },
+      evt.preventDefault();
+      evt = dedu.util.normalizeEvent(evt);
+      var localPoint = this.snapToGrid({
+        x: evt.clientX,
+        y: evt.clientY
+      });
+      if (this.sourceView) {
+        if (this.sourceView instanceof dedu.LinkView) {
+          this.sourceView.pointermove(evt, localPoint.x, localPoint.y);
+          return;
+        }
+        //Mouse moved counter.
+        // this._mousemoved++;
+        var grid = this.options.gridSize;
+        var position = this.sourceView.model.get('position');
+        var tx = g.snapToGrid(position.x, grid) - position.x + g.snapToGrid(localPoint.x - this.sourceView._dx, grid);
+        var ty = g.snapToGrid(position.y, grid) - position.y + g.snapToGrid(localPoint.y - this.sourceView._dy, grid);
+        this.sourceView._dx = g.snapToGrid(localPoint.x, grid);
+        this.sourceView._dy = g.snapToGrid(localPoint.y, grid);
 
-  /**
-   *  mouse up
-   *  * 判断鼠标点击的位置
-   *  1. 图元上,则调用该图元的事件处理函数
-   *  2. 空白处,则调用 {@link dedu.Paper~blank_pointUp}
-   * @param {Event} evt
-   * @param {Number} x
-   * @param {Number} y
-   * @memberof dedu.Paper
-   */
-  canvasMouseUp: function (evt) {
-    evt = dedu.util.normalizeEvent(evt);
+        _.each(this.model.selectionSet, function (model) {
+          this.findViewByModel(model).pointermove(evt, tx, ty, localPoint);
+        }, this);
 
-    var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
+      } else {
+        this.trigger('blank:pointermove', evt, localPoint.x, localPoint.y);
+      }
 
-    if (this.sourceView) {
+    },
 
-      this.sourceView.pointerup(evt, localPoint.x, localPoint.y);
+    /**
+     *  mouse up
+     *  * 判断鼠标点击的位置
+     *  1. 图元上,则调用该图元的事件处理函数
+     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointUp}
+     * @param {Event} evt
+     * @param {Number} x
+     * @param {Number} y
+     * @memberof dedu.Paper
+     */
+    canvasMouseUp: function (evt) {
+      evt = dedu.util.normalizeEvent(evt);
 
-      //"delete sourceView" occasionally throws an error in chrome (illegal access exception)
-      this.sourceView = null;
+      var localPoint = this.snapToGrid({
+        x: evt.clientX,
+        y: evt.clientY
+      });
 
-    } else {
+      if (this.sourceView) {
 
-      this.trigger('blank:pointerup', evt, localPoint.x, localPoint.y);
-    }
-  },
+        this.sourceView.pointerup(evt, localPoint.x, localPoint.y);
 
-  /**
-   * 双击事件
-   * @param {Event} evt
-   */
-  mousedblclick: function (evt) {
-    evt.preventDefault();
-    evt = dedu.util.normalizeEvent(evt);
+        //"delete sourceView" occasionally throws an error in chrome (illegal access exception)
+        this.sourceView = null;
 
-    var view = this.findView(evt.target);
-    if (this.guard(evt, view)) return;
+      } else {
 
-    var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
+        this.trigger('blank:pointerup', evt, localPoint.x, localPoint.y);
+      }
+    },
 
-    if (view) {
-
-      view.pointerdblclick(evt, localPoint.x, localPoint.y);
-
-    } else {
-
-      this.trigger('blank:pointerdblclick', evt, localPoint.x, localPoint.y);
-    }
-  },
-
-  /**
-   * 单击事件
-   * @param {Event} evt
-   */
-  mouseclick: function (evt) {
-
-    // Trigger event when mouse not moved.
-    if (this._mousemoved <= this.options.clickThreshold) {
-
+    /**
+     * 双击事件
+     * @param {Event} evt
+     */
+    mousedblclick: function (evt) {
+      evt.preventDefault();
       evt = dedu.util.normalizeEvent(evt);
 
       var view = this.findView(evt.target);
       if (this.guard(evt, view)) return;
 
-      var localPoint = this.snapToGrid({ x: evt.clientX, y: evt.clientY });
+      var localPoint = this.snapToGrid({
+        x: evt.clientX,
+        y: evt.clientY
+      });
 
       if (view) {
 
-        view.pointerclick(evt, localPoint.x, localPoint.y);
+        view.pointerdblclick(evt, localPoint.x, localPoint.y);
 
       } else {
 
-        this.trigger('blank:pointerclick', evt, localPoint.x, localPoint.y);
+        this.trigger('blank:pointerdblclick', evt, localPoint.x, localPoint.y);
       }
+    },
+
+    /**
+     * 单击事件
+     * @param {Event} evt
+     */
+    mouseclick: function (evt) {
+
+      // Trigger event when mouse not moved.
+      if (this._mousemoved <= this.options.clickThreshold) {
+
+        evt = dedu.util.normalizeEvent(evt);
+
+        var view = this.findView(evt.target);
+        if (this.guard(evt, view)) return;
+
+        var localPoint = this.snapToGrid({
+          x: evt.clientX,
+          y: evt.clientY
+        });
+
+        if (view) {
+
+          view.pointerclick(evt, localPoint.x, localPoint.y);
+
+        } else {
+
+          this.trigger('blank:pointerclick', evt, localPoint.x, localPoint.y);
+        }
+      }
+
+      this._mousemoved = 0;
+    },
+
+    cellMouseover: function (evt) {
+
+      evt = dedu.util.normalizeEvent(evt);
+      var view = this.findView(evt.target);
+      if (view) {
+        if (this.guard(evt, view)) return;
+        view.mouseover(evt);
+      }
+    },
+
+    // Guard guards the event received. If the event is not interesting, guard returns `true`.
+    // Otherwise, it return `false`.
+    guard: function (evt, view) {
+      if (view && view.model && (view.model instanceof dedu.Cell)) {
+        return false;
+      } else if (this.svg === evt.target || this.el === evt.target || $.contains(this.svg, evt.target)) {
+        return false;
+      }
+      return true; //Event guarded. Paper should not react on it in any way.
+    },
+
+    /**
+     * get default linkview {@link dedu.Paper~options.linkView}
+     * @method getDefaultLink
+     * @param cellView
+     * @param magnet
+     * @returns {*}
+     */
+    getDefaultLink: function (cellView, magnet) {
+
+      return _.isFunction(this.options.defaultLink)
+        // default link is a function producing link model
+        ?
+        this.options.defaultLink.call(this, cellView, magnet)
+        // default link is the Backbone model
+        :
+        this.options.defaultLink.clone();
+    },
+
+    notify(evt, cell, args) {
+      this.model.trigger(evt, cell.model, args);
     }
 
-    this._mousemoved = 0;
-  },
+  });
 
-  cellMouseover: function (evt) {
-
-    evt = dedu.util.normalizeEvent(evt);
-    var view = this.findView(evt.target);
-    if (view) {
-      if (this.guard(evt, view)) return;
-      view.mouseover(evt);
-    }
-  },
-
-  // Guard guards the event received. If the event is not interesting, guard returns `true`.
-  // Otherwise, it return `false`.
-  guard: function (evt, view) {
-    if (view && view.model && (view.model instanceof dedu.Cell)) {
-      return false;
-    } else if (this.svg === evt.target || this.el === evt.target || $.contains(this.svg, evt.target)) {
-      return false;
-    }
-    return true; //Event guarded. Paper should not react on it in any way.
-  },
-
-  /**
-   * get default linkview {@link dedu.Paper~options.linkView}
-   * @method getDefaultLink
-   * @param cellView
-   * @param magnet
-   * @returns {*}
-   */
-  getDefaultLink: function (cellView, magnet) {
-
-    return _.isFunction(this.options.defaultLink)
-      // default link is a function producing link model
-      ? this.options.defaultLink.call(this, cellView, magnet)
-      // default link is the Backbone model
-      : this.options.defaultLink.clone();
-  },
-
-  notify(evt, cell, args){
-    this.model.trigger(evt,cell.model,args);
-  }
-
-});
+  return dedu;
+})

@@ -1,4 +1,5 @@
-dedu.shape = {basic:{}};
+define(['../element'],function(dedu){
+  dedu.shape = {basic:{}};
 
 /**
  * 不能连线的图元
@@ -307,3 +308,5 @@ dedu.shape.basic.PortsViewInterface = {
 
     }
 };
+  return dedu;
+})

@@ -1,4 +1,5 @@
-/**
+define(["backbone",'./core'],function(Backbone, dedu){
+  /**
  * `dedu.Cell` 是`joint_chart`所有图形的父类
  * @class
  * @augments Backbone.Model
@@ -11,7 +12,7 @@ dedu.Cell = Backbone.Model.extend({
         this.cid = _.uniqueId('d');
         this.attributes = {};
         if (defaults = _.result(this, 'defaults')) {
-            attrs = _.merge({}, defaults, attrs);
+            attrs = _.extendOwn({}, defaults, attrs);
         }
         attrs.redID = attrs.redID || (1 + Math.random() * 4294967295).toString(16);  //be used by user program
         this.set(attrs, options);
@@ -189,7 +190,7 @@ dedu.Cell = Backbone.Model.extend({
             }
 
         }
-        return this.set(_.merge({}, this.attributes, props), value);
+        return this.set(_.extendOwn({}, this.attributes, props), value);
     },
 
     isEmbeddedIn: function (cell, opt) {
@@ -591,3 +592,6 @@ dedu.CellView = Backbone.View.extend({
     },
 
 });
+
+  return dedu;
+})
