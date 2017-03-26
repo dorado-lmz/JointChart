@@ -2,103 +2,14 @@
 <html>
 <head>
     <meta charset="utf8"/>
-
     <title>Basic</title>
     <link rel="stylesheet" type="text/css" href="../../dist/joint_chart.css">
     <link rel="stylesheet" type="text/css" href="../../dist/style.css">
 </head>
 <body>
-
-<div id="palette">
-    <div id="palette-search">
-        <i class="fa fa-search"></i><input id="palette-search-input" type="text" data-i18n="[placeholder]palette.filter"><a href="#" id="palette-search-clear"><i class="fa fa-times"></i></a></input>
+    <div id="workspace">
+        <div id="chart" class="ui-droppable" style="margin-top: 0px;"></div>
     </div>
-    <div id="palette-container" class="palette-scroll" style="display: block;">
-
-    </div>
-    <div id="palette-footer">
-        <a class="palette-button" id="palette-collapse-all" href="#"><i class="fa fa-angle-double-up"></i></a>
-        <a class="palette-button" id="palette-expand-all" href="#"><i class="fa fa-angle-double-down"></i></a>
-    </div>
-</div>
-<div id="palette-separator" class="ui-draggable"></div>
-<div id="workspace">
-    <div id="designer_header">
-        <div id="toolbar">
-
-        </div>
-    </div>
-    <ul id="workspace-tabs" class="red-ui-tabs"><li class="red-ui-tab active" style="width: 98.9399%;"><a href="#7d91eb90.45fd04" class="red-ui-tab-label" title="Flow 1"><span>Flow 1</span></a></li></ul>
-    <div id="workspace-add-tab"><a id="btn-workspace-add-tab" href="#"><i class="fa fa-plus"></i></a></div>
-    <div id="chart" class="ui-droppable" style="margin-top: 0px;"></div>
-<!--     <div id="chart_ext">
-        <textarea id="linker_text_edit"></textarea>
-    </div> -->
-    <div id="workspace-toolbar" style="display: none;"></div>
-    <div id="workspace-footer">
-        <a class="workspace-footer-button" id="btn-zoom-out" href="#"><i class="fa fa-minus"></i></a>
-        <a class="workspace-footer-button" id="btn-zoom-zero" href="#"><i class="fa fa-circle-o"></i></a>
-        <a class="workspace-footer-button" id="btn-zoom-in" href="#"><i class="fa fa-plus"></i></a>
-    </div>
-</div>
-<div id="sidebar-separator" class="ui-draggable"></div>
-<div id="sidebar">
-    <ul id="sidebar-tabs"></ul>
-    <div id="sidebar-content"></div>
-    <div id="sidebar-footer"></div>
-</div>
-
-<script data-main="js/basic.js" src="../../vendor/require.js"></script>
-
-<script>
-    var joint = {};
-</script>
-
-<!-- Dependencies: -->
-<!--<script src="../../lib/jquery/jquery.js"></script>
-<script src="../../lib/lodash.js"></script>
-<script type="text/javascript">
-  _.extendOwn = _.merge;
-</script>
-<script src="../../lib/backbone/backbone.js"></script>
-<script src="../../lib/skanaar.svg.js"></script>-->
-
-
-
-<!-- joint_chart:-->
-        <!--<script src="../../dist/snap.svg.js"></script>
-        <script src="../../bower_components/graphlib/dist/graphlib.core.js"></script>
-        <script src="../../bower_components/dagre/dist/dagre.core.js"></script>-->
-
-<!-- <script src="../../dist/joint_chart.js"></script> -->
-        <!--<script>
-          Snap.plugin(function (Snap, Element, Paper, global) {
-              // Snap.newmethod = function () {};
-              Element.prototype.bbox = function () {
-                return this.getBBox();
-              };
-              // Paper.prototype.newmethod = function () {};
-          });
-        </script>-->
-        <!--<script src="../../src/geometry.js"></script>
-        <script src="../../src/vectorizer.js"></script>
-        <script src="../../src/core.js"></script>
-        <script src="../../src/cell.js"></script>
-        <script src="../../src/element.js"></script>
-        <script src="../../src/link.js"></script>
-        <script src="../../src/graph.js"></script>
-        <script src="../../src/shape/shape.basic.js"></script>
-        <script src="../../src/shape/shape.devs.js"></script>
-        <script src="../../src/shape/shape.node.js"></script>
-        <script src="../../src/shape/shape.simple.js"></script>
-        <script src="../../src/shape/shape.uml.state.js"></script>
-        <script src="../../src/shape/shape.uml.class.js"></script>
-        <script src="../../src/paper.js"></script>
-        <script src="../../src/chart.js"></script>
-        <script src="../../src/connectors/connectors.normal.js"></script>
-        <script src="../../src/plugins/plugins.Halo.js"></script>
-        <script src="../../src/plugins/plugins.PlainSvg.js"></script>
-        <script src="../../src/shape/shape.node_red.js"></script>-->
-
+    <script data-main="js/basic.js" src="../../vendor/requirejs/require.js"></script>
 </body>
 </html>

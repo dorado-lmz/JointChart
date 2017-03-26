@@ -2,10 +2,9 @@ requirejs.config({
   baseUrl: '../../',
   paths: {
     jquery: 'vendor/jquery/dist/jquery',
-    snap: 'dist/snap.svg',
+    snap: 'vendor/Snap.svg/dist/snap.svg',
     underscore: 'vendor/underscore/underscore',
     backbone: 'vendor/backbone/backbone',
-    V: 'src/vectorizer',
     g: 'src/geometry',
     src: 'src'
   },
@@ -223,13 +222,6 @@ require(["joint_chart"],function (dedu) {
   graph.addCell(simple2);
 });
 
-
-
-
-
-var json = '{"id":"30127b7.fcfed84","x":29,"y":187,"w":140,"z":"210d0848.def2f8","type":"inject","_def":{"category":"input","label":"sdfasfadsf","color":"#a6bbcf","defaults":{"name":{"value":""},"topic":{"value":""},"payload":{"value":""},"payloadType":{"value":"date"},"repeat":{"value":""},"crontab":{"value":""},"once":{"value":false}},"inputs":0,"outputs":1,"icon":"inject.png","button":{},"set":{"id":"node-red/inject","name":"inject","types":["inject"],"enabled":true,"module":"node-red","version":"0.11.2-git","added":true}},"inputs":0,"outputs":1,"name":"","topic":"","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"changed":true,"h":30}';
-var data = JSON.parse(json);
-var halo;
 
 // chart.on('cell:pointerdown',function(cellView){
 //    if (cellView.model instanceof dedu.Link) return;

@@ -121,7 +121,7 @@ define(['./cell'], function (dedu) {
         return labels[idx];
       }
 
-      var newValue = _.merge({}, labels[idx], value);
+      var newValue = _.extend({}, labels[idx], value);
 
       var newLabels = labels.slice();
       newLabels[idx] = newValue;

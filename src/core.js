@@ -1,4 +1,4 @@
-define(["snap","underscore"],function (Snap,_) {
+define(["snap", "underscore"], function (Snap, _) {
   SVGElement.prototype.getTransformToElement = SVGElement.prototype.getTransformToElement || function (toElement) {
     return toElement.getScreenCTM().inverse().multiply(this.getScreenCTM());
   };
@@ -6,6 +6,21 @@ define(["snap","underscore"],function (Snap,_) {
     // Snap.newmethod = function () {};
     Element.prototype.bbox = function () {
       return this.getBBox();
+    };
+    Element.prototype.toLocalPoint = function (x, y) {
+      var svg = this.node instanceof window.SVGSVGElement ? this.node : this.node.ownerSVGElement;
+      var p = svg.createSVGPoint();
+      p.x = x;
+      p.y = y
+      try {
+        var globalPoint = p.matrixTransform(svg.getScreenCTM().inverse());
+        var globalToLocalMatrix = this.node.getTransformToElement(svg).inverse();
+      } catch (e) {
+        // IE9 throws an exception in odd cases. (`Unexpected call to method or property access`)
+        // We have to make do with the original coordianates.
+        return p;
+      }
+      return globalPoint.matrixTransform(globalToLocalMatrix);
     };
     // Paper.prototype.newmethod = function () {};
   });

@@ -225,7 +225,7 @@ dedu.shape.basic.PortsModelInterface = {
         // Silently set `attrs` on the cell so that noone knows the attrs have changed. This makes sure
         // that, for example, command manager does not register `change:attrs` command but only
         // the important `change:inPorts`/`change:outPorts` command.
-        this.attr(attrs, { silent: true });
+        // this.attr(attrs, { silent: true });
         // Manually call the `processPorts()` method that is normally called on `change:attrs` (that we just made silent).
         this.processPorts();
         // Let the outside world (mainly the `ModelView`) know that we're done configuring the `attrs` object.

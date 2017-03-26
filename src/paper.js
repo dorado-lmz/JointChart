@@ -1,4 +1,4 @@
-define(["backbone", "V", 'g', "./element", "./link"], function (Backbone,V,g,dedu) {
+define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,dedu) {
   /**
    * `dedu.Paper` 是{@link dedu.Graph}的view
    * @class
@@ -126,7 +126,7 @@ define(["backbone", "V", 'g', "./element", "./link"], function (Backbone,V,g,ded
     },
 
     _configure: function (options) {
-      if (this.options) options = _.extendOwn({}, _.result(this, 'options'), options);
+      if (this.options) options = _.extend({}, _.result(this, 'options'), options);
       this.options = options;
     },
 
@@ -365,13 +365,12 @@ define(["backbone", "V", 'g', "./element", "./link"], function (Backbone,V,g,ded
       // Convert global coordinates to the local ones of the `viewport`. Otherwise,
       // improper transformation would be applied when the viewport gets transformed (scaled/rotated).
 
-      var localPoint = V(this.viewport).toLocalPoint(p.x, p.y);
+      var localPoint = Snap(this.viewport).toLocalPoint(p.x, p.y);
 
       return {
         x: g.snapToGrid(localPoint.x, this.options.gridSize),
         y: g.snapToGrid(localPoint.y, this.options.gridSize)
-      };
-      return p;
+      }
     },
 
     createViewForModel: function (cell) {

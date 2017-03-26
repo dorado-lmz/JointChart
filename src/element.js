@@ -173,12 +173,12 @@ define(["./cell"], function (dedu) {
 
       var that = this;
 
-      setTimeout(function () {
+      // setTimeout(function () {
         that.update();
         that.resize();
         that.rotate();
         that.translate();
-      }, 0);
+      // }, 0);
 
       return this;
     },
@@ -208,8 +208,8 @@ define(["./cell"], function (dedu) {
       var scalableBbox = scalable.getBBox();
       // Make sure `scalableBbox.width` and `scalableBbox.height` are not zero which can happen if the element does not have any content. By making
       // the width/height 1, we prevent HTML errors of the type `scale(Infinity, Infinity)`.
-      // scalable.attr('transform','scale(' + (size.width / (scalableBbox.width || size.width)) + ',' + (size.height / (scalableBbox.height || size.height)) + ')');
-      V(scalable.node).attr('transform', 'scale(' + (size.width / (scalableBbox.width || size.width)) + ',' + (size.height / (scalableBbox.height || size.height)) + ')');
+      scalable.attr('transform','scale(' + (size.width / (scalableBbox.width || 1)) + ',' + (size.height / (scalableBbox.height || 1)) + ')');
+      // V(scalable.node).attr('transform', 'scale(' + (size.width / (scalableBbox.width || size.width)) + ',' + (size.height / (scalableBbox.height || size.height)) + ')');
 
       // this.update();
     },
@@ -288,8 +288,7 @@ define(["./cell"], function (dedu) {
         var finalAttributes = _.omit(attrs, specialAttributes);
 
         $selected.each(function () {
-
-          Snap(this).attr(finalAttributes);
+          $(this).attr(finalAttributes);
         });
 
         // `port` attribute contains the `id` of the port that the underlying magnet represents.
@@ -358,7 +357,7 @@ define(["./cell"], function (dedu) {
         // to update the position relatively (i.e `ref`)
         var renderingOnlyElAttrs = renderingOnlyAttrs[$el.selector];
         var elAttrs = renderingOnlyElAttrs ?
-          _.merge({}, allAttrs[$el.selector], renderingOnlyElAttrs) :
+          _.extend({}, allAttrs[$el.selector], renderingOnlyElAttrs) :
           allAttrs[$el.selector];
 
         this.positionRelative(Snap($el[0]), bbox, elAttrs, nodesBySelector);
@@ -586,8 +585,8 @@ define(["./cell"], function (dedu) {
         x: 0,
         y: 0
       };
-      // this.vel.attr('transform','translate('+position.x+','+position.y+')');
-      V(this.vel.node).attr('transform', 'translate(' + position.x + ',' + position.y + ')');
+      this.vel.attr('transform','translate('+position.x+','+position.y+')');
+      // V(this.vel.node).attr('transform', 'translate(' + position.x + ',' + position.y + ')');
     },
 
     /**

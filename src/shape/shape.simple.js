@@ -5,11 +5,7 @@ define(['./shape.basic'], function (dedu) {
    * SuspendPort model interface
    * @class
    */
-  dedu.shape.simple.SuspendPortModelInterface = {
-    initialize: function () {
-
-    }
-  };
+  dedu.shape.simple.SuspendPortModelInterface = {};
 
   /**
    * SuspendPort view interface
@@ -125,8 +121,6 @@ define(['./shape.basic'], function (dedu) {
           }
         });
       }
-
-
       this.trigger('add:ports');
     },
     /**
@@ -159,8 +153,7 @@ define(['./shape.basic'], function (dedu) {
    * @augments dedu.shape.basic.Generic
    */
   dedu.shape.simple.Generic = dedu.shape.basic.Generic.extend(
-    _.extend({},
-      dedu.shape.basic.PortsModelInterface, {
+    _.extend({}, {
         markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><text class="label"/></g>',
         suspendPortMarkup: '<circle class="suspend port<%= dir %>" port="<%= dir %>"/>',
         defaults: dedu.util.deepSupplement({
@@ -217,7 +210,6 @@ define(['./shape.basic'], function (dedu) {
           return attrs;
         },
         compoundUI: function () {
-
         }
       })
   );
