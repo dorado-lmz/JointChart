@@ -1,16 +1,17 @@
-define(['./shape.simple'], function (dedu) {
+define(['./shape.simple', '../core'], function (shape, core) {
+  var util = core.util;
   /**
    * Created by lmz on 16/3/20.
    */
 
-  dedu.shape.uml = {};
+  shape.uml = {};
 
   /**
    * `StartState`
    * @class
-   * @augments dedu.shape.simple.Generic
+   * @augments shape.simple.Generic
    */
-  dedu.shape.uml.StartState = dedu.shape.simple.Generic.extend({
+  shape.uml.StartState = shape.simple.Generic.extend({
     markup: [
       '<g class="rotatable">',
       '<g class="scalable">',
@@ -19,7 +20,7 @@ define(['./shape.simple'], function (dedu) {
       '</g>'
     ].join(''),
 
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
       type: 'uml.StartState',
       size: {
         width: 25,
@@ -50,15 +51,15 @@ define(['./shape.simple'], function (dedu) {
           'fill': 'blue'
         }
       },
-      name: 'Initial' + dedu.util.randomString(6)
-    }, dedu.shape.simple.Generic.prototype.defaults)
+      name: 'Initial' + util.randomString(6)
+    }, shape.simple.Generic.prototype.defaults)
   });
 
   /**
    * @class
-   * @augments dedu.shape.simple.Generic
+   * @augments shape.simple.Generic
    */
-  dedu.shape.uml.EndState = dedu.shape.simple.Generic.extend({
+  shape.uml.EndState = shape.simple.Generic.extend({
     markup: [
       '<g class="rotatable">',
       '<g class="scalable">',
@@ -67,7 +68,7 @@ define(['./shape.simple'], function (dedu) {
       '</g>',
       '</g>'
     ].join(''),
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
       type: 'uml.EndState',
       size: {
         width: 25,
@@ -102,11 +103,11 @@ define(['./shape.simple'], function (dedu) {
           'stroke': '#333'
         }
       },
-      name: 'End' + dedu.util.randomString(6)
-    }, dedu.shape.simple.Generic.prototype.defaults)
+      name: 'End' + util.randomString(6)
+    }, shape.simple.Generic.prototype.defaults)
   });
 
-  dedu.shape.uml.Choice = dedu.shape.simple.Generic.extend({
+  shape.uml.Choice = shape.simple.Generic.extend({
     markup: [
       '<g class="rotatable">',
       '<g class="scalable">',
@@ -115,7 +116,7 @@ define(['./shape.simple'], function (dedu) {
       '</g>'
     ].join(''),
 
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
 
       type: 'uml.Choice',
       size: {
@@ -128,10 +129,10 @@ define(['./shape.simple'], function (dedu) {
           'stroke-width': 2
         }
       }
-    }, dedu.shape.simple.Generic.prototype.defaults)
+    }, shape.simple.Generic.prototype.defaults)
   });
 
-  dedu.shape.uml.DeepHistory = dedu.shape.simple.Generic.extend({
+  shape.uml.DeepHistory = shape.simple.Generic.extend({
     markup: [
       '<g class="rotatable">',
       '<g class="scalable">',
@@ -141,7 +142,7 @@ define(['./shape.simple'], function (dedu) {
       '</g>'
     ].join(''),
 
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
       type: 'uml.DeepHistory',
       size: {
         width: 40,
@@ -177,10 +178,10 @@ define(['./shape.simple'], function (dedu) {
         }
 
       }
-    }, dedu.shape.simple.Generic.prototype.defaults)
+    }, shape.simple.Generic.prototype.defaults)
   });
 
-  dedu.shape.uml.ShadowHistory = dedu.shape.simple.Generic.extend({
+  shape.uml.ShadowHistory = shape.simple.Generic.extend({
     markup: [
       '<g class="rotatable">',
       '<g class="scalable">',
@@ -190,7 +191,7 @@ define(['./shape.simple'], function (dedu) {
       '</g>',
       '</g>'
     ].join(''),
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
       type: 'uml.ShadowHistory',
       port_ref_position: {
         portup: {
@@ -223,14 +224,14 @@ define(['./shape.simple'], function (dedu) {
           'stroke-width': 2,
         }
       }
-    }, dedu.shape.uml.DeepHistory.prototype.defaults)
+    }, shape.uml.DeepHistory.prototype.defaults)
   })
 
   /**
    * @class
-   * @augments dedu.shape.simple.Generic.
+   * @augments shape.simple.Generic.
    */
-  dedu.shape.uml.State = dedu.shape.simple.Generic.extend({
+  shape.uml.State = shape.simple.Generic.extend({
     markup: [
       '<g class="rotatable">',
       '<g class="scalable">',
@@ -270,7 +271,7 @@ define(['./shape.simple'], function (dedu) {
       }
     },
 
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
 
       type: 'uml.State',
       size: {
@@ -315,18 +316,18 @@ define(['./shape.simple'], function (dedu) {
       },
 
       events: [],
-      name: 'State' + dedu.util.randomString(6)
-    }, dedu.shape.simple.Generic.prototype.defaults)
+      name: 'State' + util.randomString(6)
+    }, shape.simple.Generic.prototype.defaults)
 
   });
 
-  dedu.shape.uml.StateView = dedu.shape.simple.GenericView.extend({
+  shape.uml.StateView = shape.simple.GenericView.extend({
 
     initialize: function (options) {
       if (options.skip_render) {
         return;
       }
-      dedu.shape.simple.GenericView.prototype.initialize.apply(this, arguments);
+      shape.simple.GenericView.prototype.initialize.apply(this, arguments);
       this.model.on('change:name', this.updateName, this);
       this.model.on('change:events', this.updateEvents, this);
       this.model.on('change:size', this.updatePath, this);
@@ -359,7 +360,7 @@ define(['./shape.simple'], function (dedu) {
     },
 
     render: function () {
-      dedu.shape.simple.GenericView.prototype.render.apply(this, arguments);
+      shape.simple.GenericView.prototype.render.apply(this, arguments);
       this.originSize = this.model.get('size');
       this.updateName();
       if (this.model.debug) {
@@ -380,7 +381,7 @@ define(['./shape.simple'], function (dedu) {
         width = model.width,
         height = model.height,
         yDivider = 0;
-      // dedu.ElementView.prototype.update.apply(this,arguments);
+      // ElementView.prototype.update.apply(this,arguments);
 
       var debugContainer = V(this.rotatableNode.node).select('.debug'),
         originExists = true;
@@ -454,7 +455,7 @@ define(['./shape.simple'], function (dedu) {
     }
   });
 
-  dedu.shape.uml.StartStateView = dedu.shape.simple.GenericView.extend({
+  shape.uml.StartStateView = shape.simple.GenericView.extend({
 
     focus: function () {
       this.vel.select('.uml-state-body').attr({
@@ -478,10 +479,10 @@ define(['./shape.simple'], function (dedu) {
 
   });
 
-  dedu.shape.uml.EndStateView = dedu.shape.simple.GenericView.extend({
+  shape.uml.EndStateView = shape.simple.GenericView.extend({
     initialize: function (options) {
       this.circle_index = 2;
-      dedu.shape.simple.GenericView.prototype.initialize.apply(this, arguments);
+      shape.simple.GenericView.prototype.initialize.apply(this, arguments);
     },
     focus: function () {
       this.vel.select('.uml-state-body').attr({
@@ -504,7 +505,7 @@ define(['./shape.simple'], function (dedu) {
     },
   });
 
-  dedu.shape.uml.ChoiceView = dedu.shape.simple.GenericView.extend({
+  shape.uml.ChoiceView = shape.simple.GenericView.extend({
 
     focus: function () {
       this.vel.select('.uml-choice-body').attr({
@@ -520,7 +521,7 @@ define(['./shape.simple'], function (dedu) {
 
   });
 
-  dedu.shape.uml.DeepHistoryView = dedu.shape.simple.GenericView.extend({
+  shape.uml.DeepHistoryView = shape.simple.GenericView.extend({
     focus: function () {
       this.vel.select('.uml-history-body').attr({
         fill: "#ffc21d"
@@ -542,7 +543,7 @@ define(['./shape.simple'], function (dedu) {
     },
 
   });
-  dedu.shape.uml.ShadowHistoryView = dedu.shape.simple.GenericView.extend({
+  shape.uml.ShadowHistoryView = shape.simple.GenericView.extend({
     focus: function () {
       this.vel.select('.uml-history-body').attr({
         fill: "#ffc21d"
@@ -563,5 +564,5 @@ define(['./shape.simple'], function (dedu) {
       this.vel.attr('transform', 'translate(' + Math.round(position.x + size.width / 2) + ',' + Math.round(position.y + size.height / 2) + ')');
     },
   });
-  return dedu;
+  return shape;
 })

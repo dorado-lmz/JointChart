@@ -1,18 +1,23 @@
-define(["./paper","backbone"], function (dedu,Backbone) {
+define(["backbone","joint_chart"], function (Backbone,JointChart) {
+  var core = JointChart.core,
+      Paper = JointChart.Paper,
+      shape = JointChart.shape,
+      util = core.util;
   /**
    * 添加svg的属性,主要为了和node-red~editor的兼容
    * @class
-   * @augments dedu.Paper
+   * @augments Paper
    */
-  dedu.Chart = dedu.Paper.extend({
-    options: dedu.util.supplement({
+  Chart = Paper.extend({
+    options: util.supplement({
       tabindex: 1,
       style: {
 
-      }
-    }, dedu.Paper.prototype.options),
+      },
+      cellViewNamespace:shape
+    }, Paper.prototype.options),
     initialize: function () {
-      dedu.Paper.prototype.initialize.apply(this, arguments);
+      Paper.prototype.initialize.apply(this, arguments);
 
       Snap(this.svg).attr({
         tabindex: this.options.tabindex
@@ -28,5 +33,5 @@ define(["./paper","backbone"], function (dedu,Backbone) {
     }
   });
 
-  return dedu;
+  return Chart;
 })

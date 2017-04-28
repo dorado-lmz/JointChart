@@ -1,22 +1,22 @@
-define(['./shape.basic'], function (dedu) {
-
-  dedu.shape.simple = {};
+define(['underscore', './shape.basic', '../core', '../view/ElementView'], function (_,shape,core, ElementView) {
+  var util = core.util;
+  shape.simple = {};
   /**
    * SuspendPort model interface
    * @class
    */
-  dedu.shape.simple.SuspendPortModelInterface = {};
+  shape.simple.SuspendPortModelInterface = {};
 
   /**
    * SuspendPort view interface
    * @class
    */
-  dedu.shape.simple.SuspendPortViewInterface = {
+  shape.simple.SuspendPortViewInterface = {
     initialize: function (options) {
       if (options.skip_render) {
         return;
       }
-      dedu.ElementView.prototype.initialize.apply(this, arguments);
+      ElementView.prototype.initialize.apply(this, arguments);
       //this.listenTo(this, 'add:ports', this.update);
       //this.listenTo(this,'remove:ports',this.update);
       _.bindAll(this, "showSuspendPort", "hideSuspendPort");
@@ -37,14 +37,14 @@ define(['./shape.basic'], function (dedu) {
       }, this);
     },
     renderView: function () {
-      //dedu.ElementView.prototype.render.apply(this, arguments);
+      //ElementView.prototype.render.apply(this, arguments);
       this.renderSuspendPort();
       //this.update();
     },
     /**
      * 渲染suspend port
      * @method renderSuspendPort
-     * @memberof dedu.shape.simple.SuspendPortViewInterface
+     * @memberof shape.simple.SuspendPortViewInterface
      */
     renderSuspendPort: function () {
 
@@ -126,7 +126,7 @@ define(['./shape.basic'], function (dedu) {
     /**
      * show suspend port
      * method showSuspendPort
-     * @memberof dedu.shape.simple.SuspendPortViewInterface
+     * @memberof shape.simple.SuspendPortViewInterface
      */
     showSuspendPort: function () {
       this.up.attr('display', 'block');
@@ -137,7 +137,7 @@ define(['./shape.basic'], function (dedu) {
     /**
      * hide suspend port
      * method hideSuspendPort
-     * @memberof dedu.shape.simple.SuspendPortViewInterface
+     * @memberof shape.simple.SuspendPortViewInterface
      */
     hideSuspendPort: function () {
       this.up.attr('display', 'none');
@@ -150,13 +150,13 @@ define(['./shape.basic'], function (dedu) {
   /**
    * A model class implements suspend port
    * @class
-   * @augments dedu.shape.basic.Generic
+   * @augments shape.basic.Generic
    */
-  dedu.shape.simple.Generic = dedu.shape.basic.Generic.extend(
+  shape.simple.Generic = shape.basic.Generic.extend(
     _.extend({}, {
         markup: '<g class="rotatable"><g class="scalable"><rect class="body"/></g><text class="label"/></g>',
-        suspendPortMarkup: '<circle class="suspend port<%= dir %>" port="<%= dir %>"/>',
-        defaults: dedu.util.deepSupplement({
+        suspendPortMarkup: '<circle class="suspend port<%= dir %>" port="<%= dir %>" magnet/>',
+        defaults: util.deepSupplement({
           type: 'simple.Generic',
           size: {
             width: 1,
@@ -174,7 +174,7 @@ define(['./shape.basic'], function (dedu) {
             },
 
           }
-        }, dedu.shape.basic.Generic.prototype.defaults),
+        }, shape.basic.Generic.prototype.defaults),
         /**
          * get relative position for port
          * @param portName
@@ -183,7 +183,7 @@ define(['./shape.basic'], function (dedu) {
          * @param selector
          * @param type
          * @returns {{}}
-         * @memberof dedu.shape.simple.Generic
+         * @memberof shape.simple.Generic
          */
         getPortAttrs: function (portName, index, total, selector, type) {
           var attrs = {};
@@ -217,25 +217,24 @@ define(['./shape.basic'], function (dedu) {
   /**
    * A view class implements suspend port
    * @class
-   * @augments dedu.ElementView
+   * @augments ElementView
    */
-  dedu.shape.simple.GenericView = dedu.ElementView.extend(
-    _.extend({}, dedu.shape.simple.SuspendPortViewInterface, {
+  shape.simple.GenericView = ElementView.extend(
+    _.extend({}, shape.simple.SuspendPortViewInterface, {
       /**
        * 显示连接到port的提示
        * @param {DOMObject} el - port对应的domObject
        * @param {Object} [opt]
        */
       addTipMagnet: function (el, opt) {
-        var port = V(el);
+        var template = _.template('<circle class="tip tip-${ port }" transform="${ transform }"  r="15" fill="black" opacity="0.3"></circle>');
+
+        var port = Snap(el);
         if (port.attr('port') && !$(".tip-" + port.attr('port'), this.$el)[0]) {
-          var tip = V('circle', {
-            class: "tip tip-" + port.attr('port'),
-            transform: port.attr('transform'),
-            r: 15,
-            fill: 'black',
-            opacity: 0.3
-          });
+          var tip = Snap.fragment(template({
+            port: port.attr('port'),
+            transform: port.attr('transform')
+          }))
           this.rotatableNode.append(tip);
         }
         this.showSuspendPort(); // show four ports
@@ -243,7 +242,7 @@ define(['./shape.basic'], function (dedu) {
 
       getPositionBySelector: function (el) {
         el = !el ? this.el : $(el, $(this.el))[0] || this.el;
-        var port = V(el),
+        var port = Snap(el),
           box = port.bbox();
         var x = box.x + box.width / 2,
           y = box.y + box.height / 2;
@@ -258,7 +257,7 @@ define(['./shape.basic'], function (dedu) {
        * @param opt
        */
       removeTipMagnet: function (el, opt) {
-        var port = V(el);
+        var port = Snap(el);
         if ($(".tip-" + port.attr('port'), this.$el)[0]) {
           $(".tip.tip-" + port.attr('port'), this.$el).remove();
         }
@@ -273,5 +272,5 @@ define(['./shape.basic'], function (dedu) {
       }
     })
   );
-  return dedu;
+  return shape;
 })

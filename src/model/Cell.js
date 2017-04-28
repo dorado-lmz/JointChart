@@ -1,10 +1,11 @@
-define(["backbone", './core'], function (Backbone, dedu) {
+define(["backbone", '../core'], function (Backbone, core) {
+   var util = core.util;
   /**
-  * `dedu.Cell` 是`joint_chart`所有图形的父类
+  * `Cell` 是`joint_chart`所有图形的父类
   * @class
   * @augments Backbone.Model
   */
-  dedu.Cell = Backbone.Model.extend({
+  Cell = Backbone.Model.extend({
 
     constructor: function (attributes, options) {
       var defaults;
@@ -22,15 +23,15 @@ define(["backbone", './core'], function (Backbone, dedu) {
     /**
      * initialize:
      * * set id
-     * * process all attrs of port {@link dedu.Cell#processPorts|processPorts}
+     * * process all attrs of port {@link Cell#processPorts|processPorts}
      * @method
      * @instance
      * @param {Object} options
-     * @memberof dedu.Cell
+     * @memberof Cell
      */
     initialize: function (attributes, options) {
       if (!attributes || !attributes.id) {
-        this.set('id', dedu.util.uuid(), { silent: true });
+        this.set('id', util.uuid(), { silent: true });
       }
       // Collect ports defined in `attrs` and keep collecting whenever `attrs` object changes.
       this.processPorts();
@@ -42,7 +43,7 @@ define(["backbone", './core'], function (Backbone, dedu) {
      * @method isLink
      * @instance
      * @returns {boolean}
-     * @memberof dedu.Cell
+     * @memberof Cell
      */
     isLink: function () {
       return false;
@@ -52,8 +53,8 @@ define(["backbone", './core'], function (Backbone, dedu) {
      * @method toFront
      * @instance
      * @param opt
-     * @returns {dedu.Cell}
-     * @memberof dedu.Cell
+     * @returns {Cell}
+     * @memberof Cell
      */
     toFront: function (opt) {
       if (this.collection) {
@@ -77,10 +78,10 @@ define(["backbone", './core'], function (Backbone, dedu) {
     },
 
     /**
-     * process all attrs of port and called by {@link dedu.Cell#initialize|initialize}
+     * process all attrs of port and called by {@link Cell#initialize|initialize}
      * @method processPorts
      * @instance
-     * @memberof dedu.Cell
+     * @memberof Cell
      *
      */
     processPorts: function () {
@@ -133,7 +134,7 @@ define(["backbone", './core'], function (Backbone, dedu) {
      * @param {*} value
      * @param {Object} opt
      * @returns {*}
-     * @memberof dedu.Cell
+     * @memberof Cell
      * @example
      * cell.prop('name/first', 'John')
      * cell.prop({ name: { first: 'John' } })
@@ -174,19 +175,19 @@ define(["backbone", './core'], function (Backbone, dedu) {
             prevProperty = key;
           });
           // Fill update with the `value` on `path`.
-          update = dedu.util.setByPath(update, path, value, '/');
+          update = util.setByPath(update, path, value, '/');
 
           var baseAttributes = _.extend({}, this.attributes);
           // if rewrite mode enabled, we replace value referenced by path with
           // the new one (we don't merge).
-          opt.rewrite && dedu.util.unsetByPath(baseAttributes, path, '/');
+          opt.rewrite && util.unsetByPath(baseAttributes, path, '/');
 
           // Merge update with the model attributes.
           var attributes = _.extend(baseAttributes, update);
           // Finally, set the property to the updated attributes.
           return this.set(property, attributes[property], opt);
         } else {
-          return dedu.util.getByPath(this.attributes, props, delim);
+          return util.getByPath(this.attributes, props, delim);
         }
 
       }
@@ -241,6 +242,31 @@ define(["backbone", './core'], function (Backbone, dedu) {
       this.trigger('remove', this, this.collection, opt);
 
       return this;
+    },
+
+    // Return an array of ancestor cells.
+    // The array is ordered from the parent of the cell
+    // to the most distant ancestor.
+    getAncestors: function() {
+
+        var ancestors = [];
+        var parentId = this.get('parent');
+
+        if (!this.graph) {
+            return ancestors;
+        }
+
+        while (parentId !== undefined) {
+            var parent = this.graph.getCell(parentId);
+            if (parent !== undefined) {
+                ancestors.push(parent);
+                parentId = parent.get('parent');
+            } else {
+                break;
+            }
+        }
+
+        return ancestors;
     },
 
     getEmbeddedCells: function (opt) {
@@ -321,7 +347,7 @@ define(["backbone", './core'], function (Backbone, dedu) {
 
         var clone = Backbone.Model.prototype.clone.apply(this, arguments);
         // We don't want the clone to have the same ID as the original.
-        clone.set('id', dedu.util.uuid());
+        clone.set('id', util.uuid());
         // A shallow cloned element does not carry over the original embeds.
         clone.set('embeds', '');
         return clone;
@@ -330,7 +356,7 @@ define(["backbone", './core'], function (Backbone, dedu) {
         // Deep cloning.
 
         // For a deep clone, simply call `graph.cloneCells()` with the cell and all its embedded cells.
-        return _.values(dedu.Graph.prototype.cloneCells.call(null, [this].concat(this.getEmbeddedCells({ deep: true }))));
+        return _.values(Graph.prototype.cloneCells.call(null, [this].concat(this.getEmbeddedCells({ deep: true }))));
       }
     },
 

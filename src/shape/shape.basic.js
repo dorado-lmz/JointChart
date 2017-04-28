@@ -1,16 +1,16 @@
-define(['../element'],function(dedu){
-  dedu.shape = {basic:{}};
+define(['../model/Element', '../core'],function(Element, core){
+  var util = core.util,shape = {basic:{}};
 
 /**
  * 不能连线的图元
  * @class
- * @augments dedu.Element.
+ * @augments Element.
  */
-dedu.shape.basic.Generic = dedu.Element.extend({
+shape.basic.Generic = Element.extend({
     /**
      * @override
      */
-    defaults:dedu.util.deepSupplement({
+    defaults:util.deepSupplement({
         type:'basic.Generic',
         attrs:{
             '.':{fill:'#fff',stroke:'none',magnet:false},
@@ -19,12 +19,12 @@ dedu.shape.basic.Generic = dedu.Element.extend({
                 'stroke':'none'
             },
         }
-    },dedu.Element.prototype.defaults)
+    },Element.prototype.defaults)
 });
 
-dedu.shape.basic.Rect  = dedu.shape.basic.Generic.extend({
+shape.basic.Rect  = shape.basic.Generic.extend({
     markup: '<g class="rotatable"><g class="scalable"><rect/></g><text/></g>',
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
         size: {
             width: 60,
             height: 40
@@ -49,25 +49,25 @@ dedu.shape.basic.Rect  = dedu.shape.basic.Generic.extend({
             }
         }
 
-    }, dedu.shape.basic.Generic.prototype.defaults)
+    }, shape.basic.Generic.prototype.defaults)
 });
 
-dedu.shape.basic.CRect = dedu.shape.basic.Rect.extend({
-    defaults:dedu.util.deepSupplement({
+shape.basic.CRect = shape.basic.Rect.extend({
+    defaults:util.deepSupplement({
         attrs:{
             'rect':{
                 rx:7,
                 ry:7
             }
         }
-    },dedu.shape.basic.Rect.prototype.defaults)
+    },shape.basic.Rect.prototype.defaults)
 });
 
-dedu.shape.basic.Circle = dedu.shape.basic.Generic.extend({
+shape.basic.Circle = shape.basic.Generic.extend({
 
     markup: '<g class="rotatable"><g class="scalable"><circle/></g><text/></g>',
 
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
 
         type: 'basic.Circle',
         size: { width: 60, height: 60 },
@@ -90,15 +90,15 @@ dedu.shape.basic.Circle = dedu.shape.basic.Generic.extend({
                 'font-family': 'Arial, helvetica, sans-serif'
             }
         }
-    }, dedu.shape.basic.Generic.prototype.defaults)
+    }, shape.basic.Generic.prototype.defaults)
 });
 
 
-dedu.shape.basic.Ellipse = dedu.shape.basic.Generic.extend({
+shape.basic.Ellipse = shape.basic.Generic.extend({
 
     markup: '<g class="rotatable"><g class="scalable"><ellipse/></g><text/></g>',
 
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
 
         type: 'basic.Ellipse',
         size: { width: 60, height: 40 },
@@ -120,14 +120,14 @@ dedu.shape.basic.Ellipse = dedu.shape.basic.Generic.extend({
                 'font-family': 'Arial, helvetica, sans-serif'
             }
         }
-    }, dedu.shape.basic.Generic.prototype.defaults)
+    }, shape.basic.Generic.prototype.defaults)
 });
 
-dedu.shape.basic.Polygon = dedu.shape.basic.Generic.extend({
+shape.basic.Polygon = shape.basic.Generic.extend({
 
     markup: '<g class="rotatable"><g class="scalable"><polygon/></g><text/></g>',
 
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
 
         type: 'basic.Polygon',
         size: { width: 60, height: 40 },
@@ -147,14 +147,14 @@ dedu.shape.basic.Polygon = dedu.shape.basic.Generic.extend({
                 'font-family': 'Arial, helvetica, sans-serif'
             }
         }
-    }, dedu.shape.basic.Generic.prototype.defaults)
+    }, shape.basic.Generic.prototype.defaults)
 });
 
-dedu.shape.basic.Polyline = dedu.shape.basic.Generic.extend({
+shape.basic.Polyline = shape.basic.Generic.extend({
 
     markup: '<g class="rotatable"><g class="scalable"><polyline/></g><text/></g>',
 
-    defaults: dedu.util.deepSupplement({
+    defaults: util.deepSupplement({
 
         type: 'basic.Polyline',
         size: { width: 60, height: 40 },
@@ -174,18 +174,18 @@ dedu.shape.basic.Polyline = dedu.shape.basic.Generic.extend({
                 'font-family': 'Arial, helvetica, sans-serif'
             }
         }
-    }, dedu.shape.basic.Generic.prototype.defaults)
+    }, shape.basic.Generic.prototype.defaults)
 });
 
 /**
- * `dedu.shape.basic.PortsModelInterface` 增加inPort和outPort,用于link
+ * `shape.basic.PortsModelInterface` 增加inPort和outPort,用于link
  * @class
  */
-dedu.shape.basic.PortsModelInterface = {
+shape.basic.PortsModelInterface = {
     /**
      * initialize
      * *增加对port的update
-     * @ memberof dedu.shape.basic.PortsModelInterface
+     * @ memberof shape.basic.PortsModelInterface
      */
     initialize:function(){
         this.updatePortsAttrs();
@@ -196,7 +196,7 @@ dedu.shape.basic.PortsModelInterface = {
     },
     /**
      * update port css
-     * @memberof dedu.shape.basic.PortsModelInterface
+     * @memberof shape.basic.PortsModelInterface
      */
     updatePortsAttrs: function () {
         // Delete previously set attributes for ports.
@@ -251,21 +251,21 @@ dedu.shape.basic.PortsModelInterface = {
 };
 
 /**
- * `dedu.shape.basic.PortsViewInterface` 是 `dedu.shape.basic.PortsModelInterface`的view
+ * `shape.basic.PortsViewInterface` 是 `shape.basic.PortsModelInterface`的view
  * @class
  */
-dedu.shape.basic.PortsViewInterface = {
+shape.basic.PortsViewInterface = {
 
     /**
      * initialize
      * @param options
-     * @memberof dedu.shape.basic.PortsViewInterface
+     * @memberof shape.basic.PortsViewInterface
      */
     initialize: function (options) {
         if(options.skip_render){
             return;
         }
-        dedu.ElementView.prototype.initialize.apply(this, arguments);
+        ElementView.prototype.initialize.apply(this, arguments);
         // `Model` emits the `process:ports` whenever it's done configuring the `attrs` object for ports.
         this.listenTo(this.model, 'process:ports', this.update);
         this.model.on('change:selected',function(){
@@ -279,17 +279,17 @@ dedu.shape.basic.PortsViewInterface = {
 
     /**
      * `update` in order to override
-     * @memberof dedu.shape.basic.PortsViewInterface
+     * @memberof shape.basic.PortsViewInterface
      */
     update: function () {
         // First render ports so that `attrs` can be applied to those newly created DOM elements
         // in `ElementView.prototype.update()`.
         this.renderPorts();
-        dedu.ElementView.prototype.update.apply(this, arguments);
+        ElementView.prototype.update.apply(this, arguments);
     },
     /**
      * render port
-     * @memberof dedu.shape.basic.PortsViewInterface
+     * @memberof shape.basic.PortsViewInterface
      */
     renderPorts: function () {
         var $inPorts = this.$('.inPorts').empty();
@@ -308,5 +308,5 @@ dedu.shape.basic.PortsViewInterface = {
 
     }
 };
-  return dedu;
+  return shape;
 })

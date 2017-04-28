@@ -1,5 +1,5 @@
 import React from 'react';
-import _ from 'lodash';
+import _ from 'underscore';
 import TabStore from '../stores/TabStore.js';
 
 class TabsComponent extends React.Component {

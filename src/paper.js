@@ -1,22 +1,24 @@
-define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,dedu) {
+define(["backbone", './geometry', "./model/Cell", "./model/Link", "./Graph", "./view/ElementView", './view/LinkView', './core'],
+  function (Backbone, g, Cell, Link, Graph, ElementView, LinkView, core, manhattan) {
+     var util = core.util;
   /**
-   * `dedu.Paper` 是{@link dedu.Graph}的view
+   * `Paper` 是{@link Graph}的view
    * @class
    * @augments Backbone.View
    */
-  dedu.Paper = Backbone.View.extend({
+  Paper = Backbone.View.extend({
     /**
      * 渲染元素的class
      * @member {String}
-     * @memberof dedu.Paper
+     * @memberof Paper
      * @default
      */
     className: 'paper',
 
     /**
-     * `dedu.Paper`的默认属性
+     * `Paper`的默认属性
      * @member {Object}
-     * @memberof dedu.Paper
+     * @memberof Paper
      */
     options: {
 
@@ -42,13 +44,13 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
       gridSize: 1,
       perpendicularLinks: false,
       /**
-       * @property {dedu.ElementView} options.elementView - 默认的elementView
+       * @property {ElementView} options.elementView - 默认的elementView
        */
-      elementView: dedu.ElementView,
+      elementView: ElementView,
       /**
-       *  @property {dedu.LinkView} options.LinkView - 默认的LinkView
+       *  @property {LinkView} options.LinkView - 默认的LinkView
        */
-      linkView: dedu.LinkView,
+      linkView: LinkView,
 
       /**
        * @property {Object} options.interactive - 哪些元素可以进行交互
@@ -69,7 +71,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
       // Defines what link model is added to the graph after an user clicks on an active magnet.
       // Value could be the Backbone.model or a function returning the Backbone.model
       // defaultLink: function(elementView, magnet) { return condition ? new customLink1() : new customLink2() }
-      defaultLink: new dedu.Link,
+      defaultLink: new Link,
 
       // A connector that is used by links with no connector defined on the model.
       // e.g. { name: 'rounded', args: { radius: 5 }} or a function
@@ -80,7 +82,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
       // A router that is used by links with no router defined on the model.
       // e.g. { name: 'oneSide', args: { padding: 10 }} or a function
       // defaultRouter: { name: 'manhattan' },\
-      defaultRouter: null,
+      defaultRouter: { name: 'manhattan' },
 
       /* CONNECTING */
 
@@ -92,7 +94,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
       // Check whether to allow or disallow the link connection while an arrowhead end (source/target)
       // being changed.
       validateConnection: function (cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
-        return (end === 'target' ? cellViewT : cellViewS) instanceof dedu.ElementView;
+        return (end === 'target' ? cellViewT : cellViewS) instanceof ElementView;
       },
 
       // Restrict the translation of elements by given bounding box.
@@ -113,9 +115,9 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
       linkPinning: false,
 
       /**
-       *  @property {dedu.shape} options.cellViewNamespace - 默认的cellViewNamespace
+       *  @property {shape} options.cellViewNamespace - 默认的cellViewNamespace
        */
-      cellViewNamespace: dedu.shape
+      cellViewNamespace: void 0
     },
 
     constructor: function (options) {
@@ -136,7 +138,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
       this.mouse_mode = 0;
 
       var snap_svg = this.snap_svg = Snap();
-      dedu.Paper.marker_end = snap_svg.path("M 0 0 6.6 5.3 0 10.6 13.3 5.3 Z").attr({
+      core.marker_end = snap_svg.path("M 0 0 6.6 5.3 0 10.6 13.3 5.3 Z").attr({
         fill: 'blue',
         stroke: 'blue',
         'stroke-width': 1,
@@ -145,7 +147,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
       }).marker(0, 0, 13.3, 10.6, 13.3, 5.3).attr({
         markerUnits: 'userSpaceOnUse'
       });
-      dedu.Paper.marker_end.toDefs();
+      core.marker_end.toDefs();
 
       this.svg = snap_svg.node;
 
@@ -198,9 +200,9 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
     },
 
     /**
-     * render cell that be added to `dedu.Graph`
+     * render cell that be added to `Graph`
      * @method onCellAdded
-     * @param {dedu.Cell} cell
+     * @param {Cell} cell
      * @param graph
      * @param opt
      */
@@ -261,8 +263,8 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
 
     /**
      * Find a view for a model `cell`. `cell` can also be a string representing a model `id`.
-     * @param {dedu.Cell} cell
-     * @returns {dedu.CellView}
+     * @param {Cell} cell
+     * @returns {CellView}
      */
     findViewByModel: function (cell) {
 
@@ -290,7 +292,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
     /**
      * Find a cell, the id of which is equal to `id`
      * @param {String} id
-     * @returns {dedu.Cell}
+     * @returns {Cell}
      */
     getModelById: function (id) {
 
@@ -299,8 +301,8 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
 
     /**
      * 渲染`cell`
-     * @param {dedu.Cell} cell - the model cell to be rendered
-     * @returns {dedu.CellView}
+     * @param {Cell} cell - the model cell to be rendered
+     * @returns {CellView}
      */
     renderView: function (cell) {
       var view = this._views[cell.id] = this.createViewForModel(cell);
@@ -351,7 +353,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
 
     getRestrictedArea: function () {
       var restrictedArea;
-      if (_.isFunction(this.options.restrictTranslate)) {} else if (this.options.restrictedTranslate === true) {
+      if (_.isFunction(this.options.restrictTranslate)) { } else if (this.options.restrictedTranslate === true) {
         restrictedArea = this.getArea();
       } else {
         restrictedArea = this.options.restrictTranslate || null;
@@ -384,14 +386,14 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
       var namespace = this.options.cellViewNamespace;
       var type = cell.get('type') + "View";
 
-      var namespaceViewClass = dedu.util.getByPath(namespace, type, ".");
+      var namespaceViewClass = util.getByPath(namespace, type, ".");
 
       if (cell.isLink()) {
         optionalViewClass = this.options.linkView;
-        defaultViewClass = dedu.LinkView;
+        defaultViewClass = LinkView;
       } else {
         optionalViewClass = this.options.elementView;
-        defaultViewClass = dedu.ElementView;
+        defaultViewClass = ElementView;
       }
 
       var ViewClass = (optionalViewClass.prototype instanceof Backbone.View) ?
@@ -410,7 +412,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
      * 更改原点
      * @param {Number} ox - 新原点的x坐标
      * @param {Number} oy - 新原点的y坐标
-     * @memberof dedu.Paper
+     * @memberof Paper
      */
     setOrigin: function (ox, oy) {
       this.options.origin.x = ox || 0;
@@ -473,7 +475,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof dedu.Paper
+     * @memberof Paper
      */
     blank_pointDown: function (evt, x, y) {
       this.model.cancelSelection();
@@ -503,7 +505,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof dedu.Paper
+     * @memberof Paper
      */
     blank_pointMove: function (evt, x, y) {
       var mouse_position = [evt.offsetX, evt.offsetY];
@@ -542,7 +544,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof dedu.Paper
+     * @memberof Paper
      */
     blank_pointUp: function (evt, x, y) {
       var lasso = this.lasso;
@@ -558,7 +560,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
 
         var selection_models = [];
         _.each(this._views, function (cellView) {
-          if (cellView instanceof dedu.LinkView) {
+          if (cellView instanceof LinkView) {
             return;
           }
           var model = cellView.model;
@@ -584,17 +586,17 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
      *  mouse down
      *  * 判断鼠标点击的位置
      *  1. 图元上,则调用该图元的事件处理函数
-     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointDown}
+     *  2. 空白处,则调用 {@link Paper~blank_pointDown}
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof dedu.Paper
+     * @memberof Paper
      */
     canvasMouseDown: function (evt) {
 
       evt.preventDefault();
 
-      var evt = dedu.util.normalizeEvent(evt);
+      var evt = util.normalizeEvent(evt);
       var view = this.findView(evt.target);
 
       if (this.guard(evt, view)) return;
@@ -622,22 +624,22 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
      *  mouse move
      *  * 判断鼠标点击的位置
      *  1. 图元上,则调用该图元的事件处理函数
-     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointMove}
+     *  2. 空白处,则调用 {@link Paper~blank_pointMove}
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof dedu.Paper
+     * @memberof Paper
      */
     canvasMouseMove: function (evt) {
 
       evt.preventDefault();
-      evt = dedu.util.normalizeEvent(evt);
+      evt = util.normalizeEvent(evt);
       var localPoint = this.snapToGrid({
         x: evt.clientX,
         y: evt.clientY
       });
       if (this.sourceView) {
-        if (this.sourceView instanceof dedu.LinkView) {
+        if (this.sourceView instanceof LinkView) {
           this.sourceView.pointermove(evt, localPoint.x, localPoint.y);
           return;
         }
@@ -664,14 +666,14 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
      *  mouse up
      *  * 判断鼠标点击的位置
      *  1. 图元上,则调用该图元的事件处理函数
-     *  2. 空白处,则调用 {@link dedu.Paper~blank_pointUp}
+     *  2. 空白处,则调用 {@link Paper~blank_pointUp}
      * @param {Event} evt
      * @param {Number} x
      * @param {Number} y
-     * @memberof dedu.Paper
+     * @memberof Paper
      */
     canvasMouseUp: function (evt) {
-      evt = dedu.util.normalizeEvent(evt);
+      evt = util.normalizeEvent(evt);
 
       var localPoint = this.snapToGrid({
         x: evt.clientX,
@@ -697,7 +699,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
      */
     mousedblclick: function (evt) {
       evt.preventDefault();
-      evt = dedu.util.normalizeEvent(evt);
+      evt = util.normalizeEvent(evt);
 
       var view = this.findView(evt.target);
       if (this.guard(evt, view)) return;
@@ -726,7 +728,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
       // Trigger event when mouse not moved.
       if (this._mousemoved <= this.options.clickThreshold) {
 
-        evt = dedu.util.normalizeEvent(evt);
+        evt = util.normalizeEvent(evt);
 
         var view = this.findView(evt.target);
         if (this.guard(evt, view)) return;
@@ -751,7 +753,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
 
     cellMouseover: function (evt) {
 
-      evt = dedu.util.normalizeEvent(evt);
+      evt = util.normalizeEvent(evt);
       var view = this.findView(evt.target);
       if (view) {
         if (this.guard(evt, view)) return;
@@ -762,7 +764,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
     // Guard guards the event received. If the event is not interesting, guard returns `true`.
     // Otherwise, it return `false`.
     guard: function (evt, view) {
-      if (view && view.model && (view.model instanceof dedu.Cell)) {
+      if (view && view.model && (view.model instanceof Cell)) {
         return false;
       } else if (this.svg === evt.target || this.el === evt.target || $.contains(this.svg, evt.target)) {
         return false;
@@ -771,7 +773,7 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
     },
 
     /**
-     * get default linkview {@link dedu.Paper~options.linkView}
+     * get default linkview {@link Paper~options.linkView}
      * @method getDefaultLink
      * @param cellView
      * @param magnet
@@ -794,5 +796,5 @@ define(["backbone", 'g', "./element", "./link","./graph"], function (Backbone,g,
 
   });
 
-  return dedu;
+  return Paper;
 })

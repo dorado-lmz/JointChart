@@ -8,7 +8,9 @@ If you want to work on joint-chart locally, use the following guidelines to get 
 # Dependencies
 
 * Node.js(v0.10~)
-* grunt-cli
+* gulp
+* requireJS
+* webpack
 * bower
 * git
 
@@ -24,13 +26,11 @@ Change into the joint-chart directory:
 
 Run installation
 
-`npm install`
+`npm install` or `yarn`
 
 # Demo
 
-`cd demo`
-
-using your chrome open the basic.html
+`node server.js`
 
 
 

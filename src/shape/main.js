@@ -1,3 +1,3 @@
-define(["./shape.uml.state"],function(dedu){
-  return dedu
+define(["./shape.uml.state"],function(shape){
+  return shape
 });

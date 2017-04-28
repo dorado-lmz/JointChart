@@ -2,10 +2,67 @@ define(["snap", "underscore"], function (Snap, _) {
   SVGElement.prototype.getTransformToElement = SVGElement.prototype.getTransformToElement || function (toElement) {
     return toElement.getScreenCTM().inverse().multiply(this.getScreenCTM());
   };
+  Snap.transformRect = function (svgDocument, r, matrix) {
+
+    var p = svgDocument.createSVGPoint();
+
+    p.x = r.x;
+    p.y = r.y;
+    var corner1 = p.matrixTransform(matrix);
+
+    p.x = r.x + r.width;
+    p.y = r.y;
+    var corner2 = p.matrixTransform(matrix);
+
+    p.x = r.x + r.width;
+    p.y = r.y + r.height;
+    var corner3 = p.matrixTransform(matrix);
+
+    p.x = r.x;
+    p.y = r.y + r.height;
+    var corner4 = p.matrixTransform(matrix);
+
+    var minX = Math.min(corner1.x, corner2.x, corner3.x, corner4.x);
+    var maxX = Math.max(corner1.x, corner2.x, corner3.x, corner4.x);
+    var minY = Math.min(corner1.y, corner2.y, corner3.y, corner4.y);
+    var maxY = Math.max(corner1.y, corner2.y, corner3.y, corner4.y);
+
+    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+  };
   Snap.plugin(function (Snap, Element, Paper, global) {
     // Snap.newmethod = function () {};
-    Element.prototype.bbox = function () {
-      return this.getBBox();
+    Element.prototype.bbox = function (withoutTransformations, target) {
+      // If the element is not in the live DOM, it does not have a bounding box defined and
+      // so fall back to 'zero' dimension element.
+      if (!this.node.ownerSVGElement) return { x: 0, y: 0, width: 0, height: 0 };
+
+      var box;
+      try {
+
+        box = this.node.getBBox();
+        // We are creating a new object as the standard says that you can't
+        // modify the attributes of a bbox.
+        box = { x: box.x, y: box.y, width: box.width, height: box.height };
+
+      } catch (e) {
+
+        // Fallback for IE.
+        box = {
+          x: this.node.clientLeft,
+          y: this.node.clientTop,
+          width: this.node.clientWidth,
+          height: this.node.clientHeight
+        };
+      }
+
+      if (withoutTransformations) {
+
+        return box;
+      }
+
+      var matrix = this.node.getTransformToElement(target || this.node.ownerSVGElement);
+
+      return Snap.transformRect(this.node.ownerSVGElement,box, matrix)
     };
     Element.prototype.toLocalPoint = function (x, y) {
       var svg = this.node instanceof window.SVGSVGElement ? this.node : this.node.ownerSVGElement;
@@ -25,14 +82,14 @@ define(["snap", "underscore"], function (Snap, _) {
     // Paper.prototype.newmethod = function () {};
   });
 
-  var dedu = {
+  var core = {
     // `joint.connectors` namespace.
     connectors: {},
 
     // `joint.routers` namespace.
     routers: {},
     /**
-     * @namespace dedu.util
+     * @namespace core.util
      */
     util: {
 
@@ -157,7 +214,7 @@ define(["snap", "underscore"], function (Snap, _) {
        * * The  stop function takes the value of the node currently traversed
        * * delim is a delimiter for the combined keys in the resulting object
        * @example
-       * dedu.flattenObject({
+       * core.flattenObject({
        *  a:{
        *      a1:{
        *          a2:1
@@ -323,7 +380,7 @@ define(["snap", "underscore"], function (Snap, _) {
        * @param {JQueryEvent|*} evt
        * @example
        *
-       * var evt = dedu.util.normalizeEvent(evt);
+       * var evt = core.util.normalizeEvent(evt);
        *
        * @returns {*}
        */
@@ -744,7 +801,7 @@ define(["snap", "underscore"], function (Snap, _) {
        * @example
        *
        * var myEl = document.querySelector('.mydiv');
-       * dedu.util.setAttributesBySelector(myEl,{
+       * core.util.setAttributesBySelector(myEl,{
        *  '.mydiv': { 'data-foo': 'bar' },    // Note the reference to the myEl element itself.
        *  'input': { 'value': 'my value' }   // descendant input
        * });
@@ -1075,7 +1132,7 @@ define(["snap", "underscore"], function (Snap, _) {
       },
 
       /**
-       * @namespace dedu.util.format
+       * @namespace core.util.format
        */
       format: {
 
@@ -1334,5 +1391,5 @@ define(["snap", "underscore"], function (Snap, _) {
       }
     }
   }
-  return dedu;
+  return core;
 })

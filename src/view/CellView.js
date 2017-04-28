@@ -1,16 +1,17 @@
-define(["backbone", './core'], function (Backbone, dedu,) {
+define(["backbone", '../core', '../geometry'], function (Backbone, core, g) {
+  var util = core.util;
   /**
-   * `dedu.CellView` 是{@link dedu.Cell}的view
+   * `CellView` 是{@link Cell}的view
    * @class
    * @augments  Backbone.View
    */
-  dedu.CellView = Backbone.View.extend({
+  CellView = Backbone.View.extend({
     /**
      * @member {String}
      * @default
      * @const
      * @instance
-     * @memberof dedu.CellView
+     * @memberof CellView
      */
     tagName: 'g',
 
@@ -18,7 +19,7 @@ define(["backbone", './core'], function (Backbone, dedu,) {
      * set the attribute of dom node Dom节点的attribute
      * @returns {{model-id: *}}
      * @instance
-     * @memberof dedu.CellView
+     * @memberof CellView
      */
     attributes: function () {
       return { 'model-id': this.model.id }
@@ -37,32 +38,13 @@ define(["backbone", './core'], function (Backbone, dedu,) {
       // The global unique id makes sure that the same view can be rendered on e.g. different machines and
       // still be associated to the same object among all those clients. This is necessary for real-time
       // collaboration mechanism.
-      this.options.id = this.options.id || dedu.util.guid(this);
+      this.options.id = this.options.id || util.guid(this);
 
     },
 
     initialize: function (options) {
 
     },
-
-    // // Override the Backbone `_ensureElement()` method in order to create a `<g>` node that wraps
-    // // all the nodes of the Cell view.
-    // _ensureElement: function () {
-    //     var el;
-
-    //     if (!this.el) {
-    //         var attrs = _.extend({
-    //             id: this.id
-    //         }, _.result(this, 'attributes'));
-    //         if (this.className) attrs['class'] = _.result(this, 'className');
-    //          this.setElement(this._createElement(_.result(this, 'tagName')));
-    //         this._setAttributes(attrs);
-    //         el = this._createElement(_.result(this, 'tagName'), attrs).node;
-    //     } else {
-    //         el = _.result(this, 'el');
-    //     }
-    //     this.setElement(el, false);
-    // },
 
     // Utilize an alternative DOM manipulation API by
     // adding an element reference wrapped in Vectorizer.
@@ -83,7 +65,7 @@ define(["backbone", './core'], function (Backbone, dedu,) {
      * @param [prevSelector] - 使用该方法时,不需要传递实参,它仅被用作递归
      * @returns {*}
      * @instance
-     * @memberof dedu.CellView
+     * @memberof CellView
      */
     getSelector: function (el, prevSelector) {
 
@@ -121,7 +103,7 @@ define(["backbone", './core'], function (Backbone, dedu,) {
       var isMagnet = !!el;
 
       el = el || this.el;
-      var bbox = V(el).bbox(false, this.paper.viewport);
+      var bbox = Snap(el).bbox(false, this.paper.viewport);
 
       var strokeWidth;
       if (isMagnet) {
@@ -145,7 +127,7 @@ define(["backbone", './core'], function (Backbone, dedu,) {
      * @method
      * @returns {*}
      * @instance
-     * @memberof dedu.CellView
+     * @memberof CellView
      */
     getBBox: function () {
       return g.rect(this.vel.getBBox());
@@ -177,7 +159,7 @@ define(["backbone", './core'], function (Backbone, dedu,) {
      * @param {DOMObject} el
      * @returns {*}
      * @instance
-     * @memberof dedu.CellView
+     * @memberof CellView
      */
     findMagnet: function (el) {
       var $el = this.$(el);
@@ -206,7 +188,7 @@ define(["backbone", './core'], function (Backbone, dedu,) {
      * @param {JQueryObject} selector
      * @returns {Backbone.$|*}
      * @instance
-     * @memberof dedu.CellView
+     * @memberof CellView
      */
     findBySelector: function (selector) {
       // These are either descendants of `this.$el` of `this.$el` itself.
@@ -255,5 +237,5 @@ define(["backbone", './core'], function (Backbone, dedu,) {
     },
 
   });
-
+  return CellView;
 });

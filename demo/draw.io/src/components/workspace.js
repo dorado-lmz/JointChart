@@ -1,8 +1,6 @@
 import React from 'react';
-// import _ from 'lodash';
 import $ from 'jquery';
-// import Backbone from 'backbone';
-
+import dedu from 'joint_chart';
 import {getConfigByType} from '../stores/chart_utils.js';
 import TabsComponent from './tabs.js';
 import DeployActionCreators from '../actions/DeployActionCreators';
@@ -18,14 +16,14 @@ class WorkspaceComponent extends React.Component {
         chart = this.chart,
         graph = this.props.graph;
     console.log(node_type);
-    var namespaceClass = dedu.util.getByPath(
+    var namespaceClass = dedu.core.util.getByPath(
       chart.options.cellViewNamespace, getConfigByType(category,node_type), '.')
     let cell = new namespaceClass({
       position:{
         x: e.pageX-this.originPosition.x,
         y: e.pageY-this.originPosition.y
       },
-      name:'a'+dedu.util.randomString(6)
+      name:'a'+dedu.core.util.randomString(6)
     });
     graph.addCell(cell);
   };
@@ -111,7 +109,7 @@ class WorkspaceComponent extends React.Component {
     };
 
     graph.on('cell:pointerdblclick', (cell) => {
-      if (cell instanceof dedu.Cell) {
+      if (!cell.isLink()) {
         var config = {};
         config.title = cell.get('name');
         config.body = '';

@@ -12,9 +12,17 @@ let config = Object.assign({}, baseConfig, {
     entry: {
         app: ['webpack-dev-server/client?http://127.0.0.1:' + defaultSettings.port,
             'webpack/hot/only-dev-server',
-            './src/index'
-        ],
-        vendor: ['react', 'react-dom', 'react-addons-create-fragment']
+            path.join(__dirname, '../src/index')
+        ]
+    },
+    externals: {
+        "jquery": "jQuery",
+        "lodash": "_",
+        "backbone": "Backbone",
+        "joint_chart": "dedu",
+        "react": "React",
+        "react-dom": "ReactDOM",
+        "StateJS": "StateJS"
     },
     cache: true,
     devtool: 'eval-source-map',
@@ -24,7 +32,6 @@ let config = Object.assign({}, baseConfig, {
         new BowerWebpackPlugin({
             searchResolveModulesDirectories: false
         }),
-        new webpack.optimize.CommonsChunkPlugin('vendor', 'vendor.bundle.js')
     ],
     module: defaultSettings.getDefaultModules()
 });

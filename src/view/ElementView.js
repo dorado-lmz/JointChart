@@ -1,106 +1,10 @@
-define(["./cell"], function (dedu) {
+define(["./CellView", '../geometry'], function (CellView,g) {
   /**
-   * `dedu.Element`是所有节点的父类
-   * @class
-   * @augments dedu.Cell
-   */
-  dedu.Element = dedu.Cell.extend({
-    /**
-     * @member {Object} defaults - 默认属性
-     * @property {Object} defaults.position
-     * @property {number} defaults.position.x=0
-     * @property {number} defaults.position.y=0
-     * @property {Object} defaults.size
-     * @property {number} defaults.size.width=0
-     * @property {number} defaults.size.height=0
-     * @property {number} defaults.angle=0
-     * @property {number} defaults.selected=false
-     * @memberof dedu.Element
-     */
-    defaults: {
-      position: {
-        x: 0,
-        y: 0
-      },
-      size: {
-        width: 1,
-        height: 1
-      },
-      angle: 0,
-      selected: false
-    },
-
-    position: function (x, y, opt) {
-
-    },
-    /**
-     * @method translate - 更改position
-     * @param {Number} tx - x轴偏移量
-     * @param {Number} ty - y轴偏移量
-     * @param {Object} opt
-     * @returns {dedu.Element}
-     * @memberof dedu.Element
-     */
-    translate: function (tx, ty, opt) {
-      tx = tx || 0;
-      ty = ty || 0;
-      if (tx === 0 && ty === 0) {
-        // Like nothing has happened.
-        return this;
-      }
-
-      opt = opt || {};
-      // Pass the initiator of the translation.
-      opt.translateBy = opt.translateBy || this.id;
-      var position = this.get('position') || {
-        x: 0,
-        y: 0
-      };
-
-      if (opt.restrictedArea && opt.translateBy === this.id) {
-
-      }
-
-      var translatedPosition = {
-        x: position.x + tx,
-        y: position.y + ty
-      };
-
-      // To find out by how much an element was translated in event 'change:position' handlers.
-      opt.tx = tx;
-      opt.ty = ty;
-
-
-      if (!_.isObject(opt.transition)) opt.transition = {};
-
-      this.set('position', translatedPosition, opt);
-
-    },
-
-    /**
-     * @method resize - 更改resize
-     * @param {Number} width - 宽度
-     * @param {Number} height - 高度
-     * @param {Object} opt
-     * @returns {dedu.Element}
-     * @memberof dedu.Element
-     */
-    resize: function (width, height, opt) {
-      this.set('size', {
-        width: width,
-        height: height
-      }, opt);
-      return this;
-    }
-
-  });
-
-  /**
-   * `dedu.ElementView`是`dedu.Element`的view
-   * @class
-   * @augments  dedu.CellView
-   */
-  dedu.ElementView = dedu.CellView.extend({
+ * `ElementView`是`Element`的view
+ * @class
+ * @augments  CellView
+ */
+  ElementView = CellView.extend({
     /**
      * 用于attrs的特殊属性
      * * style : An object containing CSS styles for a subelement
@@ -117,7 +21,7 @@ define(["./cell"], function (dedu) {
      * * y-alignment' : 垂直居中
      * * port : An object containing at least an id property. This property uniquely identifies the port. If a link gets connected to a magnet that has also a port object defined, the id property of the port object will be copied to the port property of the source/target of the link.
      * @member {Array}
-     * @memberof dedu.ElementView
+     * @memberof ElementView
      *
      */
     SPECIAL_ATTRIBUTES: [
@@ -140,7 +44,7 @@ define(["./cell"], function (dedu) {
      * set the attribute of dom node Dom节点的attribute
      * @returns {String}
      * @instance
-     * @memberof dedu.ElementView
+     * @memberof ElementView
      */
     className: function () {
       return 'element node ' + this.model.get('type').replace('.', ' ', 'g')
@@ -151,7 +55,7 @@ define(["./cell"], function (dedu) {
       if (options.skip_render) {
         return;
       }
-      dedu.CellView.prototype.initialize.apply(this, arguments);
+      CellView.prototype.initialize.apply(this, arguments);
 
       _.bindAll(this, 'translate', 'resize', 'rotate');
 
@@ -174,10 +78,10 @@ define(["./cell"], function (dedu) {
       var that = this;
 
       // setTimeout(function () {
-        that.update();
-        that.resize();
-        that.rotate();
-        that.translate();
+      that.update();
+      that.resize();
+      that.rotate();
+      that.translate();
       // }, 0);
 
       return this;
@@ -208,7 +112,7 @@ define(["./cell"], function (dedu) {
       var scalableBbox = scalable.getBBox();
       // Make sure `scalableBbox.width` and `scalableBbox.height` are not zero which can happen if the element does not have any content. By making
       // the width/height 1, we prevent HTML errors of the type `scale(Infinity, Infinity)`.
-      scalable.attr('transform','scale(' + (size.width / (scalableBbox.width || 1)) + ',' + (size.height / (scalableBbox.height || 1)) + ')');
+      scalable.attr('transform', 'scale(' + (size.width / (scalableBbox.width || 1)) + ',' + (size.height / (scalableBbox.height || 1)) + ')');
       // V(scalable.node).attr('transform', 'scale(' + (size.width / (scalableBbox.width || size.width)) + ',' + (size.height / (scalableBbox.height || size.height)) + ')');
 
       // this.update();
@@ -434,7 +338,7 @@ define(["./cell"], function (dedu) {
         }
 
         if (!vref) {
-          throw new Error('dedu.ElementView: reference does not exists.');
+          throw new Error('ElementView: reference does not exists.');
         }
 
         // Get the bounding box of the reference element relative to the root `<g>` element.
@@ -585,7 +489,7 @@ define(["./cell"], function (dedu) {
         x: 0,
         y: 0
       };
-      this.vel.attr('transform','translate('+position.x+','+position.y+')');
+      this.vel.attr('transform', 'translate(' + position.x + ',' + position.y + ')');
       // V(this.vel.node).attr('transform', 'translate(' + position.x + ',' + position.y + ')');
     },
 
@@ -603,7 +507,7 @@ define(["./cell"], function (dedu) {
       //    console.log(this.up.bbox(false,this.paper.viewport));
 
       return _.filter(views, function (view) {
-        return view && rect.intersect(g.rect(view.getBBox()));
+        return view && rect.intersect(g.rect(view.bbox(false, this.paper.viewport)));
         // return view && rect.intersect(g.rect(view.bbox(false,this.paper.viewport)));
       }, this);
     },
@@ -691,7 +595,7 @@ define(["./cell"], function (dedu) {
 
 
         this.restrictedArea = paper.getRestrictedArea(this);
-        dedu.CellView.prototype.pointerdown.apply(this, arguments);
+        CellView.prototype.pointerdown.apply(this, arguments);
         this.notify('element:pointerdown', evt, x, y);
       }
       this._closestView = null;
@@ -727,7 +631,7 @@ define(["./cell"], function (dedu) {
 
         //this._dx = g.snapToGrid(x, grid);
         //this._dy = g.snapToGrid(y, grid);
-        dedu.CellView.prototype.pointermove.apply(this, arguments);
+        CellView.prototype.pointermove.apply(this, arguments);
         this.notify('element:pointermove', evt, tx, ty);
       }
     },
@@ -759,7 +663,7 @@ define(["./cell"], function (dedu) {
 
       } else {
         this.notify('element:pointerup', evt, x, y);
-        dedu.CellView.prototype.pointerup.apply(this, arguments);
+        CellView.prototype.pointerup.apply(this, arguments);
       }
     },
 
@@ -771,5 +675,5 @@ define(["./cell"], function (dedu) {
     },
 
   });
-  return dedu;
-})
+  return ElementView;
+});

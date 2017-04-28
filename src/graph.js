@@ -1,33 +1,19 @@
-define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
+define(["backbone","./model/Link","./model/Element", "./core"], function (Backbone,Link,Element,core) {
+   var util = core.util;
   /**
-   * `dedu.GraphCells` stores all the cell models
+   * `GraphCells` stores all the cell models
    * @class
    * @augments  Backbone.Collection
    */
-  dedu.GraphCells = Backbone.Collection.extend({
-    /**
-     * graph处理cell的namespace
-     * @member {Object}
-     * @memberof dedu.GraphCells`
-     */
-    cellNamespace: dedu.shape,
-    initialize: function (models, opt) {
-      if (opt.cellNamespace) {
-        this.cellNamespace = opt.cellNamespace;
-      }
-    },
+  GraphCells = Backbone.Collection.extend({
     /**
      * @method model
      * @param attrs
      * @param options
      */
     model: function (attrs, options) {
-      console.log(options);
-      var namespace = options.collection.cellNamespace;
-
       // Find the model class in the namespace or use the default one.
-      var ModelClass = (attrs.type === 'link') ? dedu.Link : dedu.util.getByPath(namespace, attrs.type, '.') || dedu.Element;
-
+      var ModelClass = (attrs.type === 'link') ? Link : util.getByPath(namespace, attrs.type, '.') || Element;
       return new ModelClass(attrs, options);
     }
   });
@@ -38,15 +24,15 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
     type: graph | subgraph
     root: cells | cell
   */
-  dedu.GraphCollection = Backbone.Collection.extend({
+  GraphCollection = Backbone.Collection.extend({
     model: function (attrs, options) {
       attrs = _.defaults({}, attrs, {
-        id: dedu.util.uuid(),
+        id: util.uuid(),
         type: 'graph',
         // Passing `cellModel` function in the options object to graph allows for
         // setting models based on attribute objects. This is especially handy
         // when processing JSON graphs that are in a different than JointJS format.
-        root: new dedu.GraphCells(options.models || [], {
+        root: new GraphCells(options.models || [], {
           // model: opt.cellModel,
           // cellNamespace: opt.cellNamespace,
           graph: this
@@ -58,19 +44,19 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
 
 
   /**
-   * `dedu.Graph` A model holding all the cells (elements and links) of the diagram
+   * `Graph` A model holding all the cells (elements and links) of the diagram
    * * property `cells` stores all the cells
    * @class
    * @augments Backbone.Model
    */
-  dedu.Graph = Backbone.Model.extend({
+  Graph = Backbone.Model.extend({
 
     initialize: function (attrs, opt) {
 
       opt = opt || {};
 
       //has many graphs at a time
-      var graphs = new dedu.GraphCollection;
+      var graphs = new GraphCollection;
       Backbone.Model.prototype.set.call(this, 'graphs', graphs);
       if (!opt.tabs) {
         this.createGraph();
@@ -152,7 +138,7 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
           }
         } else {
           //create region
-          let regionName = 'region' + dedu.util.randomString(6);
+          let regionName = 'region' + util.randomString(6);
           graph = graphs.add({}, opt);
           graph.parent = {
             cell: cell,
@@ -343,7 +329,7 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
     /**
      * get cell by redID
      * @param {String} redID
-     * @returns {dedu.Cell}
+     * @returns {Cell}
      */
     getCellByRedID: function (redID) {
       var models = this.active_cells().models;
@@ -356,15 +342,15 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
     /**
      * get a cell from the graph by its `id`
      * @param {String} id
-     * @returns {dedu.Cell}
+     * @returns {Cell}
      */
     getCell: function (id) {
       return this.active_cells().get(id);
     },
 
     /**
-     * like {@link dedu.Graph~getCell},Get all the elemnet and links in the graph.
-     * @returns {Array<dedu.Cell>}
+     * like {@link Graph~getCell},Get all the elemnet and links in the graph.
+     * @returns {Array<Cell>}
      */
     getCells: function () {
       return this.active_cells().toArray();
@@ -372,19 +358,19 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
 
     /**
      * Get all the elements in the graph (i.e. omit links).
-     * @returns {Array<dedu.Element>}
+     * @returns {Array<Element>}
      */
     getElements: function () {
 
       return this.active_cells().filter(function (cell) {
 
-        return cell instanceof dedu.Element;
+        return cell instanceof Element;
       });
     },
 
     /**
      * Get all the links in the graph (i.e. omit elements).
-     * @returns {Array<dedu.Link>}
+     * @returns {Array<Link>}
      */
     getLinks: function () {
       return this.active_cells().filter(function (cell) {
@@ -404,9 +390,9 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
     getAllPosition: function () {
       var nodes = {};
       this.active_cells().models.forEach(function (model) {
-        if (model instanceof dedu.Element) {
+        if (model instanceof Element) {
 
-          if (model instanceof dedu.shape.node_red.subflowportModel) {
+          if (model instanceof shape.node_red.subflowportModel) {
             nodes[model.get('index') - 1] = {
               position: model.get('position'),
               type: 'subflowport'
@@ -447,18 +433,18 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
 
     /**
      * Add a new cell to the graph. If cell is an array, all the cells in the array will be added to the graph.
-     * @param {dedu.Cell} cell
+     * @param {Cell} cell
      * @param options
-     * @returns {dedu.Graph}
+     * @returns {Graph}
      * @example
      *
-     *  var rect = new dedu.shape.basic.Rect({
+     *  var rect = new shape.basic.Rect({
      *   position: { x: 100, y: 100 },
      *   size: { width: 70, height: 30 },
      *   attrs: { text: { text: 'my rectangle' } }
      *   });
      *   var rect2 = rect.clone();
-     *   var graph = new dedu.Graph();
+     *   var graph = new Graph();
      *   graph.addCell(rect).addCell(rect2);
      *
      */
@@ -469,7 +455,7 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
       cells.add(this._prepareCell(cell), options || {});
       var args;
       var self = this;
-      if (cell instanceof dedu.Link) {
+      if (cell instanceof Link) {
         cell.on('link:complete', function () {
           args = {
             source: this.get('source'),
@@ -479,7 +465,7 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
           };
           self.notify.apply(this, ['node-red:node-link-added'].concat(args));
         }, cell);
-      } else if (cell instanceof dedu.Element) {
+      } else if (cell instanceof Element) {
         args = {
           redID: cell.get('redID'),
           type: 'node'
@@ -509,9 +495,9 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
 
     /**
      * Add new cells to the graph. This is just a syntactic sugar to the addCell method. Calling addCell with an array of cells is an equivalent to calling addCells.
-     * @param {Array<dedu.Cell>} cells
+     * @param {Array<Cell>} cells
      * @param options
-     * @returns {dedu.Graph}
+     * @returns {Graph}
      */
     addCells: function (cells, options) {
 
@@ -527,10 +513,10 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
     },
 
     /**
-     * like {@link dedu.Graph~addCells},用于加载很多cell时
+     * like {@link Graph~addCells},用于加载很多cell时
      * @param cells
      * @param opt
-     * @returns {dedu.Graph}
+     * @returns {Graph}
      */
     resetCells: function (cells, opt) {
       // this.active_cells().reset(_.map(cells, this._prepareCell, this), opt);
@@ -600,7 +586,7 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
       this.active_cells().remove(this.selectionSet);
       var selectionIDs = {};
       for (var i = 0; i < this.selectionSet.length; i++) {
-        selectionIDs[this.selectionSet[i].get('redID')] = this.selectionSet[i] instanceof dedu.Link ? 'link' : 'node';
+        selectionIDs[this.selectionSet[i].get('redID')] = this.selectionSet[i] instanceof Link ? 'link' : 'node';
       }
       this.notify.apply(this, ['node-red:node-link-removed'].concat(selectionIDs));
       this.selectionSet = [];
@@ -612,5 +598,5 @@ define(["backbone","./shape","./link","./element"], function (Backbone,dedu) {
     },
   });
 
-  return dedu;
+  return Graph;
 })

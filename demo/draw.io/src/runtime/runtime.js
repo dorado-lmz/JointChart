@@ -1,4 +1,4 @@
-
+import StateJS from 'StateJS';
 var statements = '', PseudoStateMap = {
     'uml.StartState': StateJS.PseudoStateKind.Initial,
     'uml.EndState': StateJS.PseudoStateKind.Terminate,

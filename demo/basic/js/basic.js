@@ -1,10 +1,11 @@
 requirejs.config({
   baseUrl: '../../',
   paths: {
-    jquery: 'vendor/jquery/dist/jquery',
-    snap: 'vendor/Snap.svg/dist/snap.svg',
-    underscore: 'vendor/underscore/underscore',
-    backbone: 'vendor/backbone/backbone',
+    jquery: 'http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min',
+    snap: 'https://cdn.bootcss.com/snap.svg/0.5.1/snap.svg-min',
+    underscore: 'https://cdn.bootcss.com/underscore.js/1.8.3/underscore-min',
+    backbone: 'https://cdn.bootcss.com/backbone.js/1.3.3/backbone-min',
+    text: 'https://cdn.bootcss.com/require-text/2.0.12/text',
     g: 'src/geometry',
     src: 'src'
   },
@@ -18,9 +19,9 @@ requirejs.config({
   }
 });
 
-require(["joint_chart"],function (dedu) {
+require(["./demo/basic/js/chart","joint_chart"],function (Chart, dedu) {
   var graph = new dedu.Graph;
-  var chart = new dedu.Chart({
+  var chart = new Chart({
     el: $('#chart'),
     width: 5000,
     height: 5000,

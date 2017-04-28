@@ -1,6 +1,9 @@
 //      Geometry library.
 //      (c) 2011-2013 client IO
 
+define(function(){
+
+
 var g = (function() {
 
     // Declare shorthands to the most used math functions.
@@ -773,3 +776,5 @@ var g = (function() {
     };
 
 })();
+return g;
+})

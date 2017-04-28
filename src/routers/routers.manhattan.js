@@ -1,6 +1,4 @@
-dedu.routers = {};
-dedu.routers.manhattan = (function(g, _, dedu) {
-
+define(["underscore","../geometry", "../core","./routers.orthogonal"], function(_, g, core) {
     'use strict';
 
     var config = {
@@ -57,10 +55,10 @@ dedu.routers.manhattan = (function(g, _, dedu) {
             var step = this.step;
 
             return [
-                { offsetX: step  , offsetY: 0     , cost: step },
-                { offsetX: 0     , offsetY: step  , cost: step },
-                { offsetX: -step , offsetY: 0     , cost: step },
-                { offsetX: 0     , offsetY: -step , cost: step }
+                { offsetX: step, offsetY: 0, cost: step },
+                { offsetX: 0, offsetY: step, cost: step },
+                { offsetX: -step, offsetY: 0, cost: step },
+                { offsetX: 0, offsetY: -step, cost: step }
             ];
         },
 
@@ -222,7 +220,7 @@ dedu.routers.manhattan = (function(g, _, dedu) {
     };
 
     SortedSet.prototype.pop = function() {
-        var item =  this.items.shift();
+        var item = this.items.shift();
         this.remove(item);
         return item;
     };
@@ -344,7 +342,7 @@ dedu.routers.manhattan = (function(g, _, dedu) {
 
         // Check if there is a accessible end point.
         // We would have to use a fallback route otherwise.
-        if (startPoints.length > 0 && endPoints.length >  0) {
+        if (startPoints.length > 0 && endPoints.length > 0) {
 
             // The set of tentative points to be evaluated, initially containing the start points.
             var openSet = new SortedSet();
@@ -374,9 +372,7 @@ dedu.routers.manhattan = (function(g, _, dedu) {
                 var currentPoint = g.point(currentKey);
                 var currentDist = costs[currentKey];
                 var previousDirAngle = currentDirAngle;
-                var currentDirAngle = parents[currentKey]
-                    ? getDirectionAngle(parents[currentKey], currentPoint, dirLen)
-                    : opt.previousDirAngle != null ? opt.previousDirAngle : getDirectionAngle(startCenter, currentPoint, dirLen);
+                var currentDirAngle = parents[currentKey] ? getDirectionAngle(parents[currentKey], currentPoint, dirLen) : opt.previousDirAngle != null ? opt.previousDirAngle : getDirectionAngle(startCenter, currentPoint, dirLen);
 
                 // Check if we reached any endpoint
                 if (endPointsKeys.indexOf(currentKey) >= 0) {
@@ -492,10 +488,10 @@ dedu.routers.manhattan = (function(g, _, dedu) {
             if (partialRoute === null) {
                 // The partial route could not be found.
                 // use orthogonal (do not avoid elements) route instead.
-                if (!_.isFunction(dedu.routers.orthogonal)) {
+                if (!_.isFunction(core.routers.orthogonal)) {
                     throw new Error('Manhattan requires the orthogonal router.');
                 }
-                return dedu.routers.orthogonal(vertices, opt, this);
+                return core.routers.orthogonal(vertices, opt, this);
             }
 
             var leadPoint = _.first(partialRoute);
@@ -512,11 +508,9 @@ dedu.routers.manhattan = (function(g, _, dedu) {
 
         return newVertices;
     }
-
-    // public function
-    return function(vertices, opt, linkView) {
-
+    core.routers.manhattan = function(vertices, opt, linkView) {
         return router.call(linkView, vertices, _.extend({}, config, opt));
     };
-
-})(g, _, dedu);
+    // public function
+    return core.routers.manhattan;
+});

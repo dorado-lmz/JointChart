@@ -1,6 +1,6 @@
 require('normalize.css/normalize.css');
 require('styles/App.scss');
-
+// import short from 'jquery.shortcuts';
 import React from 'react';
 import dedu from 'joint_chart';
 import PaletteComponent from './palette.js';
