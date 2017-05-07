@@ -1,3 +1,6 @@
+define(['dagre','skanaar','../shape','../model/Element'],function(dagre,skanaar,shape,Element){
+
+
 var userStyles = null;
 var vm = skanaar.vector;
 var d = {};
@@ -36,32 +39,6 @@ var measurer = {
 
 var skCanvas = skanaar.Svg('')
 
-skanaar.sum = function sum(list, plucker) {
-    var transform = {
-        'undefined': _.identity,
-        'string': function(obj) {
-            return obj[plucker]
-        },
-        'number': function(obj) {
-            return obj[plucker]
-        },
-        'function': plucker
-    }[typeof plucker]
-    for (var i = 0, summation = 0, len = list.length; i < len; i++)
-        summation += transform(list[i])
-    return summation
-}
-
-skanaar.hasSubstring = function hasSubstring(haystack, needle) {
-    if (needle === '') return true
-    if (!haystack) return false
-    return haystack.indexOf(needle) !== -1
-}
-
-skanaar.format = function format(template /* variadic params */ ) {
-    var parts = Array.prototype.slice.call(arguments, 1)
-    return _.flatten(_.zip(template.split('#'), parts)).join('')
-}
 
 function setFont(config, isBold, isItalic) {
     var style = (isBold === 'bold' ? 'bold' : '')
@@ -114,7 +91,7 @@ function layoutCellFullFormat(cell) {
         cell.width = _.max(_.pluck(cell.compartments, 'width'));
         cell.height = skanaar.sum(cell.compartments, 'height');
         cell.debug = true;
-        if (cell instanceof dedu.shape.uml.State) {
+        if (cell instanceof shape.uml.State) {
             var radio = Math.round(cell.compartments[0].height / 4),
                 dy = Math.round(cell.compartments[0].height * .5);
             cell.compoundUI(true, {
@@ -282,7 +259,7 @@ function isEqual(pointA, pointB) {
 
 
 function layoutClassifier(cell) {
-    if (cell instanceof dedu.Element) {
+    if (cell instanceof Element) {
         // _.each(cell.children.models, layoutCell)
         if (cell.get('text')) {
             var size = measureLines([cell.get('text')]);
@@ -301,3 +278,5 @@ function measureLines(lines) {
         height: Math.round(measurer.textHeight() * lines.length + 2 * config.padding)
     }
 }
+return layoutCell;
+});

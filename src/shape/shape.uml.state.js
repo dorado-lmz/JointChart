@@ -145,8 +145,8 @@ define(['./shape.simple', '../core'], function (shape, core) {
     defaults: util.deepSupplement({
       type: 'uml.DeepHistory',
       size: {
-        width: 40,
-        height: 40
+        width: 25,
+        height: 25
       },
       port_ref_position: {
         portup: {
@@ -227,6 +227,13 @@ define(['./shape.simple', '../core'], function (shape, core) {
     }, shape.uml.DeepHistory.prototype.defaults)
   })
 
+  Region = Backbone.Model.extend({
+    initialize: function(name) {
+
+    },
+
+  });
+
   /**
    * @class
    * @augments shape.simple.Generic.
@@ -276,14 +283,15 @@ define(['./shape.simple', '../core'], function (shape, core) {
       type: 'uml.State',
       size: {
         width: 60,
-        height: 40
+        height: 30
       },
       update: 0,
+      regions: {},
 
       attrs: {
         '.uml-state-body': {
-          'rx': 15.5,
-          'ry': 15.5,
+          'rx': 10,
+          'ry': 10,
           'stroke': 'blue',
           'stroke-width': 2
         },
@@ -317,7 +325,19 @@ define(['./shape.simple', '../core'], function (shape, core) {
 
       events: [],
       name: 'State' + util.randomString(6)
-    }, shape.simple.Generic.prototype.defaults)
+    }, shape.simple.Generic.prototype.defaults),
+
+    isSimple: function() {
+      return Object.keys(this.regions).length === 0;
+    },
+
+    isOrthogonal: function() {
+      return Object.keys(this.regions).length > 1;
+    },
+
+    enableSubflow: function() {
+      return true;
+    }
 
   });
 
@@ -337,13 +357,11 @@ define(['./shape.simple', '../core'], function (shape, core) {
     renderCompartment: function (compartment, debugContainer, yDivider) {
       var that = this;
       _.each(compartment.lines, function (text, i) {
-        debugContainer.append(V('text').attr({
-          class: 'compound-name'
-        }));
+        debugContainer.append(Snap.fragment('<text class="compound-name"></text>'));
       });
 
-      var regionContainer = V('g').attr({
-          class: 'regions',
+      var regionContainer = Snap.fragment('<g class="regions"></g>');
+      regionContainer.select('g').attr({
           transform: 'translate(0,' + yDivider + ')'
         }),
         hasCells = false;
@@ -354,7 +372,7 @@ define(['./shape.simple', '../core'], function (shape, core) {
 
 
         var view = that.paper.renderViewSilence(cell);
-        regionContainer.append(view.el);
+        regionContainer.select('g').append(view.el);
       });
       hasCells && debugContainer.append(regionContainer);
     },
@@ -383,21 +401,21 @@ define(['./shape.simple', '../core'], function (shape, core) {
         yDivider = 0;
       // ElementView.prototype.update.apply(this,arguments);
 
-      var debugContainer = V(this.rotatableNode.node).select('.debug'),
+      var debugContainer = Snap(this.rotatableNode.node).select('.debug'),
         originExists = true;
       if (!debugContainer) {
-        debugContainer = V('g').attr('class', 'debug');
+        debugContainer = Snap.fragment('<g></g>').select('g').attr('class', 'debug');
         originExists = false;
       }
       $(debugContainer.node).empty();
-      originExists || V(this.rotatableNode.node).append(debugContainer);
+      originExists || Snap(this.rotatableNode.node).append(debugContainer);
       if (compartments) {
 
         _.each(compartments, function (part, i) {
           that.renderCompartment(part, debugContainer, yDivider);
           if (i + 1 === compartments.length) return;
           yDivider += part.height;
-          var divider = V('path'),
+          var divider = Snap.fragment('<path></path>'),
             style = {
               d: ['M', 0, yDivider, , 'L', width, yDivider].join(' '),
               'stroke': 'blue',
@@ -407,7 +425,7 @@ define(['./shape.simple', '../core'], function (shape, core) {
           if (i > 0) {
             style['stroke-dasharray'] = '9,5';
           }
-          divider.attr(style);
+          divider.select('path').attr(style);
           debugContainer.append(divider);
         });
       }
@@ -416,7 +434,7 @@ define(['./shape.simple', '../core'], function (shape, core) {
     updateEvents: function () {
       this.vel.select('.uml-state-events').text(this.model.get('events').join('\n'));
       var $text = $(".uml-state-events", this.$el);
-      var textBbox = V($text[0]).bbox(true, this.$el);
+      var textBbox = Snap($text[0]).bbox(true, this.$el);
       var size = this.originSize;
       this.model.set('size', {
         width: size.width,
@@ -431,7 +449,7 @@ define(['./shape.simple', '../core'], function (shape, core) {
     updatePath: function () {
 
       var $text = $(".uml-state-name", this.$el);
-      var textBbox = V($text[0]).bbox(true, this.$el);
+      var textBbox = Snap($text[0]).bbox(true, this.$el);
 
       var d = 'M 0 ' + textBbox.height + ' L ' + this.model.get('size').width + " " + textBbox.height;
 

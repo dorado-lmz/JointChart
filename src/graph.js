@@ -1,4 +1,4 @@
-define(["backbone","./model/Link","./model/Element", "./core"], function (Backbone,Link,Element,core) {
+define(["backbone","./model/Link","./model/Element", "./core","./layout/basic.layout"], function (Backbone,Link,Element,core,layoutCell) {
    var util = core.util;
   /**
    * `GraphCells` stores all the cell models
@@ -19,29 +19,15 @@ define(["backbone","./model/Link","./model/Element", "./core"], function (Backbo
   });
 
 
+
   /*
     id: unique identify for graph
     type: graph | subgraph
     root: cells | cell
   */
   GraphCollection = Backbone.Collection.extend({
-    model: function (attrs, options) {
-      attrs = _.defaults({}, attrs, {
-        id: util.uuid(),
-        type: 'graph',
-        // Passing `cellModel` function in the options object to graph allows for
-        // setting models based on attribute objects. This is especially handy
-        // when processing JSON graphs that are in a different than JointJS format.
-        root: new GraphCells(options.models || [], {
-          // model: opt.cellModel,
-          // cellNamespace: opt.cellNamespace,
-          graph: this
-        })
-      });
-      return new Backbone.Model(attrs);
-    }
+    model: Graph
   });
-
 
   /**
    * `Graph` A model holding all the cells (elements and links) of the diagram
@@ -49,51 +35,34 @@ define(["backbone","./model/Link","./model/Element", "./core"], function (Backbo
    * @class
    * @augments Backbone.Model
    */
-  Graph = Backbone.Model.extend({
-
+  Graphs = Backbone.Model.extend({
     initialize: function (attrs, opt) {
-
       opt = opt || {};
-
       //has many graphs at a time
-      var graphs = new GraphCollection;
-      Backbone.Model.prototype.set.call(this, 'graphs', graphs);
-      if (!opt.tabs) {
-        this.createGraph();
-      }
+      var current_graph = new Graph(),
+          graphs = new GraphCollection([current_graph]);
+      this.set('graphs', graphs);
+      this.set('current_graph', current_graph.get('id'));
 
+      this.on('change:current_graph',function(model, id, old_id){
+        graphs.get(id).active();
+        if(old_id){
+          graphs.get(old_id).deactive();
+          this.last_graph = old_id;
+        }
+        this.resetCells();
+      });
 
-      // Make all the events fired in the `cells` collection available.
-      // to the outside world.
-      // this.get("cells").on("all",this.trigger,this);
-      // this.active_cells().on('change', this.changeGraph, this);
-      // this.on('change', this.changeGraph, this);
-      // this.on("all", this.trigger, this);
-      // this.active_cells().on('remove', this._removeCell, this);
-      // this.on('remove', this._removeCell, this);
-
-      // Outgoing edges per node. Note that we use a hash-table for the list
-      // of outgoing edges for a faster lookup.
-      // [node ID] -> Object [edge] -> true
-      this._out = {};
-      // Ingoing edges per node.
-      // [node ID] -> Object [edge] -> true
-      this._in = {};
-      // `_nodes` is useful for quick lookup of all the elements in the graph, without
-      // having to go through the whole cells array.
-      // [node ID] -> true
-      this._nodes = {};
-      // `_edges` is useful for quick lookup of all the links in the graph, without
-      // having to go through the whole cells array.
-      // [edge ID] -> true
-      this._edges = {};
+      graphs.on('add', function(graph){
+        id = graph.get('id');
+        this.set('current_graph', id);
+      });
+      graphs.on('remove', function(graph){
+        graph.save();
+      });
 
       this.selectionSet = []; //user select much elements
 
-      // cells.on('add', this._restructureOnAdd, this);
-      // cells.on('remove', this._restructureOnRemove, this);
-      this.on('addCell', this._restructureOnAdd, this);
-      this.on('remove', this._restructureOnRemove, this);
       this.on('process_transition', function (attrs) {
         console.log(attrs)
       })
@@ -110,16 +79,15 @@ define(["backbone","./model/Link","./model/Element", "./core"], function (Backbo
     * - region has shown: switch tab
     * - region has not exits: create a region graph
     */
-    createGraph: function (cell, opt) {
-      opt = opt || {};
-      var graphs = this.get('graphs');
+    addGraph: function (cell, opt) {
+
+      var graphs = this.get('graphs'),
+          regions = cell && cell.get('regions');
       var graph, id;
 
 
       if (cell) {
-        cell.regions || (cell.regions = {});
         if (opt.region_name) {
-
           let region = cell.regions[opt.region_name];
           if (region.pending_id) {
             //switch region
@@ -127,19 +95,23 @@ define(["backbone","./model/Link","./model/Element", "./core"], function (Backbo
             graph = graphs.get(region.pending_id);
           } else {
             // restore subflow
-            graph = graphs.add({}, {
-              models: cell.regions[opt.region_name]
-            }, opt);
-            graph.parent = {
-              cell: cell,
-              region: opt.region_name
-            };
+            graph = new Graph(cell.regions[opt.region_name], {
+
+            });
+            // graph = graphs.add({}, {
+            //   models: cell.regions[opt.region_name]
+            // }, opt);
+            // graph.parent = {
+            //   cell: cell,
+            //   region: opt.region_name
+            // };
+
 
           }
         } else {
           //create region
           let regionName = 'region' + util.randomString(6);
-          graph = graphs.add({}, opt);
+          graph = new Graph();
           graph.parent = {
             cell: cell,
             region: regionName
@@ -148,11 +120,19 @@ define(["backbone","./model/Link","./model/Element", "./core"], function (Backbo
           region.pending_id = graph.id;
           region.graph = graph;
         }
-      } else {
-        graph = graphs.add({}, opt);
       }
-      id = graph.id;
-      this.switchGraph(id);
+
+
+      if(cell){
+          if(!cell.enableSubflow()){
+            return ;
+          }
+
+      }else{
+        graph = new Graph(cell, opt);
+        graphs.add(graph);
+      }
+
       return graph;
     },
 
@@ -195,23 +175,20 @@ define(["backbone","./model/Link","./model/Element", "./core"], function (Backbo
       }
     },
 
-    switchGraph: function (id) {
-      var active_cells = this.get('graphs').get(id).get('root');
-      active_cells.on("all", this.trigger, this);
-      this.set('active_graph_id', id);
-      this.resetCells();
-    },
+    // switchGraph: function (id) {
+    //   var active_cells = this.get('graphs').get(id).get('root');
+    //   active_cells.on("all", this.trigger, this);
+    //   this.set('active_graph_id', id);
+    //   this.resetCells();
+    // },
 
-    removeGraph: function (id) {
-      var graphs = this.get('graphs');
-      var graph = graphs.get(id);
-      if (graph.parent) {
-        this.saveSubGraph(graph, graph.parent);
-        // graphs.remove(graph.parent);
-      }
+    removeGraph: function () {
+      var graphs = this.get('graphs'),
+          graph = graphs.get(this.get('current_graph'));
       graphs.remove(graph);
-      this.switchGraph(graphs.at(0).id);
-      return graphs.at(0).id;
+      this.set('current_graph', this.last_graph);
+      // this.switchGraph(graphs.at(0).id);
+
     },
 
     exportGraph: function (id) {
@@ -278,38 +255,7 @@ define(["backbone","./model/Link","./model/Element", "./core"], function (Backbo
 
       }
     },
-    _restructureOnAdd: function (cell) {
 
-      if (cell.isLink()) {
-        this._edges[cell.id] = true;
-        var source = cell.get('source');
-        var target = cell.get('target');
-        if (source.id) {
-          (this._out[source.id] || (this._out[source.id] = {}))[cell.id] = true;
-        }
-        if (target.id) {
-          (this._in[target.id] || (this._in[target.id] = {}))[cell.id] = true;
-        }
-      } else {
-        this._nodes[cell.id] = true;
-      }
-    },
-
-    _restructureOnRemove: function (cell) {
-      if (cell.isLink()) {
-        delete this._edges[cell.id];
-        var source = cell.get('source');
-        var target = cell.get('target');
-        if (source.id && this._out[source.id] && this._out[source.id][cell.id]) {
-          delete this._out[source.id][cell.id];
-        }
-        if (target.id && this._in[target.id] && this._in[target.id][cell.id]) {
-          delete this._in[target.id][cell.id];
-        }
-      } else {
-        delete this._nodes[cell.id];
-      }
-    },
 
     /**
      * graphCells是否存在`id`指定的cell
@@ -485,7 +431,7 @@ define(["backbone","./model/Link","./model/Element", "./core"], function (Backbo
 
       var graphs = this.get('graphs');
       var graph = graphs.get(this.get('active_graph_id'));
-      var collection = this.active_cells()
+      var collection = this.active_cells();
       var cells = collection.models;
 
       layoutCell(cells, opt);
@@ -598,5 +544,5 @@ define(["backbone","./model/Link","./model/Element", "./core"], function (Backbo
     },
   });
 
-  return Graph;
+  return Graphs;
 })

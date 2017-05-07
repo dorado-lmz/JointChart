@@ -239,7 +239,7 @@ define(["backbone", '../core'], function (Backbone, core) {
 
       _.invoke(this.getEmbeddedCells(), 'remove', opt);
 
-      this.trigger('remove', this, this.collection, opt);
+      this.trigger('destroy', this, this.collection, opt);
 
       return this;
     },

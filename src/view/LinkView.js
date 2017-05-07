@@ -291,7 +291,7 @@ function(CellView, core, _, LinkTemplate, g) {
             }, this);
 
             // Path finding
-            var vertices = this.route = this.findRoute(this.model.get('vertices') || []);
+            var vertices = this.route = [];//this.findRoute(this.model.get('vertices') || []);
 
             // this.model.set('vertices', [], { silent: true });
 
